@@ -3,9 +3,9 @@ import {
   filenameStealth,
   isCompleteTrainingClass,
 } from "../helpers/downloadsHelpers";
-import { AppData } from "./appData";
+import { https } from "follow-redirects";
 import * as fs from "fs";
-import * as https from "node:https";
+
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
 
 import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
@@ -46,9 +46,7 @@ class DownloadsDataModel implements DownloadsData {
 
   initDownloadsPath() {
     const downloadsPath = SettingsData.downloadsPath;
-    if (!fs.existsSync(downloadsPath)) {
-      fs.mkdirSync(downloadsPath);
-    }
+    fs.mkdirSync(downloadsPath, { recursive: true });
   }
 
   addMultipleToQueue(downloadsArray: downloadRequest[]) {
@@ -96,24 +94,40 @@ class DownloadsDataModel implements DownloadsData {
       filenameStealth(download.id, media) // {id}_9879
     );
 
-    const accessToken = AppData.AUTHORIZATION.replace("Bearer ", "");
+    // const accessToken = AppData.AUTHORIZATION.replace("Bearer ", "");
+    const accessToken =
+      "772529a79cd1b70760da6e4a97dd5189:8ad16ff0a886bab9cc3f5cb921578a48fc05e7d46669c741e2d0f6f8df7a8d3a";
     const url = `/training_classes/${download.id}/download?type=${media}&player=app_preloading&access_token=${accessToken}`;
 
+    // const options = {
+    //   host: "api.bestcycling.es",
+    //   port: 443,
+    //   method: "GET",
+    //   path: "/api/bestapp" + url,
+    //   headers: {
+    //     "X-APP-ID": AppData.XAPPID,
+    //     "X-APP-VERSION": "3.3.0",
+    //     "Content-Type": media.includes("video") ? "video/mp4" : "audio/mp4",
+    //   },
+    // };
     const options = {
       host: "api.bestcycling.es",
       port: 443,
       method: "GET",
-      path: "/api/bestapp" + url,
+      path: "/api/bestapp/training_classes/267990/download?type=video_new_black_hd&player=app_preloading&access_token=772529a79cd1b70760da6e4a97dd5189:8ad16ff0a886bab9cc3f5cb921578a48fc05e7d46669c741e2d0f6f8df7a8d3a",
       headers: {
-        "X-APP-ID": AppData.APPID,
-        "X-APP-VERSION": AppData.XAPPID,
-        "Content-Type": "video/mp4", // TODO: change depending on audio/video/...
+        "X-APP-ID": "bestcycling",
+        "X-APP-VERSION": "3.3.0",
+        "Content-Type": "video/mp4",
       },
     };
 
     this.isDownloading = true;
     const writeStream = fs.createWriteStream(filename);
+    console.log(options);
+
     https.get(options, (res) => {
+      console.log("statusCode:", res.headers);
       let received = 0;
       const totalSize = parseInt(res.headers["content-length"]);
 
@@ -122,6 +136,9 @@ class DownloadsDataModel implements DownloadsData {
       res.on("data", (chunk) => {
         received += chunk.length;
         download.progress = (received / totalSize) * 100;
+        if (download.progress % 10 === 0) {
+          console.log(download.progress);
+        }
 
         for (let i = 0; i < chunk.length; i += 1) {
           chunk[i] = ~chunk[i];
@@ -144,9 +161,18 @@ class DownloadsDataModel implements DownloadsData {
       });
 
       res.on("close", () => {
-        this.isDownloading = false;
-        console.log("DOWNLOAD CLOSED");
-        // TODO:
+        const isCompleted = received === totalSize;
+        if (isCompleted) {
+          console.log("Ended download id: " + download.id);
+          download.changeStatus(media, "downloaded");
+          // TODO: when a download ends do the fetch of the training class
+          // to have a complete trainingClass object
+          sendToast(`Clase descargada ${download.id}`);
+
+          writeStream.end();
+          this.isDownloading = false;
+          this.downloadNext();
+        }
       });
 
       res.on("timeout", (err) => {
@@ -175,17 +201,8 @@ class DownloadsDataModel implements DownloadsData {
       });
 
       res.on("end", () => {
-        console.log("Ended download id: " + download.id);
-
-        // TODO: when a download ends do the fetch of the training class
-        // to have a complete trainingClass object
-        sendToast("Clase descargada");
-
-        writeStream.end();
-
-        download.changeStatus(media, "downloaded");
-        this.isDownloading = false;
-        this.downloadNext();
+        //
+        console.log("Download ended");
       });
     });
   };
