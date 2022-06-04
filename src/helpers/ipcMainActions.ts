@@ -1,9 +1,9 @@
 import { LocalServerInstance } from "../core/LocalServer";
 import { AppData } from "../data/appData";
-import { SettingsData } from "../data/settingsData";
+
 import { ipcMain } from "electron";
-import { api } from "./init";
-import { DownloadsData } from "../data/downloadsData";
+import { api, DownloadsData, SettingsData } from "./init";
+
 import { mainWindow } from "../index";
 
 export default function ipcMainActions() {
@@ -33,12 +33,27 @@ export default function ipcMainActions() {
       DownloadsData.addToQueue(trainingClass, mediatype, timestamp);
     }
   );
+
+  ipcMain.on(
+    "downloadScheduledTrainingClasses",
+    (_, downloadsArray: downloadRequest[]) => {
+      DownloadsData.addMultipleToQueue(downloadsArray);
+    }
+  );
+
+  ipcMain.on("removeAllDownloads", () => {
+    DownloadsData.removeAll();
+  });
 }
 
 export const sendToast = (
   message: string,
-  variation: null | "warn" | "error",
-  duration: number
+  variation: null | "warn" | "error" = null,
+  duration = 5
 ) => {
-  mainWindow.webContents.send("toast", "SETTINGS SAVED", null, 20);
+  mainWindow.webContents.send("toast", message, variation, duration);
+};
+
+export const informDownloads = () => {
+  mainWindow.webContents.send("downloads", DownloadsData);
 };

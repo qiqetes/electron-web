@@ -1,17 +1,23 @@
 import * as fs from "fs-extra";
-import { app } from "electron";
-import { TrainingClassesData } from "../data/trainingClassesData";
+import { app, crashReporter } from "electron";
+
 import Kitsu from "kitsu";
 import { join } from "path";
 import { JSONFile, Low } from "@commonify/lowdb";
 import { AppData } from "../data/appData";
-import { SettingsData } from "../data/settingsData";
-import { DownloadsData } from "../data/downloadsData";
+import DownloadsDataModel from "../data/downloadsData";
+import SettingsDataModel from "../data/settingsData";
+import TrainingClassesDataModel from "../data/trainingClassesData";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
+
+// Data
+export const SettingsData = new SettingsDataModel();
+export const TrainingClassesData = new TrainingClassesDataModel();
+export const DownloadsData = new DownloadsDataModel();
 
 // Gets the chromium preferences from the old directory if they exist and
 // saves them to be accesible from the webapp localStorage
@@ -31,20 +37,10 @@ const recoverOldPrefs = () => {
 
 // Processess that should be initialized before the webpage loads
 export const init = async () => {
+  initErrorHandler();
   await initDB();
 
-  console.log(
-    "DB initialized",
-    AppData.URL,
-    SettingsData.autoStartGymsScheduler
-  );
   setStartingUrl();
-  console.log(
-    "DB initialized",
-    AppData.URL,
-    SettingsData.autoStartGymsScheduler
-  );
-
   recoverOldPrefs();
 };
 
@@ -71,12 +67,17 @@ const initDB = async () => {
     };
     void DB.write();
   } else {
-    console.log(DB.data.settings);
     SettingsData.getFromDb();
     TrainingClassesData.getFromDb();
     DownloadsData.getFromDb();
   }
 };
+
+const initErrorHandler = () =>
+  crashReporter.start({
+    submitURL: "",
+    uploadToServer: false,
+  });
 
 export const api = new Kitsu({
   baseUrl: "https://apiv2.bestcycling.es/api/v2",

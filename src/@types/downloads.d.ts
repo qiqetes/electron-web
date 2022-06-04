@@ -37,3 +37,9 @@ interface OfflineTrainingClass {
   getQueuedMediaType: () => mediaType | null;
   changeStatus: (mediaType: mediaType, status: downloadStatus) => void;
 }
+
+type downloadRequest = {
+  trainingClass: TrainingClass;
+  mediaType: mediaType;
+  timestamp?: number | null;
+};

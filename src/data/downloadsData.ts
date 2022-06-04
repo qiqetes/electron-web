@@ -4,18 +4,20 @@ import {
   isCompleteTrainingClass,
 } from "../helpers/downloadsHelpers";
 import { AppData } from "./appData";
-import { SettingsData } from "./settingsData";
 import * as fs from "fs";
 import * as https from "node:https";
-import { mainWindow } from "..";
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
-import { TrainingClassesData } from "./trainingClassesData";
-import { DB } from "../helpers/init";
+
+import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
+import { sendToast } from "../helpers/ipcMainActions";
 
 class DownloadsDataModel implements DownloadsData {
   offlineTrainingClasses: OfflineTrainingClass[] = [];
   trainingClassesScheduled: number[] = [];
   isDownloading = false;
+  constructor() {
+    this.initDownloadsPath();
+  }
 
   addToQueue(
     trainingClass: TrainingClass,
@@ -25,8 +27,9 @@ class DownloadsDataModel implements DownloadsData {
     // Check if already in queue
     if (
       this.offlineTrainingClasses.find((item) => item.id === trainingClass.id)
-    )
+    ) {
       return;
+    }
 
     const offlineTrainingClass = new OfflineTrainingClass(
       trainingClass,
@@ -36,9 +39,23 @@ class DownloadsDataModel implements DownloadsData {
 
     if (isCompleteTrainingClass(trainingClass)) {
       TrainingClassesData.trainingClasses.push(trainingClass);
-    } else {
-      // TrainingClass needs to be fetched
     }
+    // TODO: TrainingClass will need to be fetched
+    this.offlineTrainingClasses.push(offlineTrainingClass);
+  }
+
+  initDownloadsPath() {
+    const downloadsPath = SettingsData.downloadsPath;
+    if (!fs.existsSync(downloadsPath)) {
+      fs.mkdirSync(downloadsPath);
+    }
+  }
+
+  addMultipleToQueue(downloadsArray: downloadRequest[]) {
+    downloadsArray.forEach((v) =>
+      this.addToQueue(v.trainingClass, v.mediaType, v.timestamp)
+    );
+    this.downloadNext();
   }
 
   getQueued(): OfflineTrainingClass[] {
@@ -70,11 +87,13 @@ class DownloadsDataModel implements DownloadsData {
     if (this.isDownloading) return;
 
     const download = this.getFirstQueued();
+    if (!download) return;
+
     const media = download.getQueuedMediaType();
 
     const filename = path.join(
       SettingsData.downloadsPath,
-      filenameStealth(download.id, media)
+      filenameStealth(download.id, media) // {id}_9879
     );
 
     const accessToken = AppData.AUTHORIZATION.replace("Bearer ", "");
@@ -88,7 +107,7 @@ class DownloadsDataModel implements DownloadsData {
       headers: {
         "X-APP-ID": AppData.APPID,
         "X-APP-VERSION": AppData.XAPPID,
-        "Content-Type": "video/mp4", // TODO:
+        "Content-Type": "video/mp4", // TODO: change depending on audio/video/...
       },
     };
 
@@ -138,12 +157,11 @@ class DownloadsDataModel implements DownloadsData {
       res.on("error", (err) => {
         this.isDownloading = false;
         console.log(`Error downloading schedule with Id: ${download.id}`, err);
-        mainWindow.webContents.send("toast", "Error en la descarga", "warn", 5);
+        sendToast("Error en la descarga", "warn", 5);
 
         // TODO: handle retries
         // if(download.retries < 5){
         //   download.retries += 1
-
         // }
         download.changeStatus(media, "error");
       });
@@ -151,14 +169,17 @@ class DownloadsDataModel implements DownloadsData {
       res.on("abort", (err) => {
         this.isDownloading = false;
         console.log(`Error downloading schedule with Id: ${download.id}`, err);
-        mainWindow.webContents.send("toast", "Descarga abortada", "warn", 5);
+        sendToast("Descarga abortada", "warn", 5);
 
         download.changeStatus(media, "error");
       });
 
       res.on("end", () => {
         console.log("Ended download id: " + download.id);
-        mainWindow.webContents.send("toast", "Clase descargada");
+
+        // TODO: when a download ends do the fetch of the training class
+        // to have a complete trainingClass object
+        sendToast("Clase descargada");
 
         writeStream.end();
 
@@ -181,12 +202,7 @@ class DownloadsDataModel implements DownloadsData {
   removeAll: () => void = () => {
     fs.rm(SettingsData.downloadsPath, (err) => {
       if (err) {
-        mainWindow.webContents.send(
-          "toast",
-          "Error al borrar las clases descargadas",
-          "error",
-          3
-        );
+        sendToast("Error al borrar las clases descargadas", "error", 3);
         return;
       }
       this.offlineTrainingClasses = [];
@@ -199,4 +215,6 @@ class DownloadsDataModel implements DownloadsData {
   };
 }
 
-export const DownloadsData = new DownloadsDataModel();
+// TODO: when a download ends do the fetch of the training class
+// to have a complete trainingClass object
+export = DownloadsDataModel;

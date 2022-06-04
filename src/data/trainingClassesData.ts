@@ -12,4 +12,4 @@ class TrainingClassesDataModel implements TrainingClassesData {
   };
 }
 
-export const TrainingClassesData = new TrainingClassesDataModel();
+export = TrainingClassesDataModel;
