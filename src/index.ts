@@ -1,6 +1,12 @@
 import { app, BrowserWindow } from "electron";
 import { AppData } from "./data/appData";
-import { init } from "./helpers/init";
+import {
+  DB,
+  DownloadsData,
+  init,
+  SettingsData,
+  TrainingClassesData,
+} from "./helpers/init";
 import ipcMainActions from "./helpers/ipcMainActions";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -47,7 +53,8 @@ app.on("ready", () => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on("window-all-closed", () => {
+app.on("window-all-closed", async () => {
+  await saveAll();
   // if (process.platform !== "darwin") {
   app.quit();
   // }
@@ -60,3 +67,12 @@ app.on("activate", () => {
     void createWindow();
   }
 });
+
+const saveAll = async () => {
+  DB.data = {
+    settings: SettingsData,
+    trainingClasses: TrainingClassesData,
+    downloads: DownloadsData,
+  };
+  await DB.write();
+};
