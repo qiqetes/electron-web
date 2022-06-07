@@ -1,50 +1,57 @@
 import { LocalServerInstance } from "../core/LocalServer";
-import { AppData } from "../data/appData";
 
-import { ipcMain } from "electron";
+import { dialog, ipcMain } from "electron";
 import { api, DownloadsData, SettingsData } from "./init";
 
 import { mainWindow } from "../index";
+import { AppData } from "../data/appData";
 
-export default function ipcMainActions() {
-  ipcMain.on("saveSetting", (_, setting, value) => {
-    SettingsData.saveSetting(setting, value);
-  });
+ipcMain.on("saveSetting", (_, setting, value) => {
+  SettingsData.saveSetting(setting, value);
+});
 
-  ipcMain.on("startLocalServer", () =>
-    LocalServerInstance.start(SettingsData.downloadsPath)
-  );
+ipcMain.on("startLocalServer", () =>
+  LocalServerInstance.start(SettingsData.downloadsPath)
+);
 
-  ipcMain.on("stopLocalServer", () => LocalServerInstance.stop());
+ipcMain.on("stopLocalServer", () => LocalServerInstance.stop());
 
-  ipcMain.on("setAuth", (_, auth) => {
-    AppData.AUTHORIZATION = `Bearer ${auth}`;
-    api.headers.Authorization = AppData.AUTHORIZATION;
-  });
+ipcMain.on("setAuth", (_, auth) => {
+  AppData.AUTHORIZATION = `Bearer ${auth}`;
+  api.headers.Authorization = AppData.AUTHORIZATION;
+  console.log(api.headers);
+});
 
-  ipcMain.on(
-    "addDownload",
-    (
-      _,
-      trainingClass: TrainingClass,
-      mediatype: mediaType = "video_hd",
-      timestamp: number | null
-    ) => {
-      DownloadsData.addToQueue(trainingClass, mediatype, timestamp);
-    }
-  );
+ipcMain.on(
+  "addDownload",
+  (
+    _,
+    trainingClass: TrainingClass,
+    mediatype: mediaType = "video_hd",
+    timestamp: number | null
+  ) => {
+    DownloadsData.addToQueue(trainingClass, mediatype, timestamp);
+  }
+);
 
-  ipcMain.on(
-    "downloadScheduledTrainingClasses",
-    (_, downloadsArray: downloadRequest[]) => {
-      DownloadsData.addMultipleToQueue(downloadsArray);
-    }
-  );
+ipcMain.on(
+  "downloadScheduledTrainingClasses",
+  (_, downloadsArray: downloadRequest[]) => {
+    DownloadsData.addMultipleToQueue(downloadsArray);
+  }
+);
 
-  ipcMain.on("removeAllDownloads", () => {
-    DownloadsData.removeAll();
-  });
-}
+ipcMain.on("removeAllDownloads", () => {
+  DownloadsData.removeAll();
+});
+
+ipcMain.on("importDownloads", () => {
+  console.log("importDownloads");
+  const dir = dialog.showOpenDialogSync({ properties: ["openDirectory"] });
+  if (dir) {
+    DownloadsData.importFromFolder(dir[0]);
+  }
+});
 
 export const sendToast = (
   message: string,
@@ -56,4 +63,8 @@ export const sendToast = (
 
 export const informDownloads = () => {
   mainWindow.webContents.send("downloads", DownloadsData);
+};
+
+export const informDownloadsState = () => {
+  mainWindow.webContents.send("downloadState", DownloadsData.toWebAppState());
 };

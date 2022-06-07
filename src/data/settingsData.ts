@@ -23,19 +23,19 @@ class SettingsDataModel implements IndexableData {
   videoHD: true;
   waitingMusicPath: string; // Archivo música en espera, waiting_music_file
 
-  saveToDb: () => void = async () => {
+  async saveToDb(): Promise<void> {
     DB.data.settings = this;
     await DB.write();
-  };
+  }
 
-  getFromDb: () => void = () => {
+  getFromDb(): void {
     if (!DB.data.settings)
       throw new Error("SettingsData.getFromDb: DB.data.settings is null");
     Object.assign(this, DB.data.settings);
-  };
+  }
 
   // Saves an old setting to new Settings
-  saveSetting = (setting: string, value: any) => {
+  saveSetting(setting: string, value: any): void {
     let validSetting = true;
     switch (setting) {
       case "default_room":
@@ -100,7 +100,7 @@ class SettingsDataModel implements IndexableData {
       this.saveToDb();
       sendToast("Preferencia guardada", null, 5);
     }
-  };
+  }
 }
 
 export = SettingsDataModel;

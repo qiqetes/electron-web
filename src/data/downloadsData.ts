@@ -1,18 +1,19 @@
 import path = require("path");
 import {
+  downloadFromFile,
   filenameStealth,
   isCompleteTrainingClass,
+  isValidDownloadFile,
 } from "../helpers/downloadsHelpers";
 import { https } from "follow-redirects";
 import * as fs from "fs";
-
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
-
 import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
-import { sendToast } from "../helpers/ipcMainActions";
+import { informDownloadsState, sendToast } from "../helpers/ipcMainActions";
+import { AppData } from "./appData";
 
 class DownloadsDataModel implements DownloadsData {
-  offlineTrainingClasses: OfflineTrainingClass[] = [];
+  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
   trainingClassesScheduled: number[] = [];
   isDownloading = false;
   constructor() {
@@ -22,15 +23,17 @@ class DownloadsDataModel implements DownloadsData {
   addToQueue(
     trainingClass: TrainingClass,
     mediaType: mediaType,
-    timestamp?: number
+    timestamp?: number,
+    inform = true
   ) {
     // Check if already in queue
     if (
-      this.offlineTrainingClasses.find((item) => item.id === trainingClass.id)
+      this.offlineTrainingClasses[trainingClass.id] &&
+      this.offlineTrainingClasses[trainingClass.id].alreadyQueued(mediaType)
     ) {
       return;
+    } else if (this.offlineTrainingClasses[trainingClass.id]) {
     }
-
     const offlineTrainingClass = new OfflineTrainingClass(
       trainingClass,
       mediaType,
@@ -38,10 +41,10 @@ class DownloadsDataModel implements DownloadsData {
     );
 
     if (isCompleteTrainingClass(trainingClass)) {
-      TrainingClassesData.trainingClasses.push(trainingClass);
+      TrainingClassesData.addTraining(trainingClass.id, false);
     }
-    // TODO: TrainingClass will need to be fetched
     this.offlineTrainingClasses.push(offlineTrainingClass);
+    if (inform) informDownloadsState();
   }
 
   initDownloadsPath() {
@@ -51,9 +54,10 @@ class DownloadsDataModel implements DownloadsData {
 
   addMultipleToQueue(downloadsArray: downloadRequest[]) {
     downloadsArray.forEach((v) =>
-      this.addToQueue(v.trainingClass, v.mediaType, v.timestamp)
+      this.addToQueue(v.trainingClass, v.mediaType, v.timestamp, false)
     );
     this.downloadNext();
+    informDownloadsState();
   }
 
   getQueued(): OfflineTrainingClass[] {
@@ -66,67 +70,48 @@ class DownloadsDataModel implements DownloadsData {
     );
   }
 
-  getFirstQueued: () => OfflineTrainingClass | null = () => {
+  getFirstQueued(): OfflineTrainingClass | null {
     const queuedTrainingClasses = this.getQueued();
     if (!queuedTrainingClasses.length) return null;
 
     return queuedTrainingClasses.sort((a, b) => a.timeStamp - b.timeStamp)[0];
-  };
+  }
 
-  stopDownloading: () => void = () => {
+  stopDownloading(): void {
     this.isDownloading = false;
-  };
+  }
 
-  startDownloads: () => void = () => {
+  startDownloads(): void {
     this.downloadNext();
-  };
+  }
 
-  downloadNext: () => void = () => {
+  async downloadNext() {
     if (this.isDownloading) return;
 
     const download = this.getFirstQueued();
     if (!download) return;
 
+    // TODO: intentar quitar el await de aquí
+    const trainingClass: TrainingClass =
+      await TrainingClassesData.getFullTrainingClass(download.id);
+
     const media = download.getQueuedMediaType();
+    const mediaUrl = trainingClass.media.find(
+      (item) => item.type === media
+    ).url;
 
     const filename = path.join(
       SettingsData.downloadsPath,
       filenameStealth(download.id, media) // {id}_9879
     );
 
-    // const accessToken = AppData.AUTHORIZATION.replace("Bearer ", "");
-    const accessToken =
-      "772529a79cd1b70760da6e4a97dd5189:8ad16ff0a886bab9cc3f5cb921578a48fc05e7d46669c741e2d0f6f8df7a8d3a";
-    const url = `/training_classes/${download.id}/download?type=${media}&player=app_preloading&access_token=${accessToken}`;
-
-    // const options = {
-    //   host: "api.bestcycling.es",
-    //   port: 443,
-    //   method: "GET",
-    //   path: "/api/bestapp" + url,
-    //   headers: {
-    //     "X-APP-ID": AppData.XAPPID,
-    //     "X-APP-VERSION": "3.3.0",
-    //     "Content-Type": media.includes("video") ? "video/mp4" : "audio/mp4",
-    //   },
-    // };
-    const options = {
-      host: "api.bestcycling.es",
-      port: 443,
-      method: "GET",
-      path: "/api/bestapp/training_classes/267990/download?type=video_new_black_hd&player=app_preloading&access_token=772529a79cd1b70760da6e4a97dd5189:8ad16ff0a886bab9cc3f5cb921578a48fc05e7d46669c741e2d0f6f8df7a8d3a",
-      headers: {
-        "X-APP-ID": "bestcycling",
-        "X-APP-VERSION": "3.3.0",
-        "Content-Type": "video/mp4",
-      },
-    };
+    const accessToken = AppData.AUTHORIZATION.split(" ")[1];
+    const url = `${mediaUrl}&access_token=${accessToken}`;
 
     this.isDownloading = true;
     const writeStream = fs.createWriteStream(filename);
-    console.log(options);
 
-    https.get(options, (res) => {
+    https.get(url, (res) => {
       console.log("statusCode:", res.headers);
       let received = 0;
       const totalSize = parseInt(res.headers["content-length"]);
@@ -136,7 +121,7 @@ class DownloadsDataModel implements DownloadsData {
       res.on("data", (chunk) => {
         received += chunk.length;
         download.progress = (received / totalSize) * 100;
-        if (download.progress % 10 === 0) {
+        if (received % 1000000 === 0) {
           console.log(download.progress);
         }
 
@@ -163,14 +148,14 @@ class DownloadsDataModel implements DownloadsData {
       res.on("close", () => {
         const isCompleted = received === totalSize;
         if (isCompleted) {
+          sendToast(`Clase descargada ${download.id}`);
           console.log("Ended download id: " + download.id);
           download.changeStatus(media, "downloaded");
+          this.isDownloading = false;
+
           // TODO: when a download ends do the fetch of the training class
           // to have a complete trainingClass object
-          sendToast(`Clase descargada ${download.id}`);
-
           writeStream.end();
-          this.isDownloading = false;
           this.downloadNext();
         }
       });
@@ -201,22 +186,24 @@ class DownloadsDataModel implements DownloadsData {
       });
 
       res.on("end", () => {
-        //
         console.log("Download ended");
+        informDownloadsState();
       });
     });
-  };
+  }
 
-  getFromDb: () => void = () => {
-    this.offlineTrainingClasses = DB.data.downloads.offlineTrainingClasses;
+  getFromDb(): void {
+    this.offlineTrainingClasses = DB.data.downloads.offlineTrainingClasses.map(
+      (v) => OfflineTrainingClass.fromDB(v)
+    );
     this.trainingClassesScheduled = DB.data.downloads.trainingClassesScheduled;
-  };
+  }
 
-  saveToDb: () => void = () => {
+  saveToDb(): void {
     DB.data.downloads = this;
-  };
+  }
 
-  removeAll: () => void = () => {
+  removeAll(): void {
     fs.rm(SettingsData.downloadsPath, (err) => {
       if (err) {
         sendToast("Error al borrar las clases descargadas", "error", 3);
@@ -225,11 +212,117 @@ class DownloadsDataModel implements DownloadsData {
       this.offlineTrainingClasses = [];
       this.trainingClassesScheduled = [];
     });
-  };
+  }
 
-  importFromFolder: (folder: string) => void = (folder) => {
-    throw new Error("Method not implemented.");
-  };
+  importFromFolder(folder: string): void {
+    // Check if files are download files
+    const files = fs.readdirSync(folder);
+    files.forEach((file) => {
+      if (isValidDownloadFile(file)) {
+        const { id, mediaType } = downloadFromFile(file);
+
+        if (!this.offlineTrainingClasses.find((item) => item.id === id)) {
+          const offline = new OfflineTrainingClass(id, mediaType);
+          offline.changeStatus(mediaType, "downloaded");
+
+          // TODO: add the training class to the TrainingClassesList
+          TrainingClassesData.addTraining(id);
+
+          this.offlineTrainingClasses.push(offline);
+        }
+      }
+    });
+  }
+
+  getDownloading(): OfflineTrainingClass {
+    return this.offlineTrainingClasses.find(
+      (item) =>
+        item.statusVideoHd === "downloading" ||
+        item.statusVideoSd === "downloading" ||
+        item.statusAudio === "downloading" ||
+        item.statusMusic === "downloading"
+    );
+  }
+
+  // TODO: es una mierda, es para adaptar a como estaba en la antigua
+  toWebAppState(): downloadsStateWebapp {
+    const isDownloading = this.isDownloading;
+    const queue = this.getQueued().map(
+      (v) => `${v.id}-${v.getQueuedMediaType()}`
+    );
+    const downloading = this.getDownloading();
+    const trainingClasses = this.offlineTrainingClasses.map((v) => {
+      const id = v.id.toString();
+      const downloadedMedia = [
+        {
+          type: "video_hd" as mediaType,
+          progress:
+            v.statusVideoHd === "downloading"
+              ? v.progress
+              : v.statusVideoHd === "downloaded"
+              ? 100
+              : 0,
+          downloaded: v.statusVideoHd === "downloaded",
+          downloading: v.statusVideoHd === "downloading",
+          queued: v.statusVideoHd === "queued",
+        },
+        {
+          type: "video_sd" as mediaType,
+          progress:
+            v.statusVideoSd === "downloading"
+              ? v.progress
+              : v.statusVideoSd === "downloaded"
+              ? 100
+              : 0,
+          downloaded: v.statusVideoSd === "downloaded",
+          downloading: v.statusVideoSd === "downloading",
+          queued: v.statusVideoSd === "queued",
+        },
+        {
+          type: "audio" as mediaType,
+          progress:
+            v.statusAudio === "downloading"
+              ? v.progress
+              : v.statusAudio === "downloaded"
+              ? 100
+              : 0,
+          downloaded: v.statusAudio === "downloaded",
+          downloading: v.statusAudio === "downloading",
+          queued: v.statusAudio === "queued",
+        },
+        {
+          type: "music" as mediaType,
+          progress:
+            v.statusMusic === "downloading"
+              ? v.progress
+              : v.statusMusic === "downloaded"
+              ? 100
+              : 0,
+          downloaded: v.statusMusic === "downloaded",
+          downloading: v.statusMusic === "downloading",
+          queued: v.statusMusic === "queued",
+        },
+      ];
+      const trainingClass = TrainingClassesData.trainingClasses[id];
+      const offline =
+        v.statusAudio === "downloaded" ||
+        v.statusMusic === "downloaded" ||
+        v.statusVideoHd === "downloaded" ||
+        v.statusVideoSd === "downloaded";
+      return {
+        id,
+        offline,
+        downloadedMedia,
+        trainingClass,
+      };
+    });
+    return {
+      isDownloading,
+      queue,
+      downloading,
+      trainingClasses,
+    };
+  }
 }
 
 // TODO: when a download ends do the fetch of the training class

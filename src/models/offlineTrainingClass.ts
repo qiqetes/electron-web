@@ -1,5 +1,5 @@
 export class OfflineTrainingClass implements OfflineTrainingClass {
-  id: number;
+  id: number | string;
   statusVideoHd: downloadStatus;
   statusVideoSd: downloadStatus;
   statusAudio: downloadStatus;
@@ -9,11 +9,12 @@ export class OfflineTrainingClass implements OfflineTrainingClass {
   retries: number;
 
   constructor(
-    trainingClass: TrainingClass,
+    trainingClass: TrainingClass | string | number,
     mediaTypeToQueue: mediaType,
     timestamp?: number
   ) {
-    this.id = trainingClass.id;
+    this.id =
+      typeof trainingClass === "object" ? trainingClass.id : trainingClass;
     this.statusVideoHd = "none";
     this.statusVideoSd = "none";
     this.statusAudio = "none";
@@ -38,5 +39,28 @@ export class OfflineTrainingClass implements OfflineTrainingClass {
     if (mediaType == "video_sd") this.statusVideoSd = status;
     if (mediaType == "audio") this.statusAudio = status;
     if (mediaType == "music") this.statusMusic = status;
+  }
+
+  static fromDB(dbOfflineTrainingClass: OfflineTrainingClass) {
+    const off = new this(
+      dbOfflineTrainingClass.id,
+      null,
+      dbOfflineTrainingClass.timeStamp
+    );
+    off.statusVideoHd = dbOfflineTrainingClass.statusVideoHd;
+    off.statusVideoSd = dbOfflineTrainingClass.statusVideoSd;
+    off.statusAudio = dbOfflineTrainingClass.statusAudio;
+    off.statusMusic = dbOfflineTrainingClass.statusMusic;
+    off.progress = dbOfflineTrainingClass.progress;
+    off.retries = dbOfflineTrainingClass.retries;
+    return off;
+  }
+
+  alreadyQueued(mediaType: mediaType) {
+    if (mediaType == "video_hd") return this.statusVideoHd != "none";
+    if (mediaType == "video_sd") return this.statusVideoSd != "none";
+    if (mediaType == "audio") return this.statusAudio != "none";
+    if (mediaType == "music") return this.statusMusic != "none";
+    return false;
   }
 }

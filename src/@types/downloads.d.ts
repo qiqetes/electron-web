@@ -1,5 +1,5 @@
 interface DownloadsData extends IndexableData {
-  offlineTrainingClasses: OfflineTrainingClass[];
+  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
   trainingClassesScheduled: number[];
 
   isDownloading: boolean;
@@ -25,7 +25,7 @@ interface Media {
 }
 
 interface OfflineTrainingClass {
-  id: number;
+  id: number | string;
   statusVideoHd: downloadStatus;
   statusVideoSd: downloadStatus;
   statusAudio: downloadStatus;
@@ -42,4 +42,24 @@ type downloadRequest = {
   trainingClass: TrainingClass;
   mediaType: mediaType;
   timestamp?: number | null;
+};
+
+// The donloadsState that the webapp expects
+// TODO: mejorar esto que es un desastre, pero se usa igual en toda la webapp
+type downloadsStateWebapp = {
+  isDownloading: boolean; // Downloads are in progress
+  queue: string[]; // Clases encoladas (['285303-music'])
+  downloading: null | OfflineTrainingClass; // Clase actualmente en descarga ({ id: 285303, key: 'audio', progress: 20 })
+  trainingClasses: {
+    id: string;
+    downloadedMedia: {
+      type: mediaType;
+      progress: number;
+      downloaded: boolean;
+      downloading: boolean;
+      queued: boolean;
+    }[];
+    trainingClass: TrainingClass;
+    offline: boolean;
+  }[];
 };

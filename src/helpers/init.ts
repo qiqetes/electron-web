@@ -11,6 +11,7 @@ import TrainingClassesDataModel from "../data/trainingClassesData";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
+console.log(file);
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -73,6 +74,7 @@ const initDB = async () => {
   }
 };
 
+// TODO: Add error handler
 const initErrorHandler = () =>
   crashReporter.start({
     submitURL: "",
@@ -80,11 +82,11 @@ const initErrorHandler = () =>
   });
 
 export const api = new Kitsu({
-  baseUrl: "https://apiv2.bestcycling.es/api/v2",
   headers: {
     "Content-Type": "application/vnd.api+json",
     "X-APP-ID": AppData.XAPPID,
     // "X-APP-VERSION": appVersion,
     Authorization: AppData.AUTHORIZATION,
   },
+  baseURL: "https://apiv2.bestcycling.es/api/v2",
 });

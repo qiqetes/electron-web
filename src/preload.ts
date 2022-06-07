@@ -23,9 +23,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 
 contextBridge.exposeInMainWorld("downloadsAPI", {
-  // offlineTrainingClasses: DownloadsData,
-  startLocalServer: ipcRenderer.send("startLocalServer"),
-  stopLocalServer: ipcRenderer.send("stopLocalServer"),
+  startLocalServer: () => ipcRenderer.send("startLocalServer"),
+
+  stopLocalServer: () => ipcRenderer.send("stopLocalServer"),
+
   downloadScheduledTrainingClasses: (downloadRequests: downloadRequest[]) =>
     ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
+
+  importDownloads: () => ipcRenderer.send("importDownloads"),
+
+  handleDownloadState: (
+    callback: (event: Event, state: downloadsStateWebapp) => void
+  ) => {
+    ipcRenderer.on("downloadState", callback);
+  },
 });

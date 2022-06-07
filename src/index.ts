@@ -7,7 +7,6 @@ import {
   SettingsData,
   TrainingClassesData,
 } from "./helpers/init";
-import ipcMainActions from "./helpers/ipcMainActions";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
@@ -37,8 +36,6 @@ const createWindow = async () => {
 
   // Open the DevTools.x
   mainWindow.webContents.openDevTools();
-
-  ipcMainActions();
 
   // Cuando la webapp está realmente cargada, se ejecuta este evento
   mainWindow.once("ready-to-show", () => {

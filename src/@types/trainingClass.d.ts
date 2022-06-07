@@ -1,5 +1,5 @@
-interface TrainingClass {
-  id: number;
+type TrainingClass = {
+  id: number | string;
   category_nr: number;
   comments_count: number;
   content: string | null;
@@ -40,7 +40,7 @@ interface TrainingClass {
   trainer?: Trainer;
   training_type_nr: number;
   training_type: string;
-}
+};
 
 interface Progression {
   track: string;
@@ -67,5 +67,5 @@ interface ProgressionWats {
 }
 
 interface TrainingClassesData extends IndexableData {
-  trainingClasses: TrainingClass[];
+  trainingClasses: { [id: string]: TrainingClass };
 }
