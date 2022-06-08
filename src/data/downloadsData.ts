@@ -209,6 +209,44 @@ class DownloadsDataModel implements DownloadsData {
     DB.data!.downloads = this;
   }
 
+  importFromFolder(folder: string): void {
+    // Check if files are download files
+    const files = fs.readdirSync(folder);
+    sendToast("Iportando clases descargadas", null, 3);
+    files.forEach((file) => {
+      if (isValidDownloadFile(file)) {
+        const source = path.join(folder, file);
+        const dest = path.join(SettingsData.downloadsPath, file);
+
+        fs.copyFile(source, dest, fs.constants.COPYFILE_EXCL, (err) => {
+          if (err) return;
+          const { id, mediaType } = downloadFromFile(file);
+
+          if (!this.offlineTrainingClasses[id + "-" + mediaType]) {
+            const offline = new OfflineTrainingClass(id, mediaType);
+            offline.status = "downloaded";
+
+            // TODO: add the training class to the TrainingClassesList
+            TrainingClassesData.addTraining(id);
+
+            this.offlineTrainingClasses[id + "-" + mediaType] = offline;
+          }
+        });
+      }
+    });
+    sendToast("Importación finalizada", null, 3);
+  }
+
+  removeDownload(id: string, mediaType: mediaType, inform = true): void {
+    const file = filenameStealth(id, mediaType);
+    const filePath = path.join(SettingsData.downloadsPath, file);
+    fs.rm(filePath, (err) => {
+      if (err) return;
+      delete this.offlineTrainingClasses[id + "-" + mediaType];
+      if (inform) informDownloadsState();
+    });
+  }
+
   removeAll(): void {
     fs.rm(SettingsData.downloadsPath, (err) => {
       if (err) {
@@ -217,26 +255,6 @@ class DownloadsDataModel implements DownloadsData {
       }
       this.offlineTrainingClasses = {};
       this.trainingClassesScheduled = [];
-    });
-  }
-
-  importFromFolder(folder: string): void {
-    // Check if files are download files
-    const files = fs.readdirSync(folder);
-    files.forEach((file) => {
-      if (isValidDownloadFile(file)) {
-        const { id, mediaType } = downloadFromFile(file);
-
-        if (!this.offlineTrainingClasses[id + "-" + mediaType]) {
-          const offline = new OfflineTrainingClass(id, mediaType);
-          offline.status = "downloaded";
-
-          // TODO: add the training class to the TrainingClassesList
-          TrainingClassesData.addTraining(id);
-
-          this.offlineTrainingClasses[id + "-" + mediaType] = offline;
-        }
-      }
     });
   }
 
