@@ -3,7 +3,7 @@ import { api, DB } from "../helpers/init";
 
 class TrainingClassesDataModel implements TrainingClassesData {
   trainingClasses: { [key: string]: TrainingClass } = {};
-  trainingClassesToFetch: (number | string)[]; // IDs de clases que tocaría hacer un fetch
+  trainingClassesToFetch: (number | string)[] = []; // IDs de clases que tocaría hacer un fetch
 
   // Adds a class with all the parameters (media, progression...)
   addTraining = (
@@ -48,11 +48,13 @@ class TrainingClassesDataModel implements TrainingClassesData {
   }
 
   async saveToDb(): Promise<void> {
+    if (!DB.data) return;
     DB.data.trainingClasses = this;
     await DB.write();
   }
 
   getFromDb(): void {
+    if (!DB.data) return;
     this.trainingClasses = DB.data.trainingClasses.trainingClasses;
   }
 

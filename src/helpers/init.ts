@@ -11,7 +11,6 @@ import TrainingClassesDataModel from "../data/trainingClassesData";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
-console.log(file);
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -52,7 +51,6 @@ const setStartingUrl = () => {
       AppData.WEBAPP_WEBASE +
       `/app#/gyms/rooms/${SettingsData.defaultRoom}/play`;
   }
-  console.log(AppData.URL);
 };
 
 const initDB = async () => {

@@ -1,5 +1,6 @@
 import { filenameStealth } from "../helpers/downloadsHelpers";
-import * as childProcess from "child_process";
+import ChildProcess from "child_process";
+
 import EventEmitter from "events";
 import * as path from "node:path";
 
@@ -8,7 +9,7 @@ export default class LocalServer extends EventEmitter {
   root: "";
   running: boolean;
   error: boolean;
-  streamingServer: childProcess.ChildProcess;
+  streamingServer = ChildProcess.ChildProcess;
 
   constructor() {
     super();
@@ -55,7 +56,7 @@ export default class LocalServer extends EventEmitter {
       cwd: path.dirname(process.execPath),
     };
 
-    this.streamingServer = childProcess.fork(
+    this.streamingServer = ChildProcess.fork(
       scriptPath,
       [this.port, "offline", downloadsPath],
       options

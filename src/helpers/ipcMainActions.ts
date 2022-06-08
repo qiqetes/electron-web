@@ -19,7 +19,6 @@ ipcMain.on("stopLocalServer", () => LocalServerInstance.stop());
 ipcMain.on("setAuth", (_, auth) => {
   AppData.AUTHORIZATION = `Bearer ${auth}`;
   api.headers.Authorization = AppData.AUTHORIZATION;
-  console.log(api.headers);
 });
 
 ipcMain.on(
@@ -46,7 +45,6 @@ ipcMain.on("removeAllDownloads", () => {
 });
 
 ipcMain.on("importDownloads", () => {
-  console.log("importDownloads");
   const dir = dialog.showOpenDialogSync({ properties: ["openDirectory"] });
   if (dir) {
     DownloadsData.importFromFolder(dir[0]);
@@ -59,10 +57,6 @@ export const sendToast = (
   duration = 5
 ) => {
   mainWindow.webContents.send("toast", message, variation, duration);
-};
-
-export const informDownloads = () => {
-  mainWindow.webContents.send("downloads", DownloadsData);
 };
 
 export const informDownloadsState = () => {

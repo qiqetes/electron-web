@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { AppData } from "./data/appData";
 import {
   DB,
@@ -32,7 +32,7 @@ const createWindow = async () => {
     },
   });
 
-  void mainWindow.loadURL(AppData.URL);
+  void mainWindow.loadURL(AppData.URL!);
 
   // Open the DevTools.x
   mainWindow.webContents.openDevTools();
@@ -44,6 +44,7 @@ const createWindow = async () => {
 };
 
 app.on("ready", () => {
+  ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   void createWindow();
 });
 

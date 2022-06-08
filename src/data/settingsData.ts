@@ -2,35 +2,35 @@ import { DB } from "../helpers/init";
 import { app } from "electron";
 import { sendToast } from "../helpers/ipcMainActions";
 
-class SettingsDataModel implements IndexableData {
-  ask_graph_intro_video: boolean; // Mostrar popup de ajuste bicicleta en pantalla externa
-  autoStartGymsScheduler: boolean; // Iniciar planificador de gimnasios automáticamente, C11
-  C16: boolean; // Aceleración generador MP4
+class SettingsDataModel implements SettingsData {
+  ask_graph_intro_video = true; // Mostrar popup de ajuste bicicleta en pantalla externa
+  autoStartGymsScheduler = false; // Iniciar planificador de gimnasios automáticamente, C11
+  C16 = false; // Aceleración generador MP4
   defaultRoom = 1;
-  download_scheduled_training_classes: boolean;
+  download_scheduled_training_classes = false;
   downloadsPath = app.getPath("userData") + "/Default/offline"; // Directorio de descarga de clases C1
-  first_experience_status: "idle"; // Ocultar primera experiencia first_experience_status
-  gymsLogoPath: string; // Archivo logo gimnasios C8
-  maxDownloadsSize: number; // Espacio máximo en GB ocupado por descargas C13
-  offlineResolution: "hd" | "hq"; // Calidad videos al descargar offline C9
-  playerVolume: number; // Volumen reproductor C7
-  playOnlyOffline: boolean; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
-  resolutionCreateMP4: "hd" | "hq"; // Calidad HD al generar mp4, C10
-  show_external_setup_video: boolean; // Mostrar video de ajuste en pantalla externa
-  showMonitorView: boolean; // Mostrar vista monitor
-  showSecondaryDisplay: boolean; // Mostrar Display secundario y pausar al inicio
-  updated_to_life: boolean;
-  videoHD: true;
-  waitingMusicPath: string; // Archivo música en espera, waiting_music_file
+  first_experience_status: "idle" = "idle"; // Ocultar primera experiencia first_experience_status
+  gymsLogoPath = ""; // Archivo logo gimnasios C8
+  maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
+  offlineResolution: "hd" | "hq" = "hd"; // Calidad videos al descargar offline C9
+  playerVolume = 1.0; // Volumen reproductor C7
+  playOnlyOffline = false; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
+  resolutionCreateMP4: "hd" | "hq" = "hq"; // Calidad HD al generar mp4, C10
+  show_external_setup_video = false; // Mostrar video de ajuste en pantalla externa
+  showMonitorView = false; // Mostrar vista monitor
+  showSecondaryDisplay = false; // Mostrar Display secundario y pausar al inicio
+  updated_to_life = false;
+  videoHD = true;
+  waitingMusicPath = ""; // Archivo música en espera, waiting_music_file
 
   async saveToDb(): Promise<void> {
+    if (!DB.data) return;
     DB.data.settings = this;
     await DB.write();
   }
 
   getFromDb(): void {
-    if (!DB.data.settings)
-      throw new Error("SettingsData.getFromDb: DB.data.settings is null");
+    if (!DB.data) return;
     Object.assign(this, DB.data.settings);
   }
 
@@ -96,7 +96,6 @@ class SettingsDataModel implements IndexableData {
     }
 
     if (validSetting) {
-      DB.data.settings = this;
       this.saveToDb();
       sendToast("Preferencia guardada", null, 5);
     }

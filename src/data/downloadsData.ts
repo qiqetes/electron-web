@@ -13,7 +13,7 @@ import { informDownloadsState, sendToast } from "../helpers/ipcMainActions";
 import { AppData } from "./appData";
 
 class DownloadsDataModel implements DownloadsData {
-  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
+  offlineTrainingClasses: { [id: string]: OfflineTrainingClass } = {}; // [id: id+"-"+mediaType]
   trainingClassesScheduled: number[] = [];
   isDownloading = false;
   constructor() {
@@ -23,27 +23,26 @@ class DownloadsDataModel implements DownloadsData {
   addToQueue(
     trainingClass: TrainingClass,
     mediaType: mediaType,
-    timestamp?: number,
+    timestamp: number | null = null,
     inform = true
   ) {
     // Check if already in queue
-    if (
-      this.offlineTrainingClasses[trainingClass.id] &&
-      this.offlineTrainingClasses[trainingClass.id].alreadyQueued(mediaType)
-    ) {
+    if (this.offlineTrainingClasses[trainingClass.id + "-" + mediaType]) {
       return;
-    } else if (this.offlineTrainingClasses[trainingClass.id]) {
     }
+
+    const id = trainingClass.id.toString();
     const offlineTrainingClass = new OfflineTrainingClass(
-      trainingClass,
+      id,
       mediaType,
       timestamp
     );
 
     if (isCompleteTrainingClass(trainingClass)) {
-      TrainingClassesData.addTraining(trainingClass.id, false);
+      TrainingClassesData.addTraining(trainingClass, true);
     }
-    this.offlineTrainingClasses.push(offlineTrainingClass);
+
+    this.offlineTrainingClasses[id + "-" + mediaType] = offlineTrainingClass;
     if (inform) informDownloadsState();
   }
 
@@ -61,12 +60,8 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   getQueued(): OfflineTrainingClass[] {
-    return this.offlineTrainingClasses.filter(
-      (item) =>
-        item.statusVideoHd === "queued" ||
-        item.statusVideoSd === "queued" ||
-        item.statusAudio === "queued" ||
-        item.statusMusic === "queued"
+    return Object.values(this.offlineTrainingClasses).filter(
+      (v) => v.status === "queued"
     );
   }
 
@@ -74,7 +69,9 @@ class DownloadsDataModel implements DownloadsData {
     const queuedTrainingClasses = this.getQueued();
     if (!queuedTrainingClasses.length) return null;
 
-    return queuedTrainingClasses.sort((a, b) => a.timeStamp - b.timeStamp)[0];
+    return Object.values(queuedTrainingClasses).sort(
+      (a, b) => (a?.timestamp || 0) - (b?.timestamp || 0)
+    )[0];
   }
 
   stopDownloading(): void {
@@ -90,15 +87,24 @@ class DownloadsDataModel implements DownloadsData {
 
     const download = this.getFirstQueued();
     if (!download) return;
+    if (download.retries > 5) {
+      sendToast("Error al descargar clase", "error", 3);
+      download.status = "error";
+    }
 
     // TODO: intentar quitar el await de aquí
-    const trainingClass: TrainingClass =
+    const trainingClass: TrainingClass | null =
       await TrainingClassesData.getFullTrainingClass(download.id);
+    if (!trainingClass) {
+      download.retries++;
+      this.downloadNext();
+      return;
+    }
 
-    const media = download.getQueuedMediaType();
-    const mediaUrl = trainingClass.media.find(
-      (item) => item.type === media
-    ).url;
+    const media = download.mediaType;
+    const mediaUrl =
+      trainingClass?.media?.find((item) => item.type === media)?.url ?? null;
+    if (!mediaUrl) throw new Error("URL NOT FOUND FOR THAT MEDIATYPE");
 
     const filename = path.join(
       SettingsData.downloadsPath,
@@ -114,7 +120,7 @@ class DownloadsDataModel implements DownloadsData {
     https.get(url, (res) => {
       console.log("statusCode:", res.headers);
       let received = 0;
-      const totalSize = parseInt(res.headers["content-length"]);
+      const totalSize = parseInt(res.headers["content-length"]!);
 
       let nChunks = 0;
       // Data received
@@ -150,8 +156,9 @@ class DownloadsDataModel implements DownloadsData {
         if (isCompleted) {
           sendToast(`Clase descargada ${download.id}`);
           console.log("Ended download id: " + download.id);
-          download.changeStatus(media, "downloaded");
+          download.status = "downloaded";
           this.isDownloading = false;
+          informDownloadsState();
 
           // TODO: when a download ends do the fetch of the training class
           // to have a complete trainingClass object
@@ -174,7 +181,7 @@ class DownloadsDataModel implements DownloadsData {
         // if(download.retries < 5){
         //   download.retries += 1
         // }
-        download.changeStatus(media, "error");
+        download.status = "error";
       });
 
       res.on("abort", (err) => {
@@ -182,7 +189,7 @@ class DownloadsDataModel implements DownloadsData {
         console.log(`Error downloading schedule with Id: ${download.id}`, err);
         sendToast("Descarga abortada", "warn", 5);
 
-        download.changeStatus(media, "error");
+        download.status = "error";
       });
 
       res.on("end", () => {
@@ -193,14 +200,13 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   getFromDb(): void {
-    this.offlineTrainingClasses = DB.data.downloads.offlineTrainingClasses.map(
-      (v) => OfflineTrainingClass.fromDB(v)
-    );
-    this.trainingClassesScheduled = DB.data.downloads.trainingClassesScheduled;
+    this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
+    this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
+    this.isDownloading = false;
   }
 
   saveToDb(): void {
-    DB.data.downloads = this;
+    DB.data!.downloads = this;
   }
 
   removeAll(): void {
@@ -209,7 +215,7 @@ class DownloadsDataModel implements DownloadsData {
         sendToast("Error al borrar las clases descargadas", "error", 3);
         return;
       }
-      this.offlineTrainingClasses = [];
+      this.offlineTrainingClasses = {};
       this.trainingClassesScheduled = [];
     });
   }
@@ -221,101 +227,91 @@ class DownloadsDataModel implements DownloadsData {
       if (isValidDownloadFile(file)) {
         const { id, mediaType } = downloadFromFile(file);
 
-        if (!this.offlineTrainingClasses.find((item) => item.id === id)) {
+        if (!this.offlineTrainingClasses[id + "-" + mediaType]) {
           const offline = new OfflineTrainingClass(id, mediaType);
-          offline.changeStatus(mediaType, "downloaded");
+          offline.status = "downloaded";
 
           // TODO: add the training class to the TrainingClassesList
           TrainingClassesData.addTraining(id);
 
-          this.offlineTrainingClasses.push(offline);
+          this.offlineTrainingClasses[id + "-" + mediaType] = offline;
         }
       }
     });
   }
 
-  getDownloading(): OfflineTrainingClass {
-    return this.offlineTrainingClasses.find(
-      (item) =>
-        item.statusVideoHd === "downloading" ||
-        item.statusVideoSd === "downloading" ||
-        item.statusAudio === "downloading" ||
-        item.statusMusic === "downloading"
+  getDownloading(): OfflineTrainingClass | null {
+    return (
+      Object.values(this.offlineTrainingClasses).find(
+        (v) => v.status === "downloading"
+      ) ?? null
     );
   }
 
-  // TODO: es una mierda, es para adaptar a como estaba en la antigua
+  // FIXME: es una mierda, es para adaptar a como estaba en la antigua
   toWebAppState(): downloadsStateWebapp {
     const isDownloading = this.isDownloading;
-    const queue = this.getQueued().map(
-      (v) => `${v.id}-${v.getQueuedMediaType()}`
-    );
+    const queue = this.getQueued().map((v) => `${v.id}-${v.mediaType}`);
     const downloading = this.getDownloading();
-    const trainingClasses = this.offlineTrainingClasses.map((v) => {
-      const id = v.id.toString();
-      const downloadedMedia = [
-        {
-          type: "video_hd" as mediaType,
-          progress:
-            v.statusVideoHd === "downloading"
-              ? v.progress
-              : v.statusVideoHd === "downloaded"
-              ? 100
-              : 0,
-          downloaded: v.statusVideoHd === "downloaded",
-          downloading: v.statusVideoHd === "downloading",
-          queued: v.statusVideoHd === "queued",
-        },
-        {
-          type: "video_sd" as mediaType,
-          progress:
-            v.statusVideoSd === "downloading"
-              ? v.progress
-              : v.statusVideoSd === "downloaded"
-              ? 100
-              : 0,
-          downloaded: v.statusVideoSd === "downloaded",
-          downloading: v.statusVideoSd === "downloading",
-          queued: v.statusVideoSd === "queued",
-        },
-        {
-          type: "audio" as mediaType,
-          progress:
-            v.statusAudio === "downloading"
-              ? v.progress
-              : v.statusAudio === "downloaded"
-              ? 100
-              : 0,
-          downloaded: v.statusAudio === "downloaded",
-          downloading: v.statusAudio === "downloading",
-          queued: v.statusAudio === "queued",
-        },
-        {
-          type: "music" as mediaType,
-          progress:
-            v.statusMusic === "downloading"
-              ? v.progress
-              : v.statusMusic === "downloaded"
-              ? 100
-              : 0,
-          downloaded: v.statusMusic === "downloaded",
-          downloading: v.statusMusic === "downloading",
-          queued: v.statusMusic === "queued",
-        },
-      ];
-      const trainingClass = TrainingClassesData.trainingClasses[id];
-      const offline =
-        v.statusAudio === "downloaded" ||
-        v.statusMusic === "downloaded" ||
-        v.statusVideoHd === "downloaded" ||
-        v.statusVideoSd === "downloaded";
-      return {
-        id,
-        offline,
-        downloadedMedia,
-        trainingClass,
-      };
-    });
+
+    type tc = {
+      id: string;
+      downloadedMedia: {
+        type: mediaType;
+        progress: number;
+        downloaded: boolean;
+        downloading: boolean;
+        queued: boolean;
+      }[];
+      trainingClass: TrainingClass;
+      offline: boolean;
+    };
+
+    const trainingClasses = Object.values(this.offlineTrainingClasses).reduce(
+      (prev: tc[], v): tc[] => {
+        const id = v.id.toString();
+        const obj = prev.find((item) => item.id === id);
+        if (obj) {
+          obj.downloadedMedia.push({
+            type: v.mediaType,
+            progress:
+              v.status === "downloading"
+                ? v.progress
+                : v.status === "downloaded"
+                ? 100
+                : 0,
+            downloaded: v.status === "downloaded",
+            downloading: v.status === "downloading",
+            queued: v.status === "queued",
+          });
+          return prev;
+        } else {
+          return [
+            ...prev,
+            {
+              id,
+              downloadedMedia: [
+                {
+                  type: v.mediaType,
+                  progress:
+                    v.status === "downloading"
+                      ? v.progress
+                      : v.status === "downloaded"
+                      ? 100
+                      : 0,
+                  downloaded: v.status === "downloaded",
+                  downloading: v.status === "downloading",
+                  queued: v.status === "queued",
+                },
+              ],
+              trainingClass: TrainingClassesData.trainingClasses[id] || null,
+              offline: v.status === "downloaded",
+            },
+          ];
+        }
+      },
+      []
+    );
     return {
       isDownloading,
       queue,

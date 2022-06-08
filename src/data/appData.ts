@@ -2,7 +2,7 @@ class AppDataModel {
   WEBAPP_WEBASE: string;
   LOGIN_PATH: string;
   URL: null | string;
-  AUTHORIZATION: `Bearer ${string}`;
+  AUTHORIZATION: `Bearer ${string}` = "Bearer ";
   XAPPID: "bestcycling";
   APPID: "772529a79cd1b70760da6e4a97dd5189";
 

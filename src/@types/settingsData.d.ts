@@ -13,7 +13,7 @@ interface SettingsData extends IndexableData {
   playOnlyOffline: boolean; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
   download_scheduled_training_classes: boolean;
   C16: boolean; // Aceleración generador MP4
-  videoHD: true;
+  videoHD: boolean;
   showMonitorView: boolean; // Mostrar vista monitor
   show_external_setup_video: boolean; // Mostrar video de ajuste en pantalla externa
   ask_graph_intro_video: boolean; // Mostrar popup de ajuste bicicleta en pantalla externa

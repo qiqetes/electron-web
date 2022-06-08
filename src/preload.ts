@@ -37,4 +37,6 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   ) => {
     ipcRenderer.on("downloadState", callback);
   },
+
+  requestDownloadsState: () => ipcRenderer.invoke("requestDownloadsState"),
 });

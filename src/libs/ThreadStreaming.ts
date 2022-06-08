@@ -5,12 +5,12 @@ function initServer(port: string, tokenAuth: string, downloadsPath: string) {
   // create http server
   http
     .createServer(function (req, res) {
-      process.send("init!!");
+      process.send?.("init!!");
 
       const { method, url } = req;
 
       // Terminamos el servidor
-      if (url == "/kill") {
+      if (url == "/kill" || !url) {
         res.writeHead(200);
         res.end();
         process.exit(0);
@@ -104,10 +104,10 @@ function initServer(port: string, tokenAuth: string, downloadsPath: string) {
           fileStream.on("end", function () {
             res.end();
           });
-          process.send("first chunk");
+          process.send?.("first chunk");
         }
       } catch (error) {
-        let code = parseInt(error, 10);
+        let code = parseInt(error as string, 10);
         if (code >= 0 && code <= 599) {
           // EMPTY?
         } else {
@@ -122,17 +122,17 @@ function initServer(port: string, tokenAuth: string, downloadsPath: string) {
     })
     .listen(port);
   console.info(`listening: http://127.0.0.1:${port}/${tokenAuth}`);
-  process.send(`listening: http://127.0.0.1:${port}/${tokenAuth}`);
+  process!.send?.(`listening: http://127.0.0.1:${port}/${tokenAuth}`);
   console.info(`serving from: ${downloadsPath}`);
-  process.send(`serving from: ${downloadsPath}`);
+  process.send?.(`serving from: ${downloadsPath}`);
 }
 
 process.on("message", function (m) {
   if (m === "EXIT") {
-    process.send("exit");
+    process.send?.("exit");
     process.exit(0);
   }
 });
 
-process.send("init");
+process.send?.("init");
 initServer(process.argv[0], process.argv[1], process.argv[2]);

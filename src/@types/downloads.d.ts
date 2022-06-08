@@ -24,20 +24,6 @@ interface Media {
   size: number;
 }
 
-interface OfflineTrainingClass {
-  id: number | string;
-  statusVideoHd: downloadStatus;
-  statusVideoSd: downloadStatus;
-  statusAudio: downloadStatus;
-  statusMusic: downloadStatus;
-  progress: number;
-  timeStamp: number | null;
-  retries: number;
-
-  getQueuedMediaType: () => mediaType | null;
-  changeStatus: (mediaType: mediaType, status: downloadStatus) => void;
-}
-
 type downloadRequest = {
   trainingClass: TrainingClass;
   mediaType: mediaType;
