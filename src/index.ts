@@ -41,6 +41,8 @@ const createWindow = async () => {
   mainWindow.once("ready-to-show", () => {
     //
   });
+
+  mainWindow.on("close", async () => await saveAll());
 };
 
 app.on("ready", () => {

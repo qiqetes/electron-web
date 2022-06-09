@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
     ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
 
   importDownloads: () => ipcRenderer.send("importDownloads"),
+  deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
+  deleteDownload: (id: number, media: mediaType = "video_hd") =>
+    ipcRenderer.send("deleteDownload", id, media),
 
   handleDownloadState: (
     callback: (event: Event, state: downloadsStateWebapp) => void

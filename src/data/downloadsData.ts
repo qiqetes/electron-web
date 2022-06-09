@@ -5,7 +5,7 @@ import {
   isCompleteTrainingClass,
   isValidDownloadFile,
 } from "../helpers/downloadsHelpers";
-import { https } from "follow-redirects";
+import { http, https } from "follow-redirects";
 import * as fs from "fs";
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
 import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
@@ -38,9 +38,7 @@ class DownloadsDataModel implements DownloadsData {
       timestamp
     );
 
-    if (isCompleteTrainingClass(trainingClass)) {
-      TrainingClassesData.addTraining(trainingClass, true);
-    }
+    TrainingClassesData.addTraining(trainingClass, false);
 
     this.offlineTrainingClasses[id + "-" + mediaType] = offlineTrainingClass;
     if (inform) informDownloadsState();
@@ -112,12 +110,13 @@ class DownloadsDataModel implements DownloadsData {
     );
 
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
-    const url = `${mediaUrl}&access_token=${accessToken}`;
+    let url = `${mediaUrl}&access_token=${accessToken}`;
+    url = "http://192.168.0.11:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
 
     this.isDownloading = true;
     const writeStream = fs.createWriteStream(filename);
 
-    https.get(url, (res) => {
+    http.get(url, (res) => {
       console.log("statusCode:", res.headers);
       let received = 0;
       const totalSize = parseInt(res.headers["content-length"]!);
