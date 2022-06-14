@@ -66,14 +66,24 @@ ipcMain.on("deleteDownloads", () => {
   DownloadsData.removeAll();
 });
 
-ipcMain.on("changeDownloadsPath", (_, path, moveDownloads) => {
-  if (moveDownloads) {
-    DownloadsData.moveDownloadsTo(path);
+ipcMain.on("changeDownloadsPath", () => {
+  const dir = dialog.showOpenDialogSync({ properties: ["openDirectory"] });
+  if (!dir?.length) {
+    sendToast("No se ha seleccionado ninguna carpeta", "error", 5);
     return;
   }
-
-  DownloadsData.removeAll();
-  SettingsData.downloadsPath = path;
+  showModal(
+    "Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
+    "Sí, copiar",
+    "No, solo cambia el directorio",
+    () => {
+      DownloadsData.moveDownloadsTo(dir![0]);
+    },
+    () => {
+      DownloadsData.removeAll();
+      SettingsData.downloadsPath = dir![0];
+    }
+  );
 });
 
 export const sendToast = (
