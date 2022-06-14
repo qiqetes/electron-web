@@ -8,7 +8,6 @@ import {
   SettingsData,
   TrainingClassesData,
 } from "./helpers/init";
-import { showModal } from "./helpers/ipcMainActions";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
@@ -41,17 +40,7 @@ const createWindow = async () => {
 
   // Cuando la webapp está realmente cargada, se ejecuta este evento
   mainWindow.once("ready-to-show", () => {
-    setTimeout(
-      () =>
-        showModal(
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-          "Sí",
-          "No",
-          () => console.log("Clicked OK"),
-          () => console.log("Clicked NOPE")
-        ),
-      4000
-    );
+    //
   });
 
   mainWindow.on("close", async () => await saveAll());

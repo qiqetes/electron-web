@@ -1,6 +1,7 @@
-import { api, SettingsData } from "./init";
+import { SettingsData } from "./init";
 import * as fs from "fs-extra";
 import { sendToast } from "./ipcMainActions";
+import path from "path";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -25,21 +26,6 @@ export const deleteAllDownloads = () => {
     console.error(err);
     sendToast("Error al borrar las clases descargadas", "error", 3);
   }
-};
-
-export const importDownloadFilesFrom = (folder: string) => {
-  // if (folder === SettingsData.downloadsPath) {
-  //   sendToast("Has seleccionado la proppia carpeta de descargas", "warn", 3);
-  //   return;
-  // }
-  // fs.copy(folder, SettingsData.downloadsPath, function (error) {
-  //   if (error) {
-  //     console.log(error);
-  //     sendToast("Error al importar las clases descargadas", "error", 3);
-  //   } else {
-  //     sendToast("Clases descargadas importadas", null, 3);
-  //   }
-  // });
 };
 
 export const isValidDownloadFile = (file: string): boolean => {

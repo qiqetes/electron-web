@@ -367,6 +367,36 @@ class DownloadsDataModel implements DownloadsData {
     ); // avg size of 500MB
     return bytes / 1000000000;
   }
+
+  // Move the downloads from the current folder to the Downloads folder
+  moveDownloadsTo(folder: string): void {
+    // Check if files are download files
+    const files = fs.readdirSync(SettingsData.downloadsPath);
+    sendToast(
+      "Iportando clases descargadas, esto podría durar varios minutos... ⏳",
+      null,
+      3
+    );
+
+    files.forEach((file) => {
+      if (!isValidDownloadFile(file)) return;
+
+      const source = path.join(SettingsData.downloadsPath, file);
+      const dest = path.join(folder, file);
+
+      const { id, mediaType } = downloadFromFile(file);
+
+      fs.copyFile(source, dest, fs.constants.COPYFILE_EXCL, (err) => {
+        if (err) {
+          delete this.offlineTrainingClasses[id + "-" + mediaType];
+          return;
+        }
+      });
+    });
+
+    SettingsData.downloadsPath = folder;
+    sendToast("Importación finalizada con éxito", null, 3);
+  }
 }
 
 // TODO: when a download ends do the fetch of the training class
