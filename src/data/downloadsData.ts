@@ -258,14 +258,6 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   removeAll(): void {
-    // fs.rm(SettingsData.downloadsPath, (err) => {
-    //   if (err) {
-    //     sendToast("Error al borrar las clases descargadas", "error", 3);
-    //     return;
-    //   }
-    //   this.offlineTrainingClasses = {};
-    //   this.trainingClassesScheduled = [];
-    // });
     const files = fs.readdirSync(SettingsData.downloadsPath);
     files.forEach((file) => {
       if (!isValidDownloadFile(file)) return;
@@ -276,6 +268,11 @@ class DownloadsDataModel implements DownloadsData {
         delete this.offlineTrainingClasses[id + "-" + mediaType];
       });
     });
+
+    this.stopDownloading();
+    informDownloadsState();
+    this.saveToDb();
+    sendToast("Clases eliminadas", null, 3);
   }
 
   getDownloading(): OfflineTrainingClass | null {
