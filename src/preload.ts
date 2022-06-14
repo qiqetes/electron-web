@@ -42,6 +42,8 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   downloadScheduledTrainingClasses: (downloadRequests: downloadRequest[]) =>
     ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
 
+  changeDownloadsPath: (path: string, moveDownloads: boolean) =>
+    ipcRenderer.send("changeDownloadsPath", path, moveDownloads),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>

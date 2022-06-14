@@ -119,9 +119,10 @@ class DownloadsDataModel implements DownloadsData {
     let url = `${mediaUrl}&access_token=${accessToken}`;
     url = "http://127.0.0.1:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
 
+    if (this.isDownloading) return;
     this.isDownloading = true;
-    const writeStream = fs.createWriteStream(filename);
 
+    const writeStream = fs.createWriteStream(filename);
     this.currentTask = http.get(url, (res) => {
       console.log("statusCode:", res.headers);
       let received = 0;
@@ -257,13 +258,23 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   removeAll(): void {
-    fs.rm(SettingsData.downloadsPath, (err) => {
-      if (err) {
-        sendToast("Error al borrar las clases descargadas", "error", 3);
-        return;
-      }
-      this.offlineTrainingClasses = {};
-      this.trainingClassesScheduled = [];
+    // fs.rm(SettingsData.downloadsPath, (err) => {
+    //   if (err) {
+    //     sendToast("Error al borrar las clases descargadas", "error", 3);
+    //     return;
+    //   }
+    //   this.offlineTrainingClasses = {};
+    //   this.trainingClassesScheduled = [];
+    // });
+    const files = fs.readdirSync(SettingsData.downloadsPath);
+    files.forEach((file) => {
+      if (!isValidDownloadFile(file)) return;
+      const filePath = path.join(SettingsData.downloadsPath, file);
+      fs.rm(filePath, (err) => {
+        if (err) return;
+        const { id, mediaType } = downloadFromFile(file);
+        delete this.offlineTrainingClasses[id + "-" + mediaType];
+      });
     });
   }
 

@@ -62,6 +62,19 @@ ipcMain.on("getMediaUrl", (event, id, media) => {
 ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
   DownloadsData.removeDownload(id, media);
 });
+ipcMain.on("deleteDownloads", () => {
+  DownloadsData.removeAll();
+});
+
+ipcMain.on("changeDownloadsPath", (_, path, moveDownloads) => {
+  if (moveDownloads) {
+    DownloadsData.moveDownloadsTo(path);
+    return;
+  }
+
+  DownloadsData.removeAll();
+  SettingsData.downloadsPath = path;
+});
 
 export const sendToast = (
   message: string,
