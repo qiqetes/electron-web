@@ -18,16 +18,6 @@ export const isCompleteTrainingClass = (tr: TrainingClass): boolean => {
   return !!(tr.media && tr.progression);
 };
 
-// Fetch TrainingClass info with all the parameters (media, progression...)
-export const fetchTrainingClass = (id: number | string): void => {
-  api
-    .fetch(`training_classes_${id}`)
-    .then((res: any) => {
-      console.log(res);
-    })
-    .catch((err: any) => console.error(err));
-};
-
 export const deleteAllDownloads = () => {
   try {
     fs.emptyDirSync(SettingsData.downloadsPath);

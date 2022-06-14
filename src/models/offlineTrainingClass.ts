@@ -6,6 +6,7 @@ export class OfflineTrainingClass {
   status: downloadStatus;
   retries = 0;
   timestamp: number | null = null;
+  size: number | null = null; // in bytes
 
   constructor(
     id: string,

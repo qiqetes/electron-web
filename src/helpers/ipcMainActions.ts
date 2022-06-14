@@ -5,6 +5,7 @@ import { api, DownloadsData, SettingsData } from "./init";
 
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
+import { filenameStealth } from "./downloadsHelpers";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -49,6 +50,16 @@ ipcMain.on("importDownloads", () => {
   if (dir) {
     DownloadsData.importFromFolder(dir[0]);
   }
+});
+
+ipcMain.on("getMediaUrl", (event, id, media) => {
+  event.returnValue = `http://127.0.0.1:${
+    LocalServerInstance.port
+  }/offline/${filenameStealth(id, media)}`;
+});
+
+ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
+  DownloadsData.removeDownload(id, media);
 });
 
 export const sendToast = (

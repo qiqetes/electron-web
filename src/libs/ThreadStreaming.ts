@@ -135,4 +135,4 @@ process.on("message", function (m) {
 });
 
 process.send?.("init");
-initServer(process.argv[0], process.argv[1], process.argv[2]);
+initServer(process.argv[2], process.argv[3], process.argv[4]);

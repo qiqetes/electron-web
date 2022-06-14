@@ -2,10 +2,9 @@ import path = require("path");
 import {
   downloadFromFile,
   filenameStealth,
-  isCompleteTrainingClass,
   isValidDownloadFile,
 } from "../helpers/downloadsHelpers";
-import { http, https } from "follow-redirects";
+import { http, https, RedirectableRequest } from "follow-redirects";
 import * as fs from "fs";
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
 import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
@@ -16,6 +15,8 @@ class DownloadsDataModel implements DownloadsData {
   offlineTrainingClasses: { [id: string]: OfflineTrainingClass } = {}; // [id: id+"-"+mediaType]
   trainingClassesScheduled: number[] = [];
   isDownloading = false;
+  currentTask: RedirectableRequest<any, any> | null = null;
+
   constructor() {
     this.initDownloadsPath();
   }
@@ -53,7 +54,7 @@ class DownloadsDataModel implements DownloadsData {
     downloadsArray.forEach((v) =>
       this.addToQueue(v.trainingClass, v.mediaType, v.timestamp, false)
     );
-    this.downloadNext();
+    this.startDownloads();
     informDownloadsState();
   }
 
@@ -74,9 +75,11 @@ class DownloadsDataModel implements DownloadsData {
 
   stopDownloading(): void {
     this.isDownloading = false;
+    if (this.currentTask) this.currentTask.abort();
   }
 
   startDownloads(): void {
+    console.log("STARTING DOWNLOADS ⬇️");
     this.downloadNext();
   }
 
@@ -93,6 +96,7 @@ class DownloadsDataModel implements DownloadsData {
     // TODO: intentar quitar el await de aquí
     const trainingClass: TrainingClass | null =
       await TrainingClassesData.getFullTrainingClass(download.id);
+
     if (!trainingClass) {
       download.retries++;
       this.downloadNext();
@@ -103,6 +107,8 @@ class DownloadsDataModel implements DownloadsData {
     const mediaUrl =
       trainingClass?.media?.find((item) => item.type === media)?.url ?? null;
     if (!mediaUrl) throw new Error("URL NOT FOUND FOR THAT MEDIATYPE");
+    download.size =
+      trainingClass?.media?.find((item) => item.type === media)?.size || null;
 
     const filename = path.join(
       SettingsData.downloadsPath,
@@ -111,12 +117,12 @@ class DownloadsDataModel implements DownloadsData {
 
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
     let url = `${mediaUrl}&access_token=${accessToken}`;
-    url = "http://192.168.0.11:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
+    url = "http://127.0.0.1:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
 
     this.isDownloading = true;
     const writeStream = fs.createWriteStream(filename);
 
-    http.get(url, (res) => {
+    this.currentTask = http.get(url, (res) => {
       console.log("statusCode:", res.headers);
       let received = 0;
       const totalSize = parseInt(res.headers["content-length"]!);
@@ -153,7 +159,11 @@ class DownloadsDataModel implements DownloadsData {
       res.on("close", () => {
         const isCompleted = received === totalSize;
         if (isCompleted) {
-          sendToast(`Clase descargada ${download.id}`);
+          sendToast(
+            `Clase descargada ${
+              TrainingClassesData.trainingClasses[download.id].title
+            }`
+          );
           console.log("Ended download id: " + download.id);
           download.status = "downloaded";
           this.isDownloading = false;
@@ -205,7 +215,7 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   saveToDb(): void {
-    DB.data!.downloads = this;
+    DB.data!.downloads = { ...this, isDownloading: false };
   }
 
   importFromFolder(folder: string): void {
@@ -279,6 +289,7 @@ class DownloadsDataModel implements DownloadsData {
         downloaded: boolean;
         downloading: boolean;
         queued: boolean;
+        url: string;
       }[];
       trainingClass: TrainingClass;
       offline: boolean;
@@ -300,6 +311,10 @@ class DownloadsDataModel implements DownloadsData {
             downloaded: v.status === "downloaded",
             downloading: v.status === "downloading",
             queued: v.status === "queued",
+            url: `http://127.0.0.1:$PORT/offline/${filenameStealth(
+              id,
+              v.mediaType
+            )}`,
           });
           return prev;
         } else {
@@ -319,6 +334,10 @@ class DownloadsDataModel implements DownloadsData {
                   downloaded: v.status === "downloaded",
                   downloading: v.status === "downloading",
                   queued: v.status === "queued",
+                  url: `http://127.0.0.1:$PORT/offline/${filenameStealth(
+                    id,
+                    v.mediaType
+                  )}`,
                 },
               ],
               trainingClass: TrainingClassesData.trainingClasses[id] || null,
@@ -335,6 +354,18 @@ class DownloadsDataModel implements DownloadsData {
       downloading,
       trainingClasses,
     };
+  }
+
+  // Total size of the downloads in GB
+  totalDownloadsSize(): number {
+    const downloaded = Object.values(this.offlineTrainingClasses).filter(
+      (v) => v.status === "downloaded"
+    );
+    const bytes = downloaded.reduce(
+      (prev, v) => prev + (v.size || 500 * 1000000),
+      0
+    ); // avg size of 500MB
+    return bytes / 1000000000;
   }
 }
 

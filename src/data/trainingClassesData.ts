@@ -36,7 +36,11 @@ class TrainingClassesDataModel implements TrainingClassesData {
 
   fetchTrainingClass(id: number | string): void {
     api
-      .fetch(`training_classes/${id}`)
+      .fetch(`training_classes/${id}`, {
+        params: {
+          include: "trainer, training_materials",
+        },
+      })
       .then((res: any) => {
         this.trainingClasses[id] = res.data as TrainingClass;
         this.saveToDb();

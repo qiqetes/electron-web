@@ -1,5 +1,5 @@
 import { filenameStealth } from "../helpers/downloadsHelpers";
-import ChildProcess from "child_process";
+import * as child_process from "child_process";
 
 import EventEmitter from "events";
 import * as path from "node:path";
@@ -9,7 +9,7 @@ export default class LocalServer extends EventEmitter {
   root: "";
   running: boolean;
   error: boolean;
-  streamingServer = ChildProcess.ChildProcess;
+  streamingServer: child_process.ChildProcess | undefined;
 
   constructor() {
     super();
@@ -30,9 +30,7 @@ export default class LocalServer extends EventEmitter {
 
   start(downloadsPath: string) {
     // Random port
-    this.port = Math.floor(
-      Math.random() * (42666 - 42660 + 1) + 42660
-    ).toString();
+    this.port = Math.floor(Math.random() * 20000 + 42666).toString();
 
     console.log("STARTING LOCAL SERVER");
     if (!downloadsPath) {
@@ -44,6 +42,10 @@ export default class LocalServer extends EventEmitter {
       console.warn();
     }
 
+    console.log(
+      "Starting local server in path:",
+      path.join(path.dirname(__dirname), "libs", "ThreadStreaming.js")
+    );
     /** Player */
     const scriptPath = path.join(
       path.dirname(__dirname), // TODO: debuggear esto a ver si va a la ruta que toca
@@ -56,13 +58,13 @@ export default class LocalServer extends EventEmitter {
       cwd: path.dirname(process.execPath),
     };
 
-    this.streamingServer = ChildProcess.fork(
+    console.log("PORT", this.port);
+    console.log("DOWNLOADS PATH", downloadsPath);
+    this.streamingServer = child_process.fork(
       scriptPath,
       [this.port, "offline", downloadsPath],
       options
     );
-
-    const streamingServer = this.streamingServer;
 
     process.on("beforeExit", () => {
       this.stop();
@@ -72,19 +74,19 @@ export default class LocalServer extends EventEmitter {
       console.log("Exit");
     });
 
-    streamingServer.on("close", (code) => {
+    this.streamingServer.on("close", (code) => {
       console.log("CLOSE SERVER " + code);
       this.emit("stop");
     });
-    streamingServer.on("exit", (code) => {
+    this.streamingServer.on("exit", (code) => {
       console.log("EXIT SERVER " + code);
     });
     // streamingServer.on("message", (_) => {});
-    streamingServer.on("error", (code) => {
+    this.streamingServer.on("error", (code) => {
       console.log("ERROR SERVER " + code);
       this.emit("error");
     });
-    streamingServer.on("disconnect", (code: any) => {
+    this.streamingServer.on("disconnect", (code: any) => {
       console.log("DISCONN SERVER " + code);
       this.emit("stop");
     });
