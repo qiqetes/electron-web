@@ -6,6 +6,7 @@ import { api, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
+import { modalFunctions } from "../models/modal.model";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -69,6 +70,22 @@ export const sendToast = (
 ) => {
   mainWindow.webContents.send("toast", message, variation, duration);
 };
+
+export const showModal = (
+  message: string,
+  textOk = "OK",
+  textCancel = "Cancel",
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  callbackOk = () => {},
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  callbackCancel = () => {}
+) => {
+  modalFunctions.callbackOk = callbackOk;
+  modalFunctions.callbackCancel = callbackCancel;
+  mainWindow.webContents.send("modal", message, textOk, textCancel);
+};
+ipcMain.on("modalOk", () => modalFunctions.callbackOk());
+ipcMain.on("modalCancel", () => modalFunctions.callbackCancel());
 
 export const informDownloadsState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.toWebAppState());

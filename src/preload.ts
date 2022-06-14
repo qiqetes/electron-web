@@ -17,6 +17,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ) => void
   ) => ipcRenderer.on("toast", callback),
 
+  // Send modal notification
+  handleModal: (
+    callback: (
+      event: Event,
+      text: string,
+      textOk?: string,
+      textCancel?: string
+    ) => void
+  ) => ipcRenderer.on("modal", callback),
+  modalOk: () => ipcRenderer.send("modalOk"),
+  modalCancel: () => ipcRenderer.send("modalCancel"),
+
   setAuth: (auth: string) => {
     ipcRenderer.send("setAuth", auth);
   },
