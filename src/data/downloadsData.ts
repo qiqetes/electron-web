@@ -28,7 +28,12 @@ class DownloadsDataModel implements DownloadsData {
     inform = true
   ) {
     // Check if already in queue
-    if (this.offlineTrainingClasses[trainingClass.id + "-" + mediaType]) {
+    const offlineTraining =
+      this.offlineTrainingClasses[trainingClass.id + "-" + mediaType];
+    const status = offlineTraining?.status;
+    if (offlineTraining && status === "none") {
+      offlineTraining.status = "queued";
+    } else if (offlineTraining) {
       return;
     }
 
@@ -249,10 +254,15 @@ class DownloadsDataModel implements DownloadsData {
 
   removeDownload(id: string, mediaType: mediaType, inform = true): void {
     const file = filenameStealth(id, mediaType);
+    if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
     fs.rm(filePath, (err) => {
       if (err) return;
-      delete this.offlineTrainingClasses[id + "-" + mediaType];
+      this.offlineTrainingClasses[id + "-" + mediaType].downloaded = false;
+      this.offlineTrainingClasses[id + "-" + mediaType].status = "none";
+      this.offlineTrainingClasses[id + "-" + mediaType].progress = 0;
+      this.offlineTrainingClasses[id + "-" + mediaType].size = null;
+      this.offlineTrainingClasses[id + "-" + mediaType].retries = 0;
       if (inform) informDownloadsState();
     });
   }
