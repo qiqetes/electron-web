@@ -58,7 +58,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
   }
 
   getFromDb(): void {
-    if (!DB.data) return;
+    if (!DB.data?.trainingClasses) return;
     this.trainingClasses = DB.data.trainingClasses.trainingClasses;
   }
 
@@ -83,7 +83,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
           return this.trainingClasses[id];
         }
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching TRAINING CLASS from API");
         return null;
       }
     }

@@ -122,14 +122,29 @@ class DownloadsDataModel implements DownloadsData {
 
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
     let url = `${mediaUrl}&access_token=${accessToken}`;
-    url = "http://127.0.0.1:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
+    if (process.env.NODE_EN == "dev")
+      url = "http://127.0.0.1:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
 
     if (this.isDownloading) return;
     this.isDownloading = true;
 
     const writeStream = fs.createWriteStream(filename);
-    this.currentTask = http.get(url, (res) => {
-      console.log("statusCode:", res.headers);
+
+    const htProtocol = process.env.NODE_ENV === "prod" ? https : http;
+    this.currentTask = htProtocol.get(url, (res) => {
+      if (res.statusMessage != "OK") {
+        download.retries++;
+        this.downloadNext();
+        sendToast(
+          `Error al descargar clase: ${
+            TrainingClassesData.trainingClasses[download.id].title
+          }`,
+          "error",
+          3
+        );
+        return;
+      }
+
       let received = 0;
       const totalSize = parseInt(res.headers["content-length"]!);
 
@@ -163,7 +178,14 @@ class DownloadsDataModel implements DownloadsData {
       });
 
       res.on("close", () => {
+        if (!res.complete) {
+          download.retries++;
+          this.downloadNext();
+          sendToast("Error al descargar clase", "error", 3);
+          return;
+        }
         const isCompleted = received === totalSize;
+
         if (isCompleted) {
           sendToast(
             `Clase descargada ${
@@ -215,13 +237,18 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   getFromDb(): void {
+    if (!DB.data?.downloads) return;
     this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
     this.isDownloading = false;
   }
 
   saveToDb(): void {
-    DB.data!.downloads = { ...this, isDownloading: false };
+    DB.data!.downloads = {
+      offlineTrainingClasses: this.offlineTrainingClasses,
+      trainingClassesScheduled: this.trainingClassesScheduled,
+      isDownloading: false,
+    };
   }
 
   importFromFolder(folder: string): void {

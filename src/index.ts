@@ -71,10 +71,8 @@ app.on("activate", () => {
 });
 
 const saveAll = async () => {
-  DB.data = {
-    settings: SettingsData,
-    trainingClasses: TrainingClassesData,
-    downloads: DownloadsData,
-  };
+  SettingsData.saveToDb();
+  TrainingClassesData.saveToDb();
+  DownloadsData.saveToDb();
   await DB.write();
 };

@@ -1,13 +1,14 @@
-interface DownloadsData extends IndexableData {
-  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
-  trainingClassesScheduled: number[];
-
-  isDownloading: boolean;
+interface DownloadsData extends IndexableData, DownloadsDataDB {
   getFirstQueued: () => OfflineTrainingClass;
   stopDownloading: () => void;
   downloadNext: () => void;
   removeAll: () => void;
   importFromFolder: (folder: string) => void;
+}
+interface DownloadsDataDB {
+  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
+  trainingClassesScheduled: number[];
+  isDownloading: boolean;
 }
 
 type downloadStatus =
