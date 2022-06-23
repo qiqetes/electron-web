@@ -26,6 +26,7 @@ const createWindow = async () => {
     height: 1000,
     width: 1200,
     minWidth: 1025,
+    minHeight: 720,
     backgroundColor: "#151515",
     webPreferences: {
       webSecurity: false, // TODO: Remove this and serve the audio+video files over http
