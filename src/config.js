@@ -1,18 +1,21 @@
 // config.js
-const env = process.env.NODE_EN; // 'dev' or 'prod'
+const env = process.env.NODE_ENV;
+console.log("Entorno de desarrollo:", env.toUpperCase());
 
-const dev = {
+const development = {
   WEBBASE: "http://localhost:8080",
   LOGIN_PATH: "",
 };
-const prod = {
+
+const production = {
   WEBBASE: "https://bestcycling.com",
+  WEBBASE2: "http://localhost:8080",
   LOGIN_PATH: "/app/#/login",
 };
 
 const config = {
-  dev,
-  prod,
+  development,
+  production,
 };
 
 module.exports = config[env];

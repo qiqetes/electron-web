@@ -1,14 +1,15 @@
 {
   "name": "desktop-electron-webpack",
-  "productName": "desktop-electron-webpack",
+  "productName": "Bestcycling TV",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
-    "start": "cross-env-shell NODE_EN=dev electron-forge start",
-    "dev": "cross-env-shell NODE_EN=dev electron-forge start",
+    "start": "cross-env-shell ENV=dev electron-forge start",
+    "dev": "cross-env-shell ENV=dev electron-forge start",
     "package": "electron-forge package",
-    "make": "cross-env-shell NODE_EN=prod electron-forge make",
+    "make": "cross-env-shell ENV=prod electron-forge make",
+    "make-dev": "cross-env-shell ENV=dev electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
@@ -20,7 +21,9 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "icon": "./assets/app-icon.ico"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
@@ -41,19 +44,6 @@
         {
           "name": "@electron-forge/maker-rpm",
           "config": {}
-        }
-      ],
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-s3",
-          "platforms": [
-            "darwin",
-            "linux"
-          ],
-          "config": {
-            "bucket": "my-bucket",
-            "folder": "my/key/prefix"
-          }
         }
       ],
       "plugins": [

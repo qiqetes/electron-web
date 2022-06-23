@@ -17,6 +17,7 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
+app.commandLine.appendSwitch("remote-debugging-port", "8181");
 export let mainWindow: BrowserWindow;
 const createWindow = async () => {
   await init();
@@ -36,7 +37,8 @@ const createWindow = async () => {
   void mainWindow.loadURL(AppData.URL!);
 
   // Open the DevTools.x
-  mainWindow.webContents.openDevTools();
+  if (process.env.NODE_ENV == "development")
+    mainWindow.webContents.openDevTools();
 
   // Cuando la webapp está realmente cargada, se ejecuta este evento
   mainWindow.once("ready-to-show", () => {

@@ -24,4 +24,5 @@ module.exports = {
   resolve: {
     extensions: [".js", ".ts", ".jsx", ".tsx", ".css", ".json"],
   },
+  mode: process.env.ENV == "dev" ? "development" : "production",
 };

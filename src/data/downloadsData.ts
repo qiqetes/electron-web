@@ -122,7 +122,7 @@ class DownloadsDataModel implements DownloadsData {
 
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
     let url = `${mediaUrl}&access_token=${accessToken}`;
-    if (process.env.NODE_EN == "dev")
+    if (process.env.NODE_EN == "development")
       url = "http://127.0.0.1:3000/mock_video.mp4"; // TODO: remember to remove this and switch back to https
 
     if (this.isDownloading) return;
@@ -130,7 +130,7 @@ class DownloadsDataModel implements DownloadsData {
 
     const writeStream = fs.createWriteStream(filename);
 
-    const htProtocol = process.env.NODE_ENV === "prod" ? https : http;
+    const htProtocol = process.env.NODE_ENV === "development" ? http : https;
     this.currentTask = htProtocol.get(url, (res) => {
       if (res.statusMessage != "OK") {
         download.retries++;
