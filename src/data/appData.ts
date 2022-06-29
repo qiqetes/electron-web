@@ -8,6 +8,7 @@ class AppDataModel {
   XAPPID: "bestcycling";
   APPID: "772529a79cd1b70760da6e4a97dd5189";
   FIRST_TIME_IT_RUNS: boolean;
+  LAST_VERSION_DOWNLOADED: null | string = null;
 
   constructor() {
     this.WEBAPP_WEBASE = config.WEBBASE;

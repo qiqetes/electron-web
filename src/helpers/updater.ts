@@ -10,6 +10,18 @@ import { download } from "./downloadsHelpers";
 import url from "url";
 import { showModal } from "./ipcMainActions";
 
+type Pckg = { url: string };
+
+type UpdateManifest = {
+  name: string;
+  version: string;
+  description: string;
+  manifestUrl: string;
+  packages: {
+    [bar: string]: Pckg;
+  };
+};
+
 const isNewVersionNuber = (actual: string, incoming: string) => {
   for (let i = 0; i < 3; i++) {
     const act = actual.split(".")[i];
@@ -20,22 +32,39 @@ const isNewVersionNuber = (actual: string, incoming: string) => {
   return false;
 };
 
+const registerAutoUpdaterEvents = () => {
+  autoUpdater.on("error", (err) => {
+    logError(err);
+  });
+
+  autoUpdater.on("checking-for-update", () =>
+    log("Checking if the update is valid")
+  );
+
+  autoUpdater.on("update-available", () => {
+    log("Update available, updating");
+    showModal(
+      "Hay disponible una nueva versión de la aplicación ¿Desea actualizar?",
+      "Sí",
+      "No, gracias",
+      () => autoUpdater.quitAndInstall()
+    );
+  });
+
+  autoUpdater.on("update-not-available", () => logWarn("Update not available"));
+
+  autoUpdater.on("update-downloaded", () =>
+    log("Update downloaded, ready for install")
+  );
+};
+
 // TODO: esta función apunta a partes temporales de s3, cambiarlo cuando esté decidido.
+// TODO: anyadir tags para que se mire a diferentes manifest
+// Sets the autoUpdater to check the s3 manifest and check wether there are updates
+// to be downloaded.
 export const setAutoUpdater = async () => {
   // AVOID TO RUN THE AUTOUPDATER THE FIRST TIME THE APP RUNS IN WINDOWS BY ALL MEANS
   if (AppData.FIRST_TIME_IT_RUNS) return;
-
-  type Pckg = { url: string };
-
-  type UpdateManifest = {
-    name: string;
-    version: string;
-    description: string;
-    manifestUrl: string;
-    packages: {
-      [bar: string]: Pckg;
-    };
-  };
 
   const resManifest = await axios.get(
     "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json"
@@ -45,6 +74,7 @@ export const setAutoUpdater = async () => {
 
   if (isNewVersionNuber(projectInfo.version, manifest.version)) {
     const version = manifest.version;
+    if (isUpdateAlreadyDownloaded(version)) return;
     log(`HAY UNA UPDATE DISPONIBLE: ${version}`);
 
     let platform: string = os.platform();
@@ -78,28 +108,12 @@ export const setAutoUpdater = async () => {
   }
 };
 
-const registerAutoUpdaterEvents = () => {
-  autoUpdater.on("error", (err) => {
-    logError(err);
-  });
+const isUpdateAlreadyDownloaded = (ver: string) => {
+  if (AppData.LAST_VERSION_DOWNLOADED == ver) {
+    // Check if the file already exists
 
-  autoUpdater.on("checking-for-update", () =>
-    log("Checking if the update is valid")
-  );
-
-  autoUpdater.on("update-available", () => {
-    log("Update available, updating");
-    showModal(
-      "Hay disponible una nueva versión de la aplicación ¿Desea actualizar?",
-      "Sí",
-      "No, gracias",
-      () => autoUpdater.quitAndInstall()
-    );
-  });
-
-  autoUpdater.on("update-not-available", () => logWarn("Update not available"));
-
-  autoUpdater.on("update-downloaded", () =>
-    log("Update downloaded, ready for install")
-  );
+    const tempPath = path.join(app.getPath("temp"), "updateVersion");
+    return fs.existsSync(path.join(tempPath, "update.zip"));
+  }
+  return false;
 };

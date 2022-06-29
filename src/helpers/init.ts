@@ -68,7 +68,7 @@ const initDB = async () => {
     };
     void DB.write();
   } else {
-    AppData.FIRST_TIME_IT_RUNS = false;
+    AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
     SettingsData.getFromDb();
     TrainingClassesData.getFromDb();
     DownloadsData.getFromDb();
