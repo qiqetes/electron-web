@@ -3,6 +3,7 @@ import * as child_process from "child_process";
 
 import EventEmitter from "events";
 import * as path from "node:path";
+import { logError } from "../helpers/loggers";
 
 export default class LocalServer extends EventEmitter {
   port: string;
@@ -34,7 +35,7 @@ export default class LocalServer extends EventEmitter {
 
     console.log("STARTING LOCAL SERVER");
     if (!downloadsPath) {
-      console.error("NO ROOT PATH");
+      logError("NO ROOT PATH");
       return;
     }
 
@@ -83,7 +84,7 @@ export default class LocalServer extends EventEmitter {
     });
     // streamingServer.on("message", (_) => {});
     this.streamingServer.on("error", (code) => {
-      console.log("ERROR SERVER " + code);
+      logError("ERROR SERVER " + code);
       this.emit("error");
     });
     this.streamingServer.on("disconnect", (code: any) => {

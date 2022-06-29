@@ -1,3 +1,4 @@
+import { logError } from "../helpers/loggers";
 import { isCompleteTrainingClass } from "../helpers/downloadsHelpers";
 import { api, DB } from "../helpers/init";
 
@@ -83,7 +84,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
           return this.trainingClasses[id];
         }
       } catch (err) {
-        console.error("Error fetching TRAINING CLASS from API");
+        logError("fetching TRAINING CLASS from API");
         return null;
       }
     }

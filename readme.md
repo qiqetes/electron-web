@@ -15,6 +15,7 @@ Aunque nuestra app no tenga renderer, por un bug de Electron-forge hay que mante
 - Quitar el webSecurity: false y servir la clase de ajuste y la música de espera por LocalServer
 - Añadir un manejo de clases descargadas (ir eliminando las antiguas)
 - Automatic updates
+- Ver que el gen_manifest funciona en windows
 
 # FIXME:
 

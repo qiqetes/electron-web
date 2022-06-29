@@ -8,6 +8,7 @@ import { AppData } from "../data/appData";
 import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
+import { setAutoUpdater } from "./updater";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
@@ -39,6 +40,7 @@ const recoverOldPrefs = () => {
 export const init = async () => {
   initErrorHandler();
   await initDB();
+  setAutoUpdater();
 
   setStartingUrl();
   recoverOldPrefs();
@@ -66,6 +68,7 @@ const initDB = async () => {
     };
     void DB.write();
   } else {
+    AppData.FIRST_TIME_IT_RUNS = false;
     SettingsData.getFromDb();
     TrainingClassesData.getFromDb();
     DownloadsData.getFromDb();

@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "1.0.0",
+  "version": "5.0.0",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
@@ -10,7 +10,8 @@
     "package": "electron-forge package",
     "make": "cross-env-shell ENV=prod electron-forge make",
     "make-dev": "cross-env-shell ENV=dev electron-forge make",
-    "publish": "electron-forge publish",
+    "publish": "cross-env-shell ENV=dev electron-forge publish",
+    "publish-test": "cross-env-shell ENV=dev node process/gen_manifest && electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
@@ -22,13 +23,25 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "icon": "./assets/app-icon.ico"
+        "icon": "./assets/app-icon.ico",
+        "appBundleId": "com.nw-builder.bestcyclingtv",
+        "osxSign": {
+          "identity": "Developer ID Application: Bestcycling SL (YMCHSA4437)",
+          "entitlements": "./process/entitlements.plist",
+          "entitlements-inherit": "./process/entitlements.plist"
+        }
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
             "name": "desktop_electron_webpack"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-dmg",
+          "config": {
+            "icon": "./assets/app-icon.ico"
           }
         },
         {
@@ -50,11 +63,9 @@
         {
           "name": "@electron-forge/publisher-s3",
           "config": {
-            "accessKeyId": "AKIASONON2GCNNQ4EQEC",
             "bucket": "bestcycling-production",
             "folder": "desktop/qiqe-temp",
-            "public": true,
-            "secretAccessKey": "ldjC50UcM7XSHCd791ElYb78/8Fb3u3+yYcBkAlj"
+            "public": true
           }
         }
       ],
@@ -92,6 +103,7 @@
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
     "@vercel/webpack-asset-relocator-loader": "^1.7.0",
+    "aws-sdk": "^2.1162.0",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "electron": "19.0.3",
@@ -108,8 +120,10 @@
   },
   "dependencies": {
     "@commonify/lowdb": "^3.0.0",
+    "@electron-forge/maker-dmg": "^6.0.0-beta.64",
     "@types/follow-redirects": "^1.14.1",
     "@types/fs-extra": "^9.0.13",
+    "axios": "^0.27.2",
     "electron-squirrel-startup": "^1.0.0",
     "eslint-import-resolver-custom-alias": "^1.3.0",
     "follow-redirects": "^1.15.1",

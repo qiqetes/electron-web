@@ -2,6 +2,8 @@ import { SettingsData } from "./init";
 import * as fs from "fs-extra";
 import { sendToast } from "./ipcMainActions";
 import path from "path";
+import { https } from "follow-redirects";
+import { log, logError } from "./loggers";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -63,4 +65,29 @@ export const downloadFromFile = (
       : "music";
 
   return { id, mediaType };
+};
+
+export const download = (
+  dir: string,
+  file: string,
+  url: string,
+  onDownloadCb?: () => void
+) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  const filePath = path.join(dir, file);
+  const writeStream = fs.createWriteStream(filePath);
+  https.get(url, (res) => {
+    if (res.statusMessage != "OK")
+      logError("Could not get the new version from the s3");
+
+    log("Downloading file from", url);
+
+    res.pipe(writeStream);
+
+    writeStream.on("finish", () => {
+      writeStream.close();
+      log("FINISHED UPDATE DOWNLOAD");
+      if (onDownloadCb) onDownloadCb();
+    });
+  });
 };

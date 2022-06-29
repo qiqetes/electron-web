@@ -7,6 +7,7 @@ class AppDataModel {
   AUTHORIZATION: `Bearer ${string}` = "Bearer ";
   XAPPID: "bestcycling";
   APPID: "772529a79cd1b70760da6e4a97dd5189";
+  FIRST_TIME_IT_RUNS: boolean;
 
   constructor() {
     this.WEBAPP_WEBASE = config.WEBBASE;
@@ -15,6 +16,7 @@ class AppDataModel {
     this.URL = this.WEBAPP_WEBASE + this.LOGIN_PATH;
     this.XAPPID = "bestcycling";
     this.APPID = "772529a79cd1b70760da6e4a97dd5189";
+    this.FIRST_TIME_IT_RUNS = true;
   }
 }
 
