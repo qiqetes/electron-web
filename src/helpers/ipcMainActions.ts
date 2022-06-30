@@ -38,6 +38,7 @@ ipcMain.on(
 ipcMain.on(
   "downloadScheduledTrainingClasses",
   (_, downloadsArray: downloadRequest[]) => {
+    if (!SettingsData.download_scheduled_training_classes) return;
     DownloadsData.addMultipleToQueue(downloadsArray);
   }
 );
