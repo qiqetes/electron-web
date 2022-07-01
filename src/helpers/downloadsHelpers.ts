@@ -78,7 +78,7 @@ export const download = (
   const writeStream = fs.createWriteStream(filePath);
   https.get(url, (res) => {
     if (res.statusMessage != "OK")
-      logError("Could not get the new version from the s3");
+      logError("Could not download ", file, "from", url);
 
     log("Downloading file from", url);
 
@@ -86,7 +86,7 @@ export const download = (
 
     writeStream.on("finish", () => {
       writeStream.close();
-      log("FINISHED UPDATE DOWNLOAD");
+      log("Downloaded:", file);
       if (onDownloadCb) onDownloadCb();
     });
   });

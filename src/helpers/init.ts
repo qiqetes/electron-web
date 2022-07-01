@@ -9,9 +9,11 @@ import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
 import { setAutoUpdater } from "./updater";
+import { log } from "./loggers";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
+log("DB file in: ", file);
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -65,13 +67,15 @@ const initDB = async () => {
       settings: SettingsData,
       trainingClasses: TrainingClassesData,
       downloads: DownloadsData,
+      appData: AppData,
     };
     void DB.write();
   } else {
-    AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
     SettingsData.getFromDb();
     TrainingClassesData.getFromDb();
     DownloadsData.getFromDb();
+    AppData.getFromDb();
+    AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
   }
 };
 

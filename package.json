@@ -1,8 +1,8 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "5.0.0",
-  "description": "My Electron application description",
+  "version": "4.0.0",
+  "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
     "start": "cross-env-shell ENV=dev electron-forge start",
@@ -11,7 +11,7 @@
     "make": "cross-env-shell ENV=prod electron-forge make",
     "make-dev": "cross-env-shell ENV=dev electron-forge make",
     "publish": "cross-env-shell ENV=dev electron-forge publish",
-    "publish-test": "cross-env-shell ENV=dev node process/gen_manifest && electron-forge publish",
+    "publish-test": "node process/gen_manifest && cross-env-shell ENV=dev electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
@@ -35,7 +35,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "desktop_electron_webpack"
+            "name": "BestcyclingTV"
           }
         },
         {

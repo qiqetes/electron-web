@@ -20,6 +20,16 @@ import os from "os";
 //   }
 // }
 
+const isNewVersionNuber = (actual, incoming) => {
+  for (let i = 0; i < 3; i++) {
+    const act = actual.split(".")[i];
+    const inc = incoming.split(".")[i];
+
+    if (inc > act) return true;
+  }
+  return false;
+};
+
 const fileName = "manifest.json";
 let manifest;
 
@@ -32,7 +42,7 @@ const uploadManifest = async () => {
     const lastManifest = await res.json();
     const lastVer = lastManifest.version;
 
-    if (lastVer > pack.version) {
+    if (isNewVersionNuber(pack.version, lastVer)) {
       console.log(
         "\x1b[36m%s\x1b[0m",
         "ERROR: Hay un manifest con una versión mayor subido actualmente!"
@@ -46,9 +56,8 @@ const uploadManifest = async () => {
         "Ya existe el manifest de esta versión con builds para ",
         Object.keys(lastManifest.packages).join(" ")
       );
+      manifest = lastManifest;
     }
-
-    manifest = lastManifest;
   }
 
   // Manifest with the last version is not uploaded
@@ -66,9 +75,9 @@ const uploadManifest = async () => {
     };
   }
 
-  let platform;
+  let platform = process.platform;
   if (process.platform == "darwin") platform = "mac64";
-  if (process.platform == "win32") platform = "win32";
+  // if (process.platform == "win32") platform = "win" + os.arch().substring(1);
 
   if (platform == "mac64") {
     manifest.packages[platform] = {
@@ -84,8 +93,8 @@ const uploadManifest = async () => {
         (manifest.packages[platform] = {
           url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${pack.productName.replace(
             " ",
-            "+"
-          )}-${os.platform()}-${os.arch()}-${pack.version}.zip`,
+            ""
+          )}-${pack.version}-full.nupkg`,
         })
     );
   }

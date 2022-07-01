@@ -4,7 +4,7 @@ console.log("Entorno de desarrollo:", env.toUpperCase());
 
 const development = {
   WEBBASE: "http://localhost:8080",
-  LOGIN_PATH: "",
+  LOGIN_PATH: "/app#/login",
 };
 
 const production = {

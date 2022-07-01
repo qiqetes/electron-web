@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import { AppData } from "./data/appData";
 import {
@@ -8,6 +9,8 @@ import {
   SettingsData,
   TrainingClassesData,
 } from "./helpers/init";
+import { sendToast } from "./helpers/ipcMainActions";
+// import icon from "../assets/app-icon.png";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
@@ -17,12 +20,18 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
+if (os.platform() == "win32") app.disableHardwareAcceleration();
+
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
 export let mainWindow: BrowserWindow;
+
 const createWindow = async () => {
   await init();
 
   mainWindow = new BrowserWindow({
+    autoHideMenuBar: true,
+    darkTheme: true,
+    // icon: icon,
     height: 1000,
     width: 1200,
     minWidth: 1025,
@@ -35,6 +44,7 @@ const createWindow = async () => {
     },
   });
 
+  mainWindow.setMenu(null);
   void mainWindow.loadURL(AppData.URL!);
 
   // Open the DevTools.x
@@ -43,7 +53,12 @@ const createWindow = async () => {
 
   // Cuando la webapp está realmente cargada, se ejecuta este evento
   mainWindow.once("ready-to-show", () => {
-    //
+    if (process.env.NODE_ENV == "development") {
+      setTimeout(
+        () => sendToast("RUNNING IN DEVELOPMENT MODE!", "warn", 20),
+        2000
+      );
+    }
   });
 
   mainWindow.on("close", async () => await saveAll());

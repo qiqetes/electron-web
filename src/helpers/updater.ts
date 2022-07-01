@@ -64,7 +64,7 @@ const registerAutoUpdaterEvents = () => {
 // to be downloaded.
 export const setAutoUpdater = async () => {
   // AVOID TO RUN THE AUTOUPDATER THE FIRST TIME THE APP RUNS IN WINDOWS BY ALL MEANS
-  if (AppData.FIRST_TIME_IT_RUNS) return;
+  // if (AppData.FIRST_TIME_IT_RUNS) return;
 
   const resManifest = await axios.get(
     "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json"
@@ -72,48 +72,65 @@ export const setAutoUpdater = async () => {
 
   const manifest: UpdateManifest = resManifest.data;
 
-  if (isNewVersionNuber(projectInfo.version, manifest.version)) {
-    const version = manifest.version;
-    if (isUpdateAlreadyDownloaded(version)) return;
-    log(`HAY UNA UPDATE DISPONIBLE: ${version}`);
+  if (!isNewVersionNuber(projectInfo.version, manifest.version)) return;
 
-    let platform: string = os.platform();
-    const arch = os.arch();
+  const version = manifest.version;
+  if (isUpdateAlreadyDownloaded(version)) return;
+  log(`HAY UNA UPDATE DISPONIBLE: ${version}`);
 
-    if (platform == "darwin") platform = "mac64";
-    else if (platform == "win32") platform = "win" + arch.substring(1);
+  let platform: string = os.platform();
+  const arch = os.arch();
 
-    const updateUrl = manifest.packages[platform].url;
+  if (platform == "darwin") platform = "mac64";
 
-    const tempPath = path.join(app.getPath("temp"), "updateVersion");
+  const updateUrl = manifest.packages[platform].url;
 
-    const setAutoUpdater = () => {
-      // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.
-      const json = {
-        url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
-      };
+  const tempPath = path.join(app.getPath("temp"), "updateVersion");
 
-      fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
-      console.log("file://" + tempPath + "/feed.json");
-
-      autoUpdater.setFeedURL({
-        url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
-      });
-
-      autoUpdater.checkForUpdates();
-      registerAutoUpdaterEvents();
+  const setAutoUpdaterMac = () => {
+    // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.
+    const json = {
+      url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
     };
 
-    download(tempPath, "update.zip", updateUrl, setAutoUpdater);
+    fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
+    console.log("file://" + tempPath + "/feed.json");
+
+    autoUpdater.setFeedURL({
+      url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
+    });
+
+    autoUpdater.checkForUpdates();
+  };
+
+  const setAutoUpdaterWin = async () => {
+    download(
+      tempPath,
+      "RELEASES",
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/RELEASES",
+      () => {
+        AppData.LAST_VERSION_DOWNLOADED = version;
+        autoUpdater.setFeedURL({ url: tempPath });
+        autoUpdater.checkForUpdates();
+      }
+    );
+  };
+
+  registerAutoUpdaterEvents();
+  if (os.platform() == "darwin") {
+    download(tempPath, "update.zip", updateUrl, setAutoUpdaterMac);
+  } else if (os.platform() == "win32") {
+    download(tempPath, "update.nupkg", updateUrl, setAutoUpdaterWin);
   }
 };
 
 const isUpdateAlreadyDownloaded = (ver: string) => {
   if (AppData.LAST_VERSION_DOWNLOADED == ver) {
     // Check if the file already exists
-
     const tempPath = path.join(app.getPath("temp"), "updateVersion");
-    return fs.existsSync(path.join(tempPath, "update.zip"));
+    const filename = os.platform() == "darwin" ? "update.zip" : "update.nupkg";
+    return fs.existsSync(path.join(tempPath, filename));
   }
+  AppData.LAST_VERSION_DOWNLOADED = null;
   return false;
 };
