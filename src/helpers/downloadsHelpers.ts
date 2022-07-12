@@ -1,9 +1,9 @@
-import { SettingsData } from "./init";
+import { DownloadsData, SettingsData } from "./init";
 import * as fs from "fs-extra";
 import { sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
-import { log, logError } from "./loggers";
+import { log, logError, logWarn } from "./loggers";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -88,6 +88,77 @@ export const download = (
       writeStream.close();
       log("Downloaded:", file);
       if (onDownloadCb) onDownloadCb();
+    });
+  });
+};
+
+/// Downloads Cesar's bike adjustment video
+export const downloadHelpVideo = () => {
+  log("Downloading adjustment video");
+
+  DownloadsData.isDownloading = true;
+  const url =
+    "https://apiv2.bestcycling.es/api/v2/media_assets/68688/?type=video_hd";
+  const filePath = path.join(SettingsData.downloadsPath, "ajustes.mp4");
+  const writeStream = fs.createWriteStream(filePath);
+
+  https.get(url, (res) => {
+    if (res.statusMessage != "OK") {
+      logError(
+        "Couldn't download bike adjustment video, got statusCode:",
+        res.statusCode
+      );
+      return;
+    }
+
+    let received = 0;
+    const totalSize = parseInt(res.headers["content-length"]!);
+
+    // Data received
+    res.on("data", (chunk) => {
+      received += chunk.length;
+
+      const bufferStore = writeStream.write(chunk);
+
+      // Si el buffer está lleno pausamos la descarga
+      if (bufferStore === false) {
+        res.pause();
+      }
+    });
+
+    // resume the streaming when emptied
+    writeStream.on("drain", () => {
+      res.resume();
+    });
+
+    res.on("close", () => {
+      if (!res.complete) {
+        logError("Adjust bike video closed before completion");
+      }
+
+      const isCompleted = received === totalSize;
+      if (isCompleted) {
+        log("Successfully downloaded adjust Video");
+
+        // to have a complete trainingClass object
+        writeStream.end();
+      }
+    });
+
+    res.on("timeout", (err) => {
+      logError("Adjust video download timeout", err);
+    });
+
+    res.on("error", (err) => {
+      logError("Adjust video download error", err);
+    });
+
+    res.on("abort", (err) => {
+      logWarn("Adjust video download aborted", err);
+    });
+
+    res.on("end", () => {
+      log("Adjust video download ended");
     });
   });
 };

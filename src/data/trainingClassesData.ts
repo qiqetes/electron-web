@@ -78,7 +78,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
       !isCompleteTrainingClass(this.trainingClasses[id])
     ) {
       try {
-        const fullTraining = await api.fetch(`training_classes/${id}`);
+        const fullTraining = await api.get(`training_classes/${id}`);
         if (fullTraining.data) {
           this.trainingClasses[id] = fullTraining.data as TrainingClass;
           return this.trainingClasses[id];

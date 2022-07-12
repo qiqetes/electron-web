@@ -12,7 +12,7 @@ interface DownloadsDataDB {
 }
 
 type downloadStatus =
-  | "none" // won't be donwloaded
+  | "none" // won't be donwloaded, doesn't count as a download
   | "queued"
   | "downloading"
   | "downloaded"
@@ -28,7 +28,7 @@ interface Media {
 type downloadRequest = {
   trainingClass: TrainingClass;
   mediaType: mediaType;
-  timestamp?: number | null;
+  timestamp: number | null;
 };
 
 // The donloadsState that the webapp expects

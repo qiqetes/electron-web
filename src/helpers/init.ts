@@ -10,10 +10,12 @@ import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
 import { setAutoUpdater } from "./updater";
 import { log } from "./loggers";
+import url from "url";
+import dayjs from "dayjs";
 
 // Use JSON file for storage
 const file = join(app.getPath("userData"), "db.json");
-log("DB file in: ", file);
+log("DB file in: ", url.pathToFileURL(file));
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -50,10 +52,25 @@ export const init = async () => {
 
 /// Sets the url starting point depending on gyms scheduler settings
 const setStartingUrl = () => {
+  const lastLoginValid =
+    AppData.LAST_LOGIN &&
+    AppData.LAST_LOGIN < dayjs().add(-14, "day").valueOf();
+  if (lastLoginValid) {
+    // No redirection needed, solves problem when the user starts the app without network connection
+    // The login page doesn't do the redirection to app if it has no connection
+    AppData.URL = AppData.WEBAPP_WEBASE + `/app/#/`;
+  }
+
   if (SettingsData.autoStartGymsScheduler) {
-    AppData.URL =
-      AppData.WEBAPP_WEBASE +
-      `/app#/gyms/rooms/${SettingsData.defaultRoom}/play`;
+    if (process.env.NODE_ENV === "development") {
+      AppData.URL =
+        AppData.WEBAPP_WEBASE +
+        `/app#/gyms/rooms/${SettingsData.defaultRoom}/play`;
+    } else {
+      AppData.URL =
+        AppData.WEBAPP_WEBASE +
+        `/app/#/gyms/rooms/${SettingsData.defaultRoom}/play`;
+    }
   }
 };
 
@@ -77,6 +94,9 @@ const initDB = async () => {
     AppData.getFromDb();
     AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
   }
+
+  // Start downloads that remained in queue
+  DownloadsData.startDownloads();
 };
 
 // TODO: Add error handler

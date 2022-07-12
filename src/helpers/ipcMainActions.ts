@@ -7,6 +7,7 @@ import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
+import { log } from "./loggers";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -20,20 +21,13 @@ ipcMain.on("stopLocalServer", () => LocalServerInstance.stop());
 
 ipcMain.on("setAuth", (_, auth) => {
   AppData.AUTHORIZATION = `Bearer ${auth}`;
+  AppData.LAST_LOGIN = +new Date();
   api.headers.Authorization = AppData.AUTHORIZATION;
 });
 
-ipcMain.on(
-  "addDownload",
-  (
-    _,
-    trainingClass: TrainingClass,
-    mediatype: mediaType = "video_hd",
-    timestamp: number | null
-  ) => {
-    DownloadsData.addToQueue(trainingClass, mediatype, timestamp);
-  }
-);
+ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
+  DownloadsData.addToQueue(downloadRequest);
+});
 
 ipcMain.on(
   "downloadScheduledTrainingClasses",
@@ -63,6 +57,7 @@ ipcMain.on("getMediaUrl", (event, id, media) => {
 ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
   DownloadsData.removeDownload(id, media);
 });
+
 ipcMain.on("deleteDownloads", () => {
   DownloadsData.removeAll();
 });
@@ -85,6 +80,27 @@ ipcMain.on("changeDownloadsPath", () => {
       SettingsData.downloadsPath = dir![0];
     }
   );
+});
+
+ipcMain.on("restoreDefaults", () => {
+  // TODO: borrar db.json EXCEPTO CLASSES?
+
+  DownloadsData.removeAll();
+
+  // borrar localStorage
+  mainWindow.webContents.session.clearStorageData();
+});
+
+ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
+  if (AppData.ONLINE != online) {
+    AppData.ONLINE = online;
+    log(`Changed status connection to: ${online ? "online" : "offline"}`);
+    if (online) sendToast("Se ha restaurado la conexión");
+    else if (!online) sendToast("Pasando a modo offline", "warn");
+  }
+  if (online) {
+    DownloadsData.startDownloads();
+  }
 });
 
 export const sendToast = (

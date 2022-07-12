@@ -10,6 +10,7 @@ import {
   TrainingClassesData,
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
+// import { touchBar } from "./touchbar";
 // import icon from "../assets/app-icon.png";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -53,6 +54,7 @@ const createWindow = async () => {
 
   // Cuando la webapp está realmente cargada, se ejecuta este evento
   mainWindow.once("ready-to-show", () => {
+    // mainWindow.setTouchBar(touchBar);
     if (process.env.NODE_ENV == "development") {
       setTimeout(
         () => sendToast("RUNNING IN DEVELOPMENT MODE!", "warn", 20),

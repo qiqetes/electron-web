@@ -32,15 +32,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setAuth: (auth: string) => {
     ipcRenderer.send("setAuth", auth);
   },
+
+  restoreDefaults: () => {
+    ipcRenderer.send("restoreDefaults");
+  },
+
+  changeConnectionStatus: (online: boolean) => {
+    ipcRenderer.send("changeConnectionStatus", online);
+  },
 });
 
 contextBridge.exposeInMainWorld("downloadsAPI", {
   startLocalServer: () => ipcRenderer.send("startLocalServer"),
-
   stopLocalServer: () => ipcRenderer.send("stopLocalServer"),
 
   downloadScheduledTrainingClasses: (downloadRequests: downloadRequest[]) =>
     ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
+  downloadTrainingClass: (
+    trainingClass: TrainingClass,
+    mediaType: mediaType
+  ) => {
+    ipcRenderer.send("downloadTrainingClass", {
+      trainingClass,
+      mediaType,
+      timestamp: null,
+    });
+  },
 
   changeDownloadsPath: () => ipcRenderer.send("changeDownloadsPath"),
   importDownloads: () => ipcRenderer.send("importDownloads"),

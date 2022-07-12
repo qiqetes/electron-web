@@ -76,14 +76,20 @@ export const setAutoUpdater = async () => {
 
   const version = manifest.version;
   if (isUpdateAlreadyDownloaded(version)) return;
-  log(`HAY UNA UPDATE DISPONIBLE: ${version}`);
+  log(`THERE IS AN UPDATE AVAILABLE: ${version}`);
 
   let platform: string = os.platform();
   const arch = os.arch();
 
   if (platform == "darwin") platform = "mac64";
 
-  const updateUrl = manifest.packages[platform].url;
+  const updateUrl = manifest.packages[platform]?.url;
+  if (!updateUrl) {
+    logError(
+      `The update is not available for this platform, you should check either if it wasn't uploaded yet or this platform is not supported. (platform: ${platform})`
+    );
+    return;
+  }
 
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
 
