@@ -9,7 +9,11 @@ import { http, https, RedirectableRequest } from "follow-redirects";
 import * as fs from "fs";
 import { OfflineTrainingClass } from "../models/offlineTrainingClass";
 import { DB, SettingsData, TrainingClassesData } from "../helpers/init";
-import { informDownloadsState, sendToast } from "../helpers/ipcMainActions";
+import {
+  informDownloadsState,
+  informDownloadState,
+  sendToast,
+} from "../helpers/ipcMainActions";
 import { AppData } from "./appData";
 import { log, logError, logWarn } from "../helpers/loggers";
 
@@ -19,6 +23,7 @@ class DownloadsDataModel implements DownloadsData {
   isDownloading = false;
   currentTask: RedirectableRequest<any, any> | null = null;
   currentDownload: OfflineTrainingClass | null = null;
+  hasAdjustVideo = false;
 
   constructor() {
     this.initDownloadsPath();
@@ -96,7 +101,10 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   startDownloads(): void {
-    console.log("STARTING DOWNLOADS ⬇️");
+    log("STARTING DOWNLOADS ⬇️");
+    if (!this.hasAdjustVideo) {
+      this.downloadHelpVideo();
+    }
     this.downloadNext();
   }
 
@@ -111,10 +119,10 @@ class DownloadsDataModel implements DownloadsData {
 
     sendToast("Error al descargar clase", "error", 3);
     this.isDownloading = false;
+    download.status = "queued";
     download.retries++;
     if (download.retries >= 5) download.status = "error";
     if (keepDownloading) this.downloadNext();
-    throw new Error();
   }
 
   // FUNCTION THAT WILL START DOWNLOADING A CLASS
@@ -126,9 +134,11 @@ class DownloadsDataModel implements DownloadsData {
     // Check if there are classes waiting to be downloaded in the queue
     const download = this.getFirstQueued();
     if (!download) {
+      logWarn("No media in downloads queue");
       this.isDownloading = false;
       return;
     }
+    download.status = "downloading";
 
     // Check if near the download limit
     if (this.totalDownloadsSize() > SettingsData.maxDownloadsSize * 0.8) {
@@ -144,7 +154,7 @@ class DownloadsDataModel implements DownloadsData {
     if (download.retries > 5) {
       sendToast("Error al descargar clase", "error", 3);
       download.status = "error";
-      this.isDownloading = false;
+      this.resumeDownloads();
       return;
     }
 
@@ -199,8 +209,7 @@ class DownloadsDataModel implements DownloadsData {
       .get(url, (res) => {
         if (res.statusMessage != "OK") {
           download.retries++;
-          this.isDownloading = false;
-          this.downloadNext();
+          this.resumeDownloads();
           sendToast(
             `Error al descargar clase: ${
               TrainingClassesData.trainingClasses[download.id].title
@@ -223,8 +232,10 @@ class DownloadsDataModel implements DownloadsData {
           download.progress = (received / totalSize) * 100;
           if (lastPercentage < parseInt(download.progress.toFixed(0))) {
             lastPercentage = parseInt(download.progress.toFixed(0));
-            if (lastPercentage % 10 == 0)
+            if (lastPercentage % 10 == 0) {
               log(download.progress.toFixed(0) + "%");
+              informDownloadState();
+            }
           }
 
           for (let i = 0; i < chunk.length; i++) {
@@ -246,11 +257,7 @@ class DownloadsDataModel implements DownloadsData {
 
         res.on("close", () => {
           if (!res.complete) {
-            this.throwErrorDownloading(
-              download,
-              "Download was closed before the completion",
-              true
-            );
+            return;
           }
 
           const isCompleted = received === totalSize;
@@ -262,33 +269,27 @@ class DownloadsDataModel implements DownloadsData {
             );
             log("Ended download id: " + download.id + "-" + download.mediaType);
             download.status = "downloaded";
-            this.isDownloading = false;
             informDownloadsState();
 
             // to have a complete trainingClass object
             writeStream.end();
-            this.downloadNext();
+            this.resumeDownloads();
           }
         });
 
-        res.on("timeout", (err) => {
-          logWarn("DOWNLOAD TIMEOUT", err);
-        });
-
         res.on("error", (err) => {
+          if (err.message === "aborted") {
+            download.status = "none";
+            logWarn("Download was aborted");
+            sendToast("Descarga cancelada", "warn");
+            return;
+          }
           this.throwErrorDownloading(
             download,
             "Error during the download",
             true,
             [err]
           );
-          logError("");
-        });
-
-        res.on("abort", (err) => {
-          this.throwErrorDownloading(download, "Download aborted", true);
-          download.status = "error";
-          sendToast("Descarga abortada", "warn", 5);
         });
 
         res.on("end", () => {
@@ -312,6 +313,7 @@ class DownloadsDataModel implements DownloadsData {
     DB.data!.downloads = {
       offlineTrainingClasses: this.offlineTrainingClasses,
       trainingClassesScheduled: this.trainingClassesScheduled,
+      hasAdjustVideo: this.hasAdjustVideo,
       isDownloading: false,
     };
   }
@@ -345,6 +347,14 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   removeDownload(id: string, mediaType: mediaType, inform = true): void {
+    const isBeingDownload =
+      this.currentDownload?.id === id &&
+      this.currentDownload?.mediaType === mediaType;
+    if (isBeingDownload) {
+      logWarn("Deleted a download that was being downloaded");
+      this.stopDownloading();
+    }
+
     const file = filenameStealth(id, mediaType);
     if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
@@ -464,6 +474,7 @@ class DownloadsDataModel implements DownloadsData {
             v.mediaType
           )}`,
         };
+
         if (!obj) {
           return [
             ...prev,
@@ -481,12 +492,18 @@ class DownloadsDataModel implements DownloadsData {
       },
       []
     );
+
     return {
       isDownloading,
       queue,
       downloading,
       trainingClasses,
     };
+  }
+
+  resumeDownloads(): void {
+    this.isDownloading = false;
+    this.downloadNext();
   }
 
   // Total size of the downloads in GB
@@ -506,7 +523,7 @@ class DownloadsDataModel implements DownloadsData {
     // Check if files are download files
     const files = fs.readdirSync(SettingsData.downloadsPath);
     sendToast(
-      "Iportando clases descargadas, esto podría durar varios minutos... ⏳",
+      "Importando clases descargadas, esto podría durar varios minutos...⏳",
       null,
       3
     );
@@ -529,6 +546,79 @@ class DownloadsDataModel implements DownloadsData {
 
     SettingsData.downloadsPath = folder;
     sendToast("Importación finalizada con éxito", null, 3);
+  }
+
+  // Downloads Cesar's bike adjustment video
+  downloadHelpVideo(): void {
+    log("Downloading adjustment video");
+
+    this.isDownloading = true;
+    const accessToken = AppData.AUTHORIZATION.split(" ")[1];
+    const url =
+      "https://apiv2.bestcycling.es/api/v2/media_assets/68688/?type=video_hd" +
+      `&access_token=${accessToken}`;
+    const filePath = path.join(SettingsData.downloadsPath, "ajustes.mp4");
+
+    if (this.hasAdjustVideo) {
+      this.isDownloading = false;
+      this.downloadNext();
+      return;
+    }
+
+    const writeStream = fs.createWriteStream(filePath);
+    https.get(url, (res) => {
+      if (res.statusMessage != "OK") {
+        logError(
+          "Couldn't download bike adjustment video, got statusCode:",
+          res.statusCode
+        );
+        this.resumeDownloads();
+        writeStream.end;
+        return;
+      }
+
+      let received = 0;
+      const totalSize = parseInt(res.headers["content-length"]!);
+
+      // Data received
+      res.on("data", (chunk) => {
+        received += chunk.length;
+
+        const bufferStore = writeStream.write(chunk);
+
+        // Si el buffer está lleno pausamos la descarga
+        if (bufferStore === false) {
+          res.pause();
+        }
+      });
+
+      // resume the streaming when emptied
+      writeStream.on("drain", () => {
+        res.resume();
+      });
+
+      res.on("close", () => {
+        if (!res.complete) {
+          logError("Adjust bike video closed before completion");
+        }
+
+        const isCompleted = received === totalSize;
+        if (!isCompleted) {
+          logError("Adjust bike video incomplete");
+          this.hasAdjustVideo = false;
+          this.resumeDownloads();
+        }
+
+        log("Successfully downloaded adjust Video");
+        this.hasAdjustVideo = true;
+        this.resumeDownloads();
+        writeStream.end();
+      });
+
+      res.on("error", (err) => {
+        logError("Adjust video download error", err);
+      });
+    });
   }
 }
 

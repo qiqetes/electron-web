@@ -59,12 +59,17 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
     });
   },
 
-  changeDownloadsPath: () => ipcRenderer.send("changeDownloadsPath"),
+  changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>
     ipcRenderer.send("deleteDownload", id, media),
 
+  handleDownloadsState: (
+    callback: (event: Event, state: downloadsStateWebapp) => void
+  ) => {
+    ipcRenderer.on("downloadsState", callback);
+  },
   handleDownloadState: (
     callback: (event: Event, state: downloadsStateWebapp) => void
   ) => {

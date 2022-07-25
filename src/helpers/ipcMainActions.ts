@@ -62,24 +62,36 @@ ipcMain.on("deleteDownloads", () => {
   DownloadsData.removeAll();
 });
 
-ipcMain.on("changeDownloadsPath", () => {
+ipcMain.handle("changeDownloadsPath", (): string => {
   const dir = dialog.showOpenDialogSync({ properties: ["openDirectory"] });
   if (!dir?.length) {
     sendToast("No se ha seleccionado ninguna carpeta", "error", 5);
-    return;
+    return SettingsData.downloadsPath;
   }
+  console.log(dir[0]);
+
+  if (dir[0] === SettingsData.downloadsPath) {
+    sendToast(
+      "La carpeta seleccionada es destino actual de las descargas",
+      "warn"
+    );
+    return SettingsData.downloadsPath;
+  }
+
   showModal(
     "Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
     "Sí, copiar",
     "No, solo cambia el directorio",
     () => {
-      DownloadsData.moveDownloadsTo(dir![0]);
+      DownloadsData.moveDownloadsTo(dir[0]);
     },
     () => {
       DownloadsData.removeAll();
-      SettingsData.downloadsPath = dir![0];
+      SettingsData.downloadsPath = dir[0];
     }
   );
+
+  return dir[0];
 });
 
 ipcMain.on("restoreDefaults", () => {
@@ -128,5 +140,11 @@ ipcMain.on("modalOk", () => modalFunctions.callbackOk());
 ipcMain.on("modalCancel", () => modalFunctions.callbackCancel());
 
 export const informDownloadsState = () => {
-  mainWindow.webContents.send("downloadState", DownloadsData.toWebAppState());
+  mainWindow.webContents.send("downloadsState", DownloadsData.toWebAppState());
+};
+
+// Just gives the information about one download (the one downloading)
+// to improve the performance?
+export const informDownloadState = () => {
+  mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };

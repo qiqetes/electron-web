@@ -93,6 +93,7 @@ export default class LocalServer extends EventEmitter {
     });
     process.on("exit", this.stop);
     process.once("exit", this.stop);
+
     this.emit("start");
   }
 
