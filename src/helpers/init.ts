@@ -54,11 +54,14 @@ export const init = async () => {
 const setStartingUrl = () => {
   const lastLoginValid =
     AppData.LAST_LOGIN &&
-    AppData.LAST_LOGIN < dayjs().add(-14, "day").valueOf();
+    AppData.LAST_LOGIN > dayjs().add(-14, "day").valueOf();
+
+  console.log(AppData.LAST_LOGIN, dayjs().add(-14, "day").valueOf());
+
   if (lastLoginValid) {
     // No redirection needed, solves problem when the user starts the app without network connection
     // The login page doesn't do the redirection to app if it has no connection
-    AppData.URL = AppData.WEBAPP_WEBASE + `/app/#/`;
+    AppData.URL = AppData.WEBAPP_WEBASE + `/app#/`;
   }
 
   if (SettingsData.autoStartGymsScheduler) {

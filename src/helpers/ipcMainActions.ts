@@ -20,9 +20,12 @@ ipcMain.on("startLocalServer", () =>
 ipcMain.on("stopLocalServer", () => LocalServerInstance.stop());
 
 ipcMain.on("setAuth", (_, auth) => {
+  log("Setting Auth");
+
   AppData.AUTHORIZATION = `Bearer ${auth}`;
   AppData.LAST_LOGIN = +new Date();
   api.headers.Authorization = AppData.AUTHORIZATION;
+  DownloadsData.downloadHelpVideo();
 });
 
 ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
@@ -68,7 +71,7 @@ ipcMain.handle("changeDownloadsPath", (): string => {
     sendToast("No se ha seleccionado ninguna carpeta", "error", 5);
     return SettingsData.downloadsPath;
   }
-  console.log(dir[0]);
+  log("Downloads path changed by user to: " + dir[0]);
 
   if (dir[0] === SettingsData.downloadsPath) {
     sendToast(

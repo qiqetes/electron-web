@@ -306,6 +306,7 @@ class DownloadsDataModel implements DownloadsData {
     if (!DB.data?.downloads) return;
     this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
+    this.hasAdjustVideo = DB.data!.downloads.hasAdjustVideo;
     this.isDownloading = false;
   }
 
@@ -554,6 +555,12 @@ class DownloadsDataModel implements DownloadsData {
 
     this.isDownloading = true;
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
+
+    if (!accessToken) {
+      logWarn("Trying to download help video without access token");
+      return;
+    }
+
     const url =
       "https://apiv2.bestcycling.es/api/v2/media_assets/68688/?type=video_hd" +
       `&access_token=${accessToken}`;
@@ -570,7 +577,9 @@ class DownloadsDataModel implements DownloadsData {
       if (res.statusMessage != "OK") {
         logError(
           "Couldn't download bike adjustment video, got statusCode:",
-          res.statusCode
+          res.statusCode,
+          " from ",
+          url
         );
         this.resumeDownloads();
         writeStream.end;

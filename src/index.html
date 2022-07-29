@@ -7,6 +7,17 @@
     <title>Document</title>
   </head>
   <body>
-    adfoijdfsaoij
+    <h1>No se ha detectado conexión</h1>
+    <h2>
+      Para cargar la applicación se necesita tener conexión a internet al menos
+      en su primer arranque.
+    </h2>
+    <h3>Si ya tiene conexión, por favor recargue la applicación.</h3>
+    <script>
+      setTimeout(
+        () => (window.location.href = "http://localhost:8080/app#/login"),
+        7000
+      );
+    </script>
   </body>
 </html>

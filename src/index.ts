@@ -10,6 +10,7 @@ import {
   TrainingClassesData,
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
+import { logError } from "./helpers/loggers";
 // import { touchBar } from "./touchbar";
 // import icon from "../assets/app-icon.png";
 
@@ -46,7 +47,10 @@ const createWindow = async () => {
   });
 
   mainWindow.setMenu(null);
-  void mainWindow.loadURL(AppData.URL!);
+  mainWindow.loadURL(AppData.URL!).catch(() => {
+    logError("TRIED TO LOAD THE APP WITHOUT ONLINE CONNECTION");
+    setTimeout(() => mainWindow.loadFile("./src/index.html"), 10000);
+  });
 
   // Open the DevTools.x
   if (process.env.NODE_ENV == "development")
