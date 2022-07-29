@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
+
+  baseURL: "http://localhost:8080",
+
   // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);

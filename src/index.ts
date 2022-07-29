@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, session } from "electron";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import { AppData } from "./data/appData";
@@ -24,8 +24,8 @@ if (require("electron-squirrel-startup")) {
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
-export let mainWindow: BrowserWindow;
 
+export let mainWindow: BrowserWindow;
 const createWindow = async () => {
   await init();
 
@@ -46,7 +46,16 @@ const createWindow = async () => {
   });
 
   mainWindow.setMenu(null);
-  void mainWindow.loadURL(AppData.URL!);
+
+  // Get all service workers.
+  console.log(session.defaultSession.serviceWorkers.getAllRunning());
+
+  mainWindow
+    .loadFile(`src/index.html`)
+    .then(() => console.info("OK"))
+    .catch((error) => {
+      console.info("movida", error);
+    });
 
   // Open the DevTools.x
   if (process.env.NODE_ENV == "development")
@@ -68,7 +77,7 @@ const createWindow = async () => {
 
 app.on("ready", () => {
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
-  void createWindow();
+  createWindow();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -86,13 +95,13 @@ app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    void createWindow();
+    createWindow();
   }
 });
 
 const saveAll = async () => {
-  SettingsData.saveToDb();
-  TrainingClassesData.saveToDb();
+  await SettingsData.saveToDb();
+  await TrainingClassesData.saveToDb();
   DownloadsData.saveToDb();
   await DB.write();
 };
