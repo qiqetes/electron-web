@@ -5,19 +5,35 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-  </head>
-  <body>
-    <h1>No se ha detectado conexión</h1>
-    <h2>
-      Para cargar la applicación se necesita tener conexión a internet al menos
-      en su primer arranque.
-    </h2>
-    <h3>Si ya tiene conexión, por favor recargue la applicación.</h3>
     <script>
-      setTimeout(
-        () => (window.location.href = "http://localhost:8080/app#/login"),
-        7000
-      );
+      const loadPage = () => {
+        window.location.href = window.electronAPI.baseURL;
+      };
+
+      const onLoad = () => {
+        console.info("loading");
+        document.getElementById("offline").style.display = "none";
+        if (localStorage.getItem("cached")) {
+          loadPage();
+        } else {
+          console.info("mostramos offline");
+          fetch(url)
+            .then(() => {
+              localStorage.setItem("cached", 1);
+              loadPage();
+            })
+            .catch(() => {
+              console.info("mostramos error");
+              document.getElementById("offline").style.display = "block";
+            });
+        }
+      };
     </script>
+  </head>
+  <body onload="onLoad()">
+    <div id="offline" style="font-size: 50px; color: white; display: none">
+      OFFLINE Y TAL
+      <button onClick="onLoad(); return false;">Reintentar</button>
+    </div>
   </body>
 </html>

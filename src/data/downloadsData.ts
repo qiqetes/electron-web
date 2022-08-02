@@ -552,6 +552,7 @@ class DownloadsDataModel implements DownloadsData {
   // Downloads Cesar's bike adjustment video
   downloadHelpVideo(): void {
     log("Downloading adjustment video");
+    return;
 
     this.isDownloading = true;
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
