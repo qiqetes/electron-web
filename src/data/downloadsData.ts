@@ -574,7 +574,7 @@ class DownloadsDataModel implements DownloadsData {
       const source = path.join(downloadsPath, file);
       const dest = path.join(folder, file);
 
-      fs.copyFile(source, dest, fs.constants.COPYFILE_EXCL, (err) => {
+      fs.rename(source, dest, (err) => {
         if (err) {
           logError("Couldn't move file " + file, err);
           if (err.code === "EEXIST") return;
