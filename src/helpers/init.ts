@@ -48,6 +48,7 @@ export const init = async () => {
 
   setStartingUrl();
   recoverOldPrefs();
+  DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
 
 /// Sets the url starting point depending on gyms scheduler settings

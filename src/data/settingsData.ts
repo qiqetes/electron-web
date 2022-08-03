@@ -1,6 +1,7 @@
 import { DB } from "../helpers/init";
 import { app } from "electron";
 import { sendToast } from "../helpers/ipcMainActions";
+import { log } from "../helpers/loggers";
 
 class SettingsDataModel implements SettingsData {
   ask_graph_intro_video = true; // Mostrar popup de ajuste bicicleta en pantalla externa
@@ -51,7 +52,8 @@ class SettingsDataModel implements SettingsData {
         break;
       case "C1":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        this.downloadsPath = value;
+        // THIS SETTING IS HANDLED DIFFERENTLY
+        log("Downloads path changed to: " + this.downloadsPath);
         break;
       case "C7":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

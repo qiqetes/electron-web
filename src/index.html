@@ -10,14 +10,18 @@
         window.location.href = window.electronAPI.baseURL;
       };
 
+      // Si entramos a la app de escritorio dejamos escrito que ya la tenemos cacheada => podremos entrar de manera totalmente offline
+      // FIXME: when entering the login page we don't really have the web cached. We should set the cached to true only
+      // when we enter the main page
       const onLoad = () => {
+        debugger;
         console.info("loading");
         document.getElementById("offline").style.display = "none";
         if (localStorage.getItem("cached")) {
           loadPage();
         } else {
           console.info("mostramos offline");
-          fetch(url)
+          fetch(window.electronAPI.baseURL)
             .then(() => {
               localStorage.setItem("cached", 1);
               loadPage();
@@ -30,6 +34,7 @@
       };
     </script>
   </head>
+
   <body onload="onLoad()">
     <div id="offline" style="font-size: 50px; color: white; display: none">
       OFFLINE Y TAL

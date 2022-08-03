@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, session } from "electron";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
-import { AppData } from "./data/appData";
 import {
   DB,
   DownloadsData,
@@ -11,7 +10,6 @@ import {
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
 import { log, logError } from "./helpers/loggers";
-// import { touchBar } from "./touchbar";
 // import icon from "../assets/app-icon.png";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
