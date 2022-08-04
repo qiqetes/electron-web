@@ -10,35 +10,101 @@
         window.location.href = window.electronAPI.baseURL;
       };
 
-      // Si entramos a la app de escritorio dejamos escrito que ya la tenemos cacheada => podremos entrar de manera totalmente offline
-      // FIXME: when entering the login page we don't really have the web cached. We should set the cached to true only
-      // when we enter the main page
       const onLoad = () => {
-        debugger;
         console.info("loading");
         document.getElementById("offline").style.display = "none";
         if (localStorage.getItem("cached")) {
           loadPage();
         } else {
           console.info("mostramos offline");
-          fetch(window.electronAPI.baseURL)
+          fetch(url)
             .then(() => {
               localStorage.setItem("cached", 1);
               loadPage();
             })
             .catch(() => {
               console.info("mostramos error");
-              document.getElementById("offline").style.display = "block";
+              document.getElementById("offline").style.display = "flex";
             });
         }
       };
     </script>
-  </head>
 
+<style type="text/css">
+.container{
+display: flex;
+justify-content: center;
+align-items: center;
+margin:0 auto;
+height:95vh;
+width: 50%;
+
+}
+
+.title{
+  font-size: 24px;
+  line-height: 28px;
+  font-family: "Lato", Arial, Helvetica, sans-serif;
+  color:#c9c9c9;
+  margin:10px 0;
+}
+
+.description{
+  font-size:18px;
+  color:#747474;
+  font-family: "Lato", Arial, Helvetica, sans-serif;
+}
+
+.img{
+  margin-right:20px;
+}
+
+.btn {
+  background: #ff7900 0% 0% no-repeat padding-box;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+  font: normal normal 600 13px/18px "Montserrat";
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  text-align: center;
+  min-width: 120px;
+  text-transform: uppercase;
+  color: white;
+}
+
+.btn:hover{
+  filter: brightness(120%);
+
+}
+
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .img{
+    margin:0;
+  }
+}
+
+ </style>
+  </head>
   <body onload="onLoad()">
-    <div id="offline" style="font-size: 50px; color: white; display: none">
-      OFFLINE Y TAL
-      <button onClick="onLoad(); return false;">Reintentar</button>
+
+    <div id="offline" style="display:none;" class="container">
+      <img class="img" width="auto" alt="No conexión Bestcycling" src="../assets/noconnection.svg"></img>
+      <div>
+        <p class="title">No podemos cargar Bestcycling TV</p>
+        <p class="description">Comprueba tu conexión a internet.</p>
+        <div>
+          <button onClick="onLoad(); return false;" class="btn" style="margin-top:12px">
+            Reintentar
+          </button>
+        </div>
+      </div>
     </div>
   </body>
 </html>
