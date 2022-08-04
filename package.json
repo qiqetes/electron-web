@@ -6,10 +6,11 @@
   "main": ".webpack/main",
   "scripts": {
     "start": "cross-env-shell ENV=dev electron-forge start",
-    "dev": "cross-env-shell ENV=dev electron-forge start",
+    "dev": "cross-env-shell ENV=dev FLAVOUR=2 electron-forge start",
     "package": "electron-forge package",
     "make": "cross-env-shell ENV=prod electron-forge make",
     "make-dev": "cross-env-shell ENV=dev electron-forge make",
+    "make-devprod": "cross-env-shell ENV=prod electron-forge make",
     "publish": "cross-env-shell ENV=dev electron-forge publish",
     "publish-test": "node process/gen_manifest && cross-env-shell ENV=dev electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
