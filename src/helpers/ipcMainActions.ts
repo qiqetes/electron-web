@@ -66,7 +66,10 @@ ipcMain.on("deleteDownloads", () => {
 });
 
 ipcMain.handle("changeDownloadsPath", (): string => {
-  const dir = dialog.showOpenDialogSync({ properties: ["openDirectory"] });
+  const dir = dialog.showOpenDialogSync({
+    properties: ["openDirectory"],
+    defaultPath: SettingsData.downloadsPath,
+  });
   if (!dir?.length) {
     sendToast("No se ha seleccionado ninguna carpeta", "error", 5);
     return SettingsData.downloadsPath;

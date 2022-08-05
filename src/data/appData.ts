@@ -1,6 +1,6 @@
+import config from "../config";
 import { DB } from "../helpers/init";
 import { logError } from "../helpers/loggers";
-import * as config from "../config";
 
 class AppDataModel implements AppData {
   WEBAPP_WEBASE: string;

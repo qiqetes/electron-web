@@ -1,8 +1,20 @@
 // config.js
-const env = process.env.FLAVOUR ? "devprod" : process.env.NODE_ENV;
+const env: "development" | "production" | "devprod" = process.env.FLAVOUR
+  ? "devprod"
+  : (process.env.NODE_ENV as "production" | "development");
+
+if (!env) {
+  throw new Error("No environment set");
+}
+
 console.log("Entorno de desarrollo:", env.toUpperCase());
 if (process.env.FLAVOUR) {
   console.log("Flavour: 2.bestcycling.com");
+}
+
+interface EvironmentConfig {
+  WEBBASE: string;
+  LOGIN_PATH: string;
 }
 
 const development = {
@@ -26,4 +38,4 @@ const config = {
   devprod,
 };
 
-module.exports = config[env];
+export default config.development;
