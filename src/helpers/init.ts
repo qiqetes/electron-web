@@ -35,7 +35,6 @@ const recoverOldPrefs = () => {
 
   fs.copySync(oldLocalStoragePath, newLocalStoragePath);
   fs.rmSync(oldLocalStoragePath, { recursive: true, force: true });
-  console.log("Successfully imported old prefs");
 
   app.relaunch();
 };
@@ -56,8 +55,6 @@ const setStartingUrl = () => {
   const lastLoginValid =
     AppData.LAST_LOGIN &&
     AppData.LAST_LOGIN > dayjs().add(-14, "day").valueOf();
-
-  console.log(AppData.LAST_LOGIN, dayjs().add(-14, "day").valueOf());
 
   if (lastLoginValid) {
     // No redirection needed, solves problem when the user starts the app without network connection
