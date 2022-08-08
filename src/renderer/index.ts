@@ -1,5 +1,7 @@
-const loginPage = window.electronAPI.baseURL + "/app#/login";
-// const loginPage = "https://localhost:8080";
+// eslint-disable-next-line import/no-unresolved
+import "./index.css";
+
+const loginPage = window.electronAPI.baseURL + window.electronAPI.loginPath;
 
 const loadPage = () => {
   window.location.href = loginPage;

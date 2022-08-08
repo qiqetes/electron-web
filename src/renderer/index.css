@@ -1,0 +1,56 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  height: 95vh;
+  width: 50%;
+}
+
+.title {
+  font-size: 24px;
+  line-height: 28px;
+  font-family: "Lato", Arial, Helvetica, sans-serif;
+  color: #c9c9c9;
+  margin: 10px 0;
+}
+
+.description {
+  font-size: 18px;
+  color: #747474;
+  font-family: "Lato", Arial, Helvetica, sans-serif;
+}
+
+.img {
+  margin-right: 20px;
+}
+
+.btn {
+  background: #ff7900 0% 0% no-repeat padding-box;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+  font: normal normal 600 13px/18px "Montserrat";
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  text-align: center;
+  min-width: 120px;
+  text-transform: uppercase;
+  color: white;
+}
+
+.btn:hover {
+  filter: brightness(120%);
+}
+
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .img {
+    margin: 0;
+  }
+}

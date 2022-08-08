@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import os from "os";
-import url from "url";
 import { LocalServerInstance } from "./core/LocalServer";
 import {
   DB,

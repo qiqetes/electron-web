@@ -12,11 +12,6 @@ if (process.env.FLAVOUR) {
   console.log("Flavour: 2.bestcycling.com");
 }
 
-interface EvironmentConfig {
-  WEBBASE: string;
-  LOGIN_PATH: string;
-}
-
 const development = {
   WEBBASE: "http://localhost:8080",
   LOGIN_PATH: "/app#/login",

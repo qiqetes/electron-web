@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
 
   baseURL: config.WEBBASE,
+  loginPath: config.LOGIN_PATH,
 
   // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
