@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import os from "os";
+import url from "url";
 import { LocalServerInstance } from "./core/LocalServer";
 import {
   DB,
@@ -47,9 +48,6 @@ const createWindow = async () => {
   });
 
   mainWindow.setMenu(null);
-
-  // Get all service workers.
-  console.log(session.defaultSession.serviceWorkers.getAllRunning());
 
   mainWindow
     .loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
