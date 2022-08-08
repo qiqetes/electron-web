@@ -1,18 +1,19 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.0",
+  "version": "5.0.1",
   "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
     "start": "cross-env-shell ENV=dev electron-forge start",
-    "dev": "cross-env-shell ENV=dev FLAVOUR=2 electron-forge start",
+    "dev": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge start",
     "package": "electron-forge package",
     "make": "cross-env-shell ENV=prod electron-forge make",
     "make-dev": "cross-env-shell ENV=dev electron-forge make",
-    "make-devprod": "cross-env-shell ENV=prod electron-forge make",
+    "make-devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge make",
     "publish": "cross-env-shell ENV=dev electron-forge publish",
     "publish-test": "node process/gen_manifest && cross-env-shell ENV=dev electron-forge publish",
+    "publish-test-devprod": "node process/gen_manifest && cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
@@ -22,76 +23,7 @@
   },
   "license": "MIT",
   "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "./assets/app-icon.ico",
-        "appBundleId": "com.nw-builder.bestcyclingtv",
-        "osxSign": {
-          "identity": "Developer ID Application: Bestcycling SL (YMCHSA4437)",
-          "entitlements": "./process/entitlements.plist",
-          "entitlements-inherit": "./process/entitlements.plist"
-        }
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "BestcyclingTV"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-dmg",
-          "config": {
-            "icon": "./assets/app-icon.ico"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ]
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ],
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-s3",
-          "config": {
-            "bucket": "bestcycling-production",
-            "folder": "desktop/qiqe-temp",
-            "public": true
-          }
-        }
-      ],
-      "plugins": [
-        [
-          "@electron-forge/plugin-webpack",
-          {
-            "mainConfig": "./webpack.main.config.js",
-            "renderer": {
-              "config": "./webpack.renderer.config.js",
-              "entryPoints": [
-                {
-                  "name": "main_window",
-                  "preload": {
-                    "js": "./src/preload.ts"
-                  },
-                  "html": "./src/index.html",
-                  "js": "./src/renderer.ts"
-                }
-              ]
-            }
-          }
-        ]
-      ]
-    }
+    "forge": "./forge.config.js"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.63",
@@ -126,6 +58,7 @@
     "@types/fs-extra": "^9.0.13",
     "axios": "^0.27.2",
     "dayjs": "^1.11.3",
+    "dotenv": "^16.0.1",
     "electron-squirrel-startup": "^1.0.0",
     "eslint-import-resolver-custom-alias": "^1.3.0",
     "follow-redirects": "^1.15.1",
