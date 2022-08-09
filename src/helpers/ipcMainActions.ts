@@ -8,7 +8,7 @@ import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
 import { log } from "./loggers";
-
+import {readTagMp3 } from './mixmeixterHelpers';
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
 });
@@ -114,6 +114,14 @@ ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
     DownloadsData.startDownloads();
   }
 });
+
+ipcMain.on("readTagMp3", async(event, file:string, pathFile:string ) => {
+ var value = await readTagMp3(file,pathFile);
+
+  event.returnValue = value;
+});
+
+
 
 export const sendToast = (
   message: string,

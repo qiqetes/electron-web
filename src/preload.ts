@@ -81,3 +81,9 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
 
   requestDownloadsState: () => ipcRenderer.invoke("requestDownloadsState"),
 });
+
+contextBridge.exposeInMainWorld("mixmeixterApi", {
+  readTagMp3: (file: string ,path:string) => {
+    return ipcRenderer.sendSync("readTagMp3", file,path);
+  }
+});
