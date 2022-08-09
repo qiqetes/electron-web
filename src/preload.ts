@@ -1,7 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
+import config from "./config";
+
+console.log("Preload: config", config);
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
+
+  baseURL: config.WEBBASE,
+  loginPath: config.LOGIN_PATH,
+
   // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);

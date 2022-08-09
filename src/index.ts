@@ -1,7 +1,6 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
-import { AppData } from "./data/appData";
 import {
   DB,
   DownloadsData,
@@ -10,10 +9,10 @@ import {
   TrainingClassesData,
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
-// import { touchBar } from "./touchbar";
-// import icon from "../assets/app-icon.png";
+import { log, logError } from "./helpers/loggers";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -24,9 +23,10 @@ if (require("electron-squirrel-startup")) {
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
-export let mainWindow: BrowserWindow;
 
+export let mainWindow: BrowserWindow;
 const createWindow = async () => {
+  log("STARTING APP: creating window");
   await init();
 
   mainWindow = new BrowserWindow({
@@ -40,13 +40,20 @@ const createWindow = async () => {
     backgroundColor: "#151515",
     webPreferences: {
       webSecurity: false, // TODO: Remove this and serve the audio+video files over http
+      autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: true,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
 
   mainWindow.setMenu(null);
-  void mainWindow.loadURL(AppData.URL!);
+
+  mainWindow
+    .loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
+    .then(() => log("Main window loaded"))
+    .catch((error) => {
+      logError("loading the index.html file", error);
+    });
 
   // Open the DevTools.x
   if (process.env.NODE_ENV == "development")
@@ -64,11 +71,33 @@ const createWindow = async () => {
   });
 
   mainWindow.on("close", async () => await saveAll());
+
+  mainWindow.webContents.on("new-window", function (e, url) {
+    e.preventDefault();
+    shell.openExternal(url);
+  });
+
+  // This is executed every request, we use it to prevent the app from visiting external sites
+  session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
+    if (details.resourceType == "mainFrame") {
+      const isExternalPage =
+        !details.url.includes("/app") &&
+        !details.url.includes("main_window") &&
+        !details.url.includes("devtools");
+
+      if (isExternalPage) {
+        shell.openExternal(details.url);
+        cb({ redirectURL: mainWindow.webContents.getURL() });
+        return;
+      }
+    }
+    cb({});
+  });
 };
 
 app.on("ready", () => {
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
-  void createWindow();
+  createWindow();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -86,13 +115,13 @@ app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
-    void createWindow();
+    createWindow();
   }
 });
 
 const saveAll = async () => {
-  SettingsData.saveToDb();
-  TrainingClassesData.saveToDb();
+  await SettingsData.saveToDb();
+  await TrainingClassesData.saveToDb();
   DownloadsData.saveToDb();
   await DB.write();
 };

@@ -1,6 +1,7 @@
 import { logError } from "../helpers/loggers";
 import { isCompleteTrainingClass } from "../helpers/downloadsHelpers";
 import { api, DB } from "../helpers/init";
+import { AppData } from "./appData";
 
 class TrainingClassesDataModel implements TrainingClassesData {
   trainingClasses: { [key: string]: TrainingClass } = {};
@@ -77,6 +78,8 @@ class TrainingClassesDataModel implements TrainingClassesData {
       !Object.prototype.hasOwnProperty.call(this.trainingClasses, id) ||
       !isCompleteTrainingClass(this.trainingClasses[id])
     ) {
+      if (!AppData.ONLINE) return null;
+
       try {
         const fullTraining = await api.get(`training_classes/${id}`);
         if (fullTraining.data) {
@@ -88,6 +91,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
         return null;
       }
     }
+
     return this.trainingClasses[id];
   }
 }

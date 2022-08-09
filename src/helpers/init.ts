@@ -35,7 +35,6 @@ const recoverOldPrefs = () => {
 
   fs.copySync(oldLocalStoragePath, newLocalStoragePath);
   fs.rmSync(oldLocalStoragePath, { recursive: true, force: true });
-  console.log("Successfully imported old prefs");
 
   app.relaunch();
 };
@@ -48,17 +47,19 @@ export const init = async () => {
 
   setStartingUrl();
   recoverOldPrefs();
+  DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
 
 /// Sets the url starting point depending on gyms scheduler settings
 const setStartingUrl = () => {
   const lastLoginValid =
     AppData.LAST_LOGIN &&
-    AppData.LAST_LOGIN < dayjs().add(-14, "day").valueOf();
+    AppData.LAST_LOGIN > dayjs().add(-14, "day").valueOf();
+
   if (lastLoginValid) {
     // No redirection needed, solves problem when the user starts the app without network connection
     // The login page doesn't do the redirection to app if it has no connection
-    AppData.URL = AppData.WEBAPP_WEBASE + `/app/#/`;
+    AppData.URL = AppData.WEBAPP_WEBASE + `/app#/`;
   }
 
   if (SettingsData.autoStartGymsScheduler) {

@@ -4,6 +4,7 @@ import { sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
+import TrainingClassesDataModel from "../data/trainingClassesData";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -31,6 +32,8 @@ export const deleteAllDownloads = () => {
 };
 
 export const isValidDownloadFile = (file: string): boolean => {
+  if (file === "ajustes.mp4") return true;
+
   const fileName = file.split("_");
   if (fileName.length < 2) {
     return false;
@@ -48,9 +51,11 @@ export const isValidDownloadFile = (file: string): boolean => {
   return true;
 };
 
-export const downloadFromFile = (
+export const downloadStatsFromFile = (
   file: string
-): { id: string; mediaType: mediaType } => {
+): { id: string; mediaType: mediaType } | "ajustes" => {
+  if (file === "ajustes.mp4") return "ajustes";
+
   const fileName = file.split("_");
   const id = fileName[0];
   const mediaTypeCode = fileName[1];
@@ -90,4 +95,21 @@ export const download = (
       if (onDownloadCb) onDownloadCb();
     });
   });
+};
+
+// Checks if the downloaded trainingClass has the size specified in the trainingClass object
+export const checkCorrectDownloadSize = async (
+  file: string,
+  folder: string
+): Promise<boolean> => {
+  // const downloadFile = downloadStatsFromFile(file);
+  // if (downloadFile === "ajustes") return true;
+
+  // const { id } = downloadFile;
+  // const trainingClass = TrainingClassesDataModel.getFullTraingClass(id);
+
+  // const stats = fs.statSync(filePath);
+  // const fileSizeInBytes = stats.size;
+  // return fileSizeInBytes === size;
+  return true;
 };
