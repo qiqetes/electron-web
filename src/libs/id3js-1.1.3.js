@@ -307,7 +307,6 @@
     /*
      * Initialise ID3
      */
-    console.log("SIIIIII HEMOS EJUTADO ESTO con opst",opts, " y de cb ",cb)
     var options = {
       type: id3.OPEN_URI,
     };
