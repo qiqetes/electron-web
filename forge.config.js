@@ -8,10 +8,13 @@ module.exports = {
       identity: "Developer ID Application: Bestcycling SL (YMCHSA4437)",
       entitlements: "./process/entitlements.plist",
       "entitlements-inherit": "./process/entitlements.plist",
+      hardenedRuntime: true,
     },
     osxNotarize: {
-      // appleId: process.env.APPLE_ID, // FIXME: app breaks when notarized
-      // appleIdPassword: process.env.APPLE_ID_PASSWORD,
+      appBundleId: "com.nw-builder.bestcyclingtv",
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_ID_PASSWORD,
+      ascProvider: "YMCHSA4437",
     },
   },
   makers: [

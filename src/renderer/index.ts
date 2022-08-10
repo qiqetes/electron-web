@@ -1,10 +1,12 @@
 // eslint-disable-next-line import/no-unresolved
 import "./index.css";
 
-const loginPage = window.electronAPI.baseURL + window.electronAPI.loginPath;
+const loginUrl = window.electronAPI.baseURL + window.electronAPI.loginPath;
+console.log(loginUrl);
 
 const loadPage = () => {
-  window.location.href = loginPage;
+  console.log(loginUrl);
+  window.location.href = loginUrl;
 };
 
 document.addEventListener("securitypolicyviolation", (e) => {
@@ -24,10 +26,9 @@ window.onload = () => {
     console.log("Cached ✨");
     loadPage();
   } else {
-    console.log("Not cached ✨");
-    fetch(loginPage)
+    console.log("Not cached");
+    fetch(loginUrl)
       .then(() => {
-        console.log("fsadiohfo");
         localStorage.setItem("cached", "true");
         loadPage();
       })

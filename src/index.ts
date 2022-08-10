@@ -78,6 +78,7 @@ const createWindow = async () => {
   });
 
   // This is executed every request, we use it to prevent the app from visiting external sites
+  // can be used for any kind of request.
   session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
     if (details.resourceType == "mainFrame") {
       const isExternalPage =
@@ -86,7 +87,12 @@ const createWindow = async () => {
         !details.url.includes("devtools");
 
       if (isExternalPage) {
-        shell.openExternal(details.url);
+        if (process.env.NODE_ENV == "production") {
+          shell.openExternal(details.url);
+        } else if (process.env.NODE_ENV == "development") {
+          const nB = new BrowserWindow({});
+          nB.loadURL(details.url);
+        }
         cb({ redirectURL: mainWindow.webContents.getURL() });
         return;
       }
