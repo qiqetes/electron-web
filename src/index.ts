@@ -87,12 +87,12 @@ const createWindow = async () => {
         !details.url.includes("devtools");
 
       if (isExternalPage) {
-        if (process.env.NODE_ENV == "production") {
-          shell.openExternal(details.url);
-        } else if (process.env.NODE_ENV == "development") {
-          const nB = new BrowserWindow({});
-          nB.loadURL(details.url);
-        }
+        // if (process.env.NODE_ENV == "production") {
+        shell.openExternal(details.url);
+        // } else if (process.env.NODE_ENV == "development") {
+        //   const nB = new BrowserWindow({});
+        //   nB.loadURL(details.url);
+        // }
         cb({ redirectURL: mainWindow.webContents.getURL() });
         return;
       }

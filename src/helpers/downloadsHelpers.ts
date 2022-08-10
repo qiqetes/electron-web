@@ -31,7 +31,7 @@ export const deleteAllDownloads = () => {
   }
 };
 
-export const isValidDownloadFile = (file: string): boolean => {
+export const isValidDownloadFilename = (file: string): boolean => {
   if (file === "ajustes.mp4") return true;
 
   const fileName = file.split("_");
