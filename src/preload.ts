@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   baseURL: config.WEBBASE,
   loginPath: config.LOGIN_PATH,
 
-  // Saves settings from webapp to SettingsData
+  // Sqes settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);
   },
@@ -90,7 +90,7 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
 });
 
 contextBridge.exposeInMainWorld("mixmeixterApi", {
-  readTagMp3: (file: string ,path:string) => {
-    return ipcRenderer.sendSync("readTagMp3", file,path);
-  }
+  readTagMp3: (file: string, path: string) => {
+    return ipcRenderer.sendSync("readTagMp3", file, path);
+  },
 });

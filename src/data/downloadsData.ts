@@ -26,7 +26,17 @@ class DownloadsDataModel implements DownloadsData {
   hasAdjustVideo = false;
 
   constructor() {
+    this.init();
     this.initDownloadsPath();
+  }
+
+  init() {
+    this.offlineTrainingClasses = {};
+    this.trainingClassesScheduled = [];
+    this.isDownloading = false;
+    this.currentTask = null;
+    this.currentDownload = null;
+    this.hasAdjustVideo = false;
   }
 
   /**
@@ -647,6 +657,12 @@ class DownloadsDataModel implements DownloadsData {
 
       const download = downloadStatsFromFile(file);
       if (download === "ajustes") {
+        // Check the file size
+        const sizeAdj = fs.statSync(path.join(folder, file)).size;
+        if (sizeAdj < 10000) {
+          logError("Adjust video file is too small, corrupt download");
+          return;
+        }
         this.hasAdjustVideo = true;
         return;
       }

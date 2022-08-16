@@ -30,6 +30,28 @@ class SettingsDataModel implements SettingsData {
     await DB.write();
   }
 
+  init(): void {
+    this.ask_graph_intro_video = true; // Mostrar popup de ajuste bicicleta en pantalla externa
+    this.autoStartGymsScheduler = false; // Iniciar planificador de gimnasios automáticamente, C11
+    this.C16 = false; // Aceleración generador MP4
+    this.defaultRoom = 1;
+    this.download_scheduled_training_classes = false;
+    this.downloadsPath = app.getPath("userData") + "/Default/offline"; // Directorio de descarga de clases C1
+    this.first_experience_status = "idle"; // Ocultar primera experiencia first_experience_status
+    this.gymsLogoPath = ""; // Archivo logo gimnasios C8
+    this.maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
+    this.offlineResolution = "hd"; // Calidad videos al descargar offline C9
+    this.playerVolume = 1.0; // Volumen reproductor C7
+    this.playOnlyOffline = false; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
+    this.resolutionCreateMP4 = "hq"; // Calidad HD al generar mp4, C10
+    this.show_external_setup_video = false; // Mostrar video de ajuste en pantalla externa
+    this.showMonitorView = false; // Mostrar vista monitor
+    this.showSecondaryDisplay = false; // Mostrar Display secundario y pausar al inicio
+    this.updated_to_life = false;
+    this.videoHD = true;
+    this.waitingMusicPath = "";
+  }
+
   getFromDb(): void {
     if (!DB.data) return;
     Object.assign(this, DB.data.settings);

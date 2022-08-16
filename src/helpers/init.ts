@@ -9,7 +9,7 @@ import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
 import { setAutoUpdater } from "./updater";
-import { log } from "./loggers";
+import { log, logWarn } from "./loggers";
 import url from "url";
 import dayjs from "dayjs";
 
@@ -45,12 +45,15 @@ export const init = async () => {
   await initDB();
   setAutoUpdater();
 
-  setStartingUrl();
+  // setStartingUrl();
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
 
-/// Sets the url starting point depending on gyms scheduler settings
+/**
+ * Sets the url starting point depending on gyms scheduler settings
+ * @deprecated The webapp should be able to set the starting url
+ * */
 const setStartingUrl = () => {
   const lastLoginValid =
     AppData.LAST_LOGIN &&
@@ -75,12 +78,17 @@ const setStartingUrl = () => {
   }
 };
 
+/**
+ * Initializes the database and creates the tables if they don't exist
+ * Also calls the startDownloads at the end
+ */
 const initDB = async () => {
   // Read the DB
   await DB.read();
 
   // Init database if it doesn't exist
   if (DB.data === null) {
+    logWarn("DB is null, creating new one");
     DB.data = {
       settings: SettingsData,
       trainingClasses: TrainingClassesData,

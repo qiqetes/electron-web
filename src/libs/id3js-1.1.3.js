@@ -3,13 +3,14 @@
  * 43081j
  * License: MIT, see LICENSE
  */
+/* eslint-disable */
 
 (function () {
   /*
    * lib/reader.js
    * Readers (local, ajax, file)
    */
-  const fs = require('fs-extra');
+  const fs = require("fs-extra");
   var Reader = function (type) {
     this.type = type || Reader.OPEN_URI;
     this.size = null;
@@ -20,7 +21,7 @@
   Reader.OPEN_URI = 2;
   Reader.OPEN_LOCAL = 3;
 
-  if (typeof require === 'function') {
+  if (typeof require === "function") {
   }
 
   Reader.prototype.open = function (file, callback) {
@@ -33,7 +34,7 @@
             return callback(err);
           }
           self.size = stat.size;
-          fs.open(self.file, 'r', function (err, fd) {
+          fs.open(self.file, "r", function (err, fd) {
             if (err) {
               return callback(err);
             }
@@ -50,13 +51,13 @@
         this.ajax(
           {
             uri: this.file,
-            type: 'HEAD',
+            type: "HEAD",
           },
           function (err, resp, xhr) {
             if (err) {
               return callback(err);
             }
-            self.size = parseInt(xhr.getResponseHeader('Content-Length'));
+            self.size = parseInt(xhr.getResponseHeader("Content-Length"));
             callback();
           }
         );
@@ -67,7 +68,7 @@
   Reader.prototype.close = function (callback) {
     if (this.type === Reader.OPEN_LOCAL) {
       fs.close(this.fd, function (err) {
-        if (typeof callback === 'function') {
+        if (typeof callback === "function") {
           callback(err);
         }
       });
@@ -75,7 +76,7 @@
   };
 
   Reader.prototype.read = function (length, position, callback) {
-    if (typeof position === 'function') {
+    if (typeof position === "function") {
       callback = position;
       position = 0;
     }
@@ -89,12 +90,12 @@
   };
 
   Reader.prototype.readBlob = function (length, position, type, callback) {
-    if (typeof position === 'function') {
+    if (typeof position === "function") {
       callback = position;
       position = 0;
-    } else if (typeof type === 'function') {
+    } else if (typeof type === "function") {
       callback = type;
-      type = 'application/octet-stream';
+      type = "application/octet-stream";
     }
     this.read(length, position, function (err, data) {
       if (err) {
@@ -110,17 +111,24 @@
    */
   Reader.prototype.readLocal = function (length, position, callback) {
     var buffer = Buffer.alloc(length);
-    fs.read(this.fd, buffer, 0, length, position, function (err, bytesRead, buffer) {
-      if (err) {
-        return callback(err);
+    fs.read(
+      this.fd,
+      buffer,
+      0,
+      length,
+      position,
+      function (err, bytesRead, buffer) {
+        if (err) {
+          return callback(err);
+        }
+        var ab = new ArrayBuffer(buffer.length),
+          view = new Uint8Array(ab);
+        for (var i = 0; i < buffer.length; i++) {
+          view[i] = buffer[i];
+        }
+        callback(null, ab);
       }
-      var ab = new ArrayBuffer(buffer.length),
-        view = new Uint8Array(ab);
-      for (var i = 0; i < buffer.length; i++) {
-        view[i] = buffer[i];
-      }
-      callback(null, ab);
-    });
+    );
   };
 
   /*
@@ -128,11 +136,11 @@
    */
   Reader.prototype.ajax = function (opts, callback) {
     var options = {
-      type: 'GET',
+      type: "GET",
       uri: null,
-      responseType: 'text',
+      responseType: "text",
     };
-    if (typeof opts === 'string') {
+    if (typeof opts === "string") {
       opts = { uri: opts };
     }
     for (var k in opts) {
@@ -142,7 +150,7 @@
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       if (xhr.status !== 200 && xhr.status !== 206) {
-        return callback('Received non-200/206 response (' + xhr.status + ')');
+        return callback("Received non-200/206 response (" + xhr.status + ")");
       }
       callback(null, xhr.response, xhr);
     };
@@ -151,9 +159,12 @@
     if (options.range) {
       options.range = [].concat(options.range);
       if (options.range.length === 2) {
-        xhr.setRequestHeader('Range', 'bytes=' + options.range[0] + '-' + options.range[1]);
+        xhr.setRequestHeader(
+          "Range",
+          "bytes=" + options.range[0] + "-" + options.range[1]
+        );
       } else {
-        xhr.setRequestHeader('Range', 'bytes=' + options.range[0]);
+        xhr.setRequestHeader("Range", "bytes=" + options.range[0]);
       }
     }
     xhr.send();
@@ -163,8 +174,8 @@
     this.ajax(
       {
         uri: this.file,
-        type: 'GET',
-        responseType: 'arraybuffer',
+        type: "GET",
+        responseType: "arraybuffer",
         range: [position, position + length - 1],
       },
       function (err, buffer) {
@@ -186,7 +197,7 @@
       callback(null, e.target.result);
     };
     fr.onerror = function (e) {
-      callback('File read failed');
+      callback("File read failed");
     };
     fr.readAsArrayBuffer(slice);
   };
@@ -200,14 +211,14 @@
     if (length < 0) {
       length += this.byteLength;
     }
-    var str = '';
-    if (typeof Buffer !== 'undefined') {
+    var str = "";
+    if (typeof Buffer !== "undefined") {
       var data = [];
       for (var i = offset; i < offset + length; i++) {
         data.push(this.getUint8(i));
       }
 
-      return  Buffer.from(data).toString();
+      return Buffer.from(data).toString();
     } else {
       for (var i = offset; i < offset + length; i++) {
         str += String.fromCharCode(this.getUint8(i));
@@ -223,9 +234,9 @@
     offset = offset || 0;
     length = length || this.byteLength - offset;
     var littleEndian = false,
-      str = '',
+      str = "",
       useBuffer = false;
-    if (typeof Buffer !== 'undefined') {
+    if (typeof Buffer !== "undefined") {
       str = [];
       useBuffer = true;
     }
@@ -234,7 +245,7 @@
     }
     if (bom) {
       if (offset + 1 > this.byteLength) {
-        return '';
+        return "";
       }
       var bomInt = this.getUint16(offset);
       if (bomInt === 0xfffe) {
@@ -295,11 +306,15 @@
   DataView.prototype.getUint24 = function (offset, littleEndian) {
     if (littleEndian) {
       return (
-        this.getUint8(offset) + (this.getUint8(offset + 1) << 8) + (this.getUint8(offset + 2) << 16)
+        this.getUint8(offset) +
+        (this.getUint8(offset + 1) << 8) +
+        (this.getUint8(offset + 2) << 16)
       );
     }
     return (
-      this.getUint8(offset + 2) + (this.getUint8(offset + 1) << 8) + (this.getUint8(offset) << 16)
+      this.getUint8(offset + 2) +
+      (this.getUint8(offset + 1) << 8) +
+      (this.getUint8(offset) << 16)
     );
   };
 
@@ -310,9 +325,13 @@
     var options = {
       type: id3.OPEN_URI,
     };
-    if (typeof opts === 'string') {
+    if (typeof opts === "string") {
       opts = { file: opts, type: id3.OPEN_URI };
-    } else if (typeof window !== 'undefined' && window.File && opts instanceof window.File) {
+    } else if (
+      typeof window !== "undefined" &&
+      window.File &&
+      opts instanceof window.File
+    ) {
       opts = { file: opts, type: id3.OPEN_FILE };
     }
     for (var k in opts) {
@@ -320,21 +339,23 @@
     }
 
     if (!options.file) {
-      return cb('No file was set');
+      return cb("No file was set");
     }
 
     if (options.type === id3.OPEN_FILE) {
       if (
-        typeof window === 'undefined' ||
+        typeof window === "undefined" ||
         !window.File ||
         !window.FileReader ||
-        typeof ArrayBuffer === 'undefined'
+        typeof ArrayBuffer === "undefined"
       ) {
-        return cb('Browser does not have support for the File API and/or ArrayBuffers');
+        return cb(
+          "Browser does not have support for the File API and/or ArrayBuffers"
+        );
       }
     } else if (options.type === id3.OPEN_LOCAL) {
-      if (typeof require !== 'function') {
-        return cb('Local paths may not be read within a browser');
+      if (typeof require !== "function") {
+        return cb("Local paths may not be read within a browser");
       }
     } else {
     }
@@ -345,155 +366,155 @@
      */
 
     var Genres = [
-      'Blues',
-      'Classic Rock',
-      'Country',
-      'Dance',
-      'Disco',
-      'Funk',
-      'Grunge',
-      'Hip-Hop',
-      'Jazz',
-      'Metal',
-      'New Age',
-      'Oldies',
-      'Other',
-      'Pop',
-      'R&B',
-      'Rap',
-      'Reggae',
-      'Rock',
-      'Techno',
-      'Industrial',
-      'Alternative',
-      'Ska',
-      'Death Metal',
-      'Pranks',
-      'Soundtrack',
-      'Euro-Techno',
-      'Ambient',
-      'Trip-Hop',
-      'Vocal',
-      'Jazz+Funk',
-      'Fusion',
-      'Trance',
-      'Classical',
-      'Instrumental',
-      'Acid',
-      'House',
-      'Game',
-      'Sound Clip',
-      'Gospel',
-      'Noise',
-      'AlternRock',
-      'Bass',
-      'Soul',
-      'Punk',
-      'Space',
-      'Meditative',
-      'Instrumental Pop',
-      'Instrumental Rock',
-      'Ethnic',
-      'Gothic',
-      'Darkwave',
-      'Techno-Industrial',
-      'Electronic',
-      'Pop-Folk',
-      'Eurodance',
-      'Dream',
-      'Southern Rock',
-      'Comedy',
-      'Cult',
-      'Gangsta Rap',
-      'Top 40',
-      'Christian Rap',
-      'Pop / Funk',
-      'Jungle',
-      'Native American',
-      'Cabaret',
-      'New Wave',
-      'Psychedelic',
-      'Rave',
-      'Showtunes',
-      'Trailer',
-      'Lo-Fi',
-      'Tribal',
-      'Acid Punk',
-      'Acid Jazz',
-      'Polka',
-      'Retro',
-      'Musical',
-      'Rock & Roll',
-      'Hard Rock',
-      'Folk',
-      'Folk-Rock',
-      'National Folk',
-      'Swing',
-      'Fast  Fusion',
-      'Bebob',
-      'Latin',
-      'Revival',
-      'Celtic',
-      'Bluegrass',
-      'Avantgarde',
-      'Gothic Rock',
-      'Progressive Rock',
-      'Psychedelic Rock',
-      'Symphonic Rock',
-      'Slow Rock',
-      'Big Band',
-      'Chorus',
-      'Easy Listening',
-      'Acoustic',
-      'Humour',
-      'Speech',
-      'Chanson',
-      'Opera',
-      'Chamber Music',
-      'Sonata',
-      'Symphony',
-      'Booty Bass',
-      'Primus',
-      'Porn Groove',
-      'Satire',
-      'Slow Jam',
-      'Club',
-      'Tango',
-      'Samba',
-      'Folklore',
-      'Ballad',
-      'Power Ballad',
-      'Rhythmic Soul',
-      'Freestyle',
-      'Duet',
-      'Punk Rock',
-      'Drum Solo',
-      'A Cappella',
-      'Euro-House',
-      'Dance Hall',
-      'Goa',
-      'Drum & Bass',
-      'Club-House',
-      'Hardcore',
-      'Terror',
-      'Indie',
-      'BritPop',
-      'Negerpunk',
-      'Polsk Punk',
-      'Beat',
-      'Christian Gangsta Rap',
-      'Heavy Metal',
-      'Black Metal',
-      'Crossover',
-      'Contemporary Christian',
-      'Christian Rock',
-      'Merengue',
-      'Salsa',
-      'Thrash Metal',
-      'Anime',
-      'JPop',
-      'Synthpop',
-      'Rock/Pop',
+      "Blues",
+      "Classic Rock",
+      "Country",
+      "Dance",
+      "Disco",
+      "Funk",
+      "Grunge",
+      "Hip-Hop",
+      "Jazz",
+      "Metal",
+      "New Age",
+      "Oldies",
+      "Other",
+      "Pop",
+      "R&B",
+      "Rap",
+      "Reggae",
+      "Rock",
+      "Techno",
+      "Industrial",
+      "Alternative",
+      "Ska",
+      "Death Metal",
+      "Pranks",
+      "Soundtrack",
+      "Euro-Techno",
+      "Ambient",
+      "Trip-Hop",
+      "Vocal",
+      "Jazz+Funk",
+      "Fusion",
+      "Trance",
+      "Classical",
+      "Instrumental",
+      "Acid",
+      "House",
+      "Game",
+      "Sound Clip",
+      "Gospel",
+      "Noise",
+      "AlternRock",
+      "Bass",
+      "Soul",
+      "Punk",
+      "Space",
+      "Meditative",
+      "Instrumental Pop",
+      "Instrumental Rock",
+      "Ethnic",
+      "Gothic",
+      "Darkwave",
+      "Techno-Industrial",
+      "Electronic",
+      "Pop-Folk",
+      "Eurodance",
+      "Dream",
+      "Southern Rock",
+      "Comedy",
+      "Cult",
+      "Gangsta Rap",
+      "Top 40",
+      "Christian Rap",
+      "Pop / Funk",
+      "Jungle",
+      "Native American",
+      "Cabaret",
+      "New Wave",
+      "Psychedelic",
+      "Rave",
+      "Showtunes",
+      "Trailer",
+      "Lo-Fi",
+      "Tribal",
+      "Acid Punk",
+      "Acid Jazz",
+      "Polka",
+      "Retro",
+      "Musical",
+      "Rock & Roll",
+      "Hard Rock",
+      "Folk",
+      "Folk-Rock",
+      "National Folk",
+      "Swing",
+      "Fast  Fusion",
+      "Bebob",
+      "Latin",
+      "Revival",
+      "Celtic",
+      "Bluegrass",
+      "Avantgarde",
+      "Gothic Rock",
+      "Progressive Rock",
+      "Psychedelic Rock",
+      "Symphonic Rock",
+      "Slow Rock",
+      "Big Band",
+      "Chorus",
+      "Easy Listening",
+      "Acoustic",
+      "Humour",
+      "Speech",
+      "Chanson",
+      "Opera",
+      "Chamber Music",
+      "Sonata",
+      "Symphony",
+      "Booty Bass",
+      "Primus",
+      "Porn Groove",
+      "Satire",
+      "Slow Jam",
+      "Club",
+      "Tango",
+      "Samba",
+      "Folklore",
+      "Ballad",
+      "Power Ballad",
+      "Rhythmic Soul",
+      "Freestyle",
+      "Duet",
+      "Punk Rock",
+      "Drum Solo",
+      "A Cappella",
+      "Euro-House",
+      "Dance Hall",
+      "Goa",
+      "Drum & Bass",
+      "Club-House",
+      "Hardcore",
+      "Terror",
+      "Indie",
+      "BritPop",
+      "Negerpunk",
+      "Polsk Punk",
+      "Beat",
+      "Christian Gangsta Rap",
+      "Heavy Metal",
+      "Black Metal",
+      "Crossover",
+      "Contemporary Christian",
+      "Christian Rock",
+      "Merengue",
+      "Salsa",
+      "Thrash Metal",
+      "Anime",
+      "JPop",
+      "Synthpop",
+      "Rock/Pop",
     ];
 
     /*
@@ -510,139 +531,139 @@
       /*
        * Textual frames
        */
-      TALB: 'album',
-      TBPM: 'bpm',
-      TCOM: 'composer',
-      TCON: 'genre',
-      TCOP: 'copyright',
-      TDEN: 'encoding-time',
-      TDLY: 'playlist-delay',
-      TDOR: 'original-release-time',
-      TDRC: 'recording-time',
-      TDRL: 'release-time',
-      TDTG: 'tagging-time',
-      TENC: 'encoder',
-      TEXT: 'writer',
-      TFLT: 'file-type',
-      TIPL: 'involved-people',
-      TIT1: 'content-group',
-      TIT2: 'title',
-      TIT3: 'subtitle',
-      TKEY: 'initial-key',
-      TLAN: 'language',
-      TLEN: 'length',
-      TMCL: 'credits',
-      TMED: 'media-type',
-      TMOO: 'mood',
-      TOAL: 'original-album',
-      TOFN: 'original-filename',
-      TOLY: 'original-writer',
-      TOPE: 'original-artist',
-      TOWN: 'owner',
-      TPE1: 'artist',
-      TPE2: 'band',
-      TPE3: 'conductor',
-      TPE4: 'remixer',
-      TPOS: 'set-part',
-      TPRO: 'produced-notice',
-      TPUB: 'publisher',
-      TRCK: 'track',
-      TRSN: 'radio-name',
-      TRSO: 'radio-owner',
-      TSOA: 'album-sort',
-      TSOP: 'performer-sort',
-      TSOT: 'title-sort',
-      TSRC: 'isrc',
-      TSSE: 'encoder-settings',
-      TSST: 'set-subtitle',
+      TALB: "album",
+      TBPM: "bpm",
+      TCOM: "composer",
+      TCON: "genre",
+      TCOP: "copyright",
+      TDEN: "encoding-time",
+      TDLY: "playlist-delay",
+      TDOR: "original-release-time",
+      TDRC: "recording-time",
+      TDRL: "release-time",
+      TDTG: "tagging-time",
+      TENC: "encoder",
+      TEXT: "writer",
+      TFLT: "file-type",
+      TIPL: "involved-people",
+      TIT1: "content-group",
+      TIT2: "title",
+      TIT3: "subtitle",
+      TKEY: "initial-key",
+      TLAN: "language",
+      TLEN: "length",
+      TMCL: "credits",
+      TMED: "media-type",
+      TMOO: "mood",
+      TOAL: "original-album",
+      TOFN: "original-filename",
+      TOLY: "original-writer",
+      TOPE: "original-artist",
+      TOWN: "owner",
+      TPE1: "artist",
+      TPE2: "band",
+      TPE3: "conductor",
+      TPE4: "remixer",
+      TPOS: "set-part",
+      TPRO: "produced-notice",
+      TPUB: "publisher",
+      TRCK: "track",
+      TRSN: "radio-name",
+      TRSO: "radio-owner",
+      TSOA: "album-sort",
+      TSOP: "performer-sort",
+      TSOT: "title-sort",
+      TSRC: "isrc",
+      TSSE: "encoder-settings",
+      TSST: "set-subtitle",
       /*
        * Textual frames (<=2.2)
        */
-      TAL: 'album',
-      TBP: 'bpm',
-      TCM: 'composer',
-      TCO: 'genre',
-      TCR: 'copyright',
-      TDY: 'playlist-delay',
-      TEN: 'encoder',
-      TFT: 'file-type',
-      TKE: 'initial-key',
-      TLA: 'language',
-      TLE: 'length',
-      TMT: 'media-type',
-      TOA: 'original-artist',
-      TOF: 'original-filename',
-      TOL: 'original-writer',
-      TOT: 'original-album',
-      TP1: 'artist',
-      TP2: 'band',
-      TP3: 'conductor',
-      TP4: 'remixer',
-      TPA: 'set-part',
-      TPB: 'publisher',
-      TRC: 'isrc',
-      TRK: 'track',
-      TSS: 'encoder-settings',
-      TT1: 'content-group',
-      TT2: 'title',
-      TT3: 'subtitle',
-      TXT: 'writer',
+      TAL: "album",
+      TBP: "bpm",
+      TCM: "composer",
+      TCO: "genre",
+      TCR: "copyright",
+      TDY: "playlist-delay",
+      TEN: "encoder",
+      TFT: "file-type",
+      TKE: "initial-key",
+      TLA: "language",
+      TLE: "length",
+      TMT: "media-type",
+      TOA: "original-artist",
+      TOF: "original-filename",
+      TOL: "original-writer",
+      TOT: "original-album",
+      TP1: "artist",
+      TP2: "band",
+      TP3: "conductor",
+      TP4: "remixer",
+      TPA: "set-part",
+      TPB: "publisher",
+      TRC: "isrc",
+      TRK: "track",
+      TSS: "encoder-settings",
+      TT1: "content-group",
+      TT2: "title",
+      TT3: "subtitle",
+      TXT: "writer",
       /*
        * URL frames
        */
-      WCOM: 'url-commercial',
-      WCOP: 'url-legal',
-      WOAF: 'url-file',
-      WOAR: 'url-artist',
-      WOAS: 'url-source',
-      WORS: 'url-radio',
-      WPAY: 'url-payment',
-      WPUB: 'url-publisher',
+      WCOM: "url-commercial",
+      WCOP: "url-legal",
+      WOAF: "url-file",
+      WOAR: "url-artist",
+      WOAS: "url-source",
+      WORS: "url-radio",
+      WPAY: "url-payment",
+      WPUB: "url-publisher",
       /*
        * URL frames (<=2.2)
        */
-      WAF: 'url-file',
-      WAR: 'url-artist',
-      WAS: 'url-source',
-      WCM: 'url-commercial',
-      WCP: 'url-copyright',
-      WPB: 'url-publisher',
+      WAF: "url-file",
+      WAR: "url-artist",
+      WAS: "url-source",
+      WCM: "url-commercial",
+      WCP: "url-copyright",
+      WPB: "url-publisher",
       /*
        * Comment frame
        */
-      COMM: 'comments',
+      COMM: "comments",
       /*
        * Image frame
        */
-      APIC: 'image',
-      PIC: 'image',
+      APIC: "image",
+      PIC: "image",
     };
 
     /*
      * ID3 image types
      */
     ID3Frame.imageTypes = [
-      'other',
-      'file-icon',
-      'icon',
-      'cover-front',
-      'cover-back',
-      'leaflet',
-      'media',
-      'artist-lead',
-      'artist',
-      'conductor',
-      'band',
-      'composer',
-      'writer',
-      'location',
-      'during-recording',
-      'during-performance',
-      'screen',
-      'fish',
-      'illustration',
-      'logo-band',
-      'logo-publisher',
+      "other",
+      "file-icon",
+      "icon",
+      "cover-front",
+      "cover-back",
+      "leaflet",
+      "media",
+      "artist-lead",
+      "artist",
+      "conductor",
+      "band",
+      "composer",
+      "writer",
+      "location",
+      "during-recording",
+      "during-performance",
+      "screen",
+      "fish",
+      "illustration",
+      "logo-band",
+      "logo-publisher",
     ];
 
     /*
@@ -673,7 +694,7 @@
           return false;
         }
         result.tag = ID3Frame.types[header.id];
-        if (header.type === 'T') {
+        if (header.type === "T") {
           var encoding = dv.getUint8(10);
           /*
            * TODO: Implement UTF-8, UTF-16 and UTF-16 with BOM properly?
@@ -687,12 +708,12 @@
           } else {
             return false;
           }
-          if (header.id === 'TCON' && !!parseInt(result.value)) {
+          if (header.id === "TCON" && !!parseInt(result.value)) {
             result.value = Genres[parseInt(result.value)];
           }
-        } else if (header.type === 'W') {
+        } else if (header.type === "W") {
           result.value = dv.getString(-10, 10);
-        } else if (header.id === 'COMM') {
+        } else if (header.id === "COMM") {
           /*
            * TODO: Implement UTF-8, UTF-16 and UTF-16 with BOM properly?
            */
@@ -719,13 +740,17 @@
           if (encoding === 0 || encoding === 3) {
             result.value = dv.getString(-1 * variableStart, variableStart);
           } else if (encoding === 1) {
-            result.value = dv.getStringUtf16(-1 * variableStart, variableStart, true);
+            result.value = dv.getStringUtf16(
+              -1 * variableStart,
+              variableStart,
+              true
+            );
           } else if (encoding === 2) {
             result.value = dv.getStringUtf16(-1 * variableStart, variableStart);
           } else {
             return false;
           }
-        } else if (header.id === 'APIC') {
+        } else if (header.id === "APIC") {
           var encoding = dv.getUint8(10),
             image = {
               type: null,
@@ -743,7 +768,9 @@
           }
           image.mime = dv.getString(variableLength, variableStart);
           image.type =
-            ID3Frame.imageTypes[dv.getUint8(variableStart + variableLength + 1)] || 'other';
+            ID3Frame.imageTypes[
+              dv.getUint8(variableStart + variableLength + 1)
+            ] || "other";
           variableStart += variableLength + 2;
           variableLength = 0;
           for (var i = variableStart; ; i++) {
@@ -753,7 +780,9 @@
             }
           }
           image.description =
-            variableLength === 0 ? null : dv.getString(variableLength, variableStart);
+            variableLength === 0
+              ? null
+              : dv.getString(variableLength, variableStart);
           image.data = buffer.slice(variableStart + 1);
           result.value = image;
         }
@@ -779,35 +808,37 @@
           return false;
         }
         result.tag = ID3Frame.types[header.id];
-        if (header.type === 'T') {
+        if (header.type === "T") {
           var encoding = dv.getUint8(7);
           /*
            * TODO: Implement UTF-8, UTF-16 and UTF-16 with BOM properly?
            */
           result.value = dv.getString(-7, 7);
-          if (header.id === 'TCO' && !!parseInt(result.value)) {
+          if (header.id === "TCO" && !!parseInt(result.value)) {
             result.value = Genres[parseInt(result.value)];
           }
-        } else if (header.type === 'W') {
+        } else if (header.type === "W") {
           result.value = dv.getString(-7, 7);
-        } else if (header.id === 'COM') {
+        } else if (header.id === "COM") {
           /*
            * TODO: Implement UTF-8, UTF-16 and UTF-16 with BOM properly?
            */
           var encoding = dv.getUint8(6);
           result.value = dv.getString(-10, 10);
-          if (result.value.indexOf('\x00') !== -1) {
-            result.value = result.value.substr(result.value.indexOf('\x00') + 1);
+          if (result.value.indexOf("\x00") !== -1) {
+            result.value = result.value.substr(
+              result.value.indexOf("\x00") + 1
+            );
           }
-        } else if (header.id === 'PIC') {
+        } else if (header.id === "PIC") {
           var encoding = dv.getUint8(6),
             image = {
               type: null,
-              mime: 'image/' + dv.getString(3, 7).toLowerCase(),
+              mime: "image/" + dv.getString(3, 7).toLowerCase(),
               description: null,
               data: null,
             };
-          image.type = ID3Frame.imageTypes[dv.getUint8(11)] || 'other';
+          image.type = ID3Frame.imageTypes[dv.getUint8(11)] || "other";
           var variableStart = 11,
             variableLength = 0;
           for (var i = variableStart; ; i++) {
@@ -817,7 +848,9 @@
             }
           }
           image.description =
-            variableLength === 0 ? null : dv.getString(variableLength, variableStart);
+            variableLength === 0
+              ? null
+              : dv.getString(variableLength, variableStart);
           image.data = buffer.slice(variableStart + 1);
           result.value = image;
         }
@@ -871,26 +904,30 @@
        */
       handle.read(128, handle.size - 128, function (err, buffer) {
         if (err) {
-          return process('Could not read file');
+          return process("Could not read file");
         }
         var dv = new DataView(buffer);
-        if (buffer.byteLength !== 128 || dv.getString(3, null, true) !== 'TAG') {
+        if (
+          buffer.byteLength !== 128 ||
+          dv.getString(3, null, true) !== "TAG"
+        ) {
           processed.v1 = true;
           return process();
         }
-        tags.v1.title = dv.getString(30, 3).replace(/(^\s+|\s+$)/, '') || null;
-        tags.v1.artist = dv.getString(30, 33).replace(/(^\s+|\s+$)/, '') || null;
-        tags.v1.album = dv.getString(30, 63).replace(/(^\s+|\s+$)/, '') || null;
-        tags.v1.year = dv.getString(4, 93).replace(/(^\s+|\s+$)/, '') || null;
+        tags.v1.title = dv.getString(30, 3).replace(/(^\s+|\s+$)/, "") || null;
+        tags.v1.artist =
+          dv.getString(30, 33).replace(/(^\s+|\s+$)/, "") || null;
+        tags.v1.album = dv.getString(30, 63).replace(/(^\s+|\s+$)/, "") || null;
+        tags.v1.year = dv.getString(4, 93).replace(/(^\s+|\s+$)/, "") || null;
         /*
          * If there is a zero byte at [125], the comment is 28 bytes and the remaining 2 are [0, trackno]
          */
         if (dv.getUint8(125) === 0) {
-          tags.v1.comment = dv.getString(28, 97).replace(/(^\s+|\s+$)/, '');
+          tags.v1.comment = dv.getString(28, 97).replace(/(^\s+|\s+$)/, "");
           tags.v1.version = 1.1;
           tags.v1.track = dv.getUint8(126);
         } else {
-          tags.v1.comment = dv.getString(30, 97).replace(/(^\s+|\s+$)/, '');
+          tags.v1.comment = dv.getString(30, 97).replace(/(^\s+|\s+$)/, "");
         }
         /*
          * Lookup the genre index in the predefined genres array
@@ -905,7 +942,7 @@
        */
       handle.read(14, 0, function (err, buffer) {
         if (err) {
-          return process('Could not read file');
+          return process("Could not read file");
         }
         var dv = new DataView(buffer),
           headerSize = 10,
@@ -917,7 +954,7 @@
          */
         if (
           buffer.byteLength !== 14 ||
-          dv.getString(3, null, true) !== 'ID3' ||
+          dv.getString(3, null, true) !== "ID3" ||
           dv.getUint8(3) > 4
         ) {
           processed.v2 = true;
@@ -956,7 +993,10 @@
               isFrame = true;
             for (var i = 0; i < 3; i++) {
               frameBit = dv.getUint8(position + i);
-              if ((frameBit < 0x41 || frameBit > 0x5a) && (frameBit < 0x30 || frameBit > 0x39)) {
+              if (
+                (frameBit < 0x41 || frameBit > 0x5a) &&
+                (frameBit < 0x30 || frameBit > 0x39)
+              ) {
                 isFrame = false;
               }
             }
@@ -966,9 +1006,15 @@
              * >= v2.3, frame ID is 4 chars, size is 4 bytes, flags are 2 bytes, total 10 bytes
              */
             if (tags.v2.version[0] < 3) {
-              slice = buffer.slice(position, position + 6 + dv.getUint24(position + 3));
+              slice = buffer.slice(
+                position,
+                position + 6 + dv.getUint24(position + 3)
+              );
             } else {
-              slice = buffer.slice(position, position + 10 + dv.getUint32Synch(position + 4));
+              slice = buffer.slice(
+                position,
+                position + 10 + dv.getUint32Synch(position + 4)
+              );
             }
             frame = ID3Frame.parse(slice, tags.v2.version[0]);
             if (frame) {
@@ -990,7 +1036,7 @@
 
     handle.open(options.file, function (err) {
       if (err) {
-        return cb('Could not open specified file');
+        return cb("Could not open specified file");
       }
       ID3Tag.parse(handle, function (err, tags) {
         cb(err, tags);
@@ -1003,11 +1049,11 @@
   id3.OPEN_URI = Reader.OPEN_URI;
   id3.OPEN_LOCAL = Reader.OPEN_LOCAL;
 
-  if (typeof module !== 'undefined' && module.exports) {
+  if (typeof module !== "undefined" && module.exports) {
     module.exports = id3;
   } else {
-    if (typeof define === 'function' && define.amd) {
-      define('id3', [], function () {
+    if (typeof define === "function" && define.amd) {
+      define("id3", [], function () {
         return id3;
       });
     } else {

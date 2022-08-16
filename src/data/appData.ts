@@ -2,24 +2,26 @@ import config from "../config";
 import { DB } from "../helpers/init";
 import { logError } from "../helpers/loggers";
 
-class AppDataModel implements AppData {
-  WEBAPP_WEBASE: string;
-  LOGIN_PATH: string;
-  URL: null | string;
+export class AppDataModel implements AppData {
+  WEBAPP_WEBASE!: string;
+  LOGIN_PATH!: string;
+  URL!: null | string;
   AUTHORIZATION: `Bearer ${string}` = "Bearer ";
-  XAPPID: "bestcycling";
-  APPID: "772529a79cd1b70760da6e4a97dd5189";
-  FIRST_TIME_IT_RUNS: boolean;
+  XAPPID = "bestcycling";
+  APPID = "772529a79cd1b70760da6e4a97dd5189";
+  FIRST_TIME_IT_RUNS!: boolean;
   LAST_VERSION_DOWNLOADED: null | string = null;
   LAST_LOGIN: null | number = null; // timestamp value
   ONLINE = true;
 
   constructor() {
+    this.init();
+  }
+
+  init() {
     this.WEBAPP_WEBASE = config.WEBBASE;
     this.LOGIN_PATH = config.LOGIN_PATH;
     this.URL = this.WEBAPP_WEBASE + this.LOGIN_PATH;
-    this.XAPPID = "bestcycling";
-    this.APPID = "772529a79cd1b70760da6e4a97dd5189";
     this.FIRST_TIME_IT_RUNS = true;
   }
 

@@ -8,7 +8,7 @@ import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
 import { log } from "./loggers";
-import {readTagMp3 } from './mixmeixterHelpers';
+import { readTagMp3 } from "./mixmeixterHelpers";
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
 });
@@ -101,9 +101,13 @@ ipcMain.handle("changeDownloadsPath", (): string => {
 });
 
 ipcMain.on("restoreDefaults", () => {
-  // TODO: borrar db.json EXCEPTO CLASSES?
+  log("Restoring defaults");
 
-  DownloadsData.removeAll();
+  DownloadsData.init();
+  SettingsData.init();
+  AppData.init();
+
+  console.log(DownloadsData.offlineTrainingClasses);
 
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
@@ -121,13 +125,11 @@ ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
   }
 });
 
-ipcMain.on("readTagMp3", async(event, file:string, pathFile:string ) => {
- var value = await readTagMp3(file,pathFile);
+ipcMain.on("readTagMp3", async (event, file: string, pathFile: string) => {
+  const value = await readTagMp3(file, pathFile);
 
   event.returnValue = value;
 });
-
-
 
 export const sendToast = (
   message: string,

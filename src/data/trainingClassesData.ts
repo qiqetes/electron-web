@@ -64,6 +64,11 @@ class TrainingClassesDataModel implements TrainingClassesData {
     this.trainingClasses = DB.data.trainingClasses.trainingClasses;
   }
 
+  init(): void {
+    this.trainingClasses = {};
+    this.trainingClassesToFetch = [];
+  }
+
   getTraingClass(id: number | string): TrainingClass | null {
     if (!Object.prototype.hasOwnProperty.call(this.trainingClasses, id)) {
       return null;
