@@ -8,6 +8,7 @@ if (!env) {
 }
 
 console.log("Entorno de desarrollo:", env.toUpperCase());
+
 if (process.env.FLAVOUR) {
   console.log("Flavour: 2.bestcycling.com");
 }
@@ -33,4 +34,4 @@ const config = {
   devprod,
 };
 
-export default config.development;
+export default config[env];

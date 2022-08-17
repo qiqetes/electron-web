@@ -167,7 +167,9 @@ class DownloadsDataModel implements DownloadsData {
     if (keepDownloading) this.downloadNext();
   }
 
-  // FUNCTION THAT WILL START DOWNLOADING A CLASS
+  /**
+   * Call to start the next training class download
+   */
   async downloadNext() {
     // Check if already downloading
     if (this.isDownloading) return;

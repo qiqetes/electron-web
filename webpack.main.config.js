@@ -1,3 +1,5 @@
+const webpack = require("webpack");
+
 module.exports = {
   /**
    * This is the main entry point for your application, it's the first file
@@ -25,4 +27,10 @@ module.exports = {
     extensions: [".js", ".ts", ".jsx", ".tsx", ".css", ".json"],
   },
   mode: process.env.ENV == "dev" ? "development" : "production",
+  plugins: [
+    // Swith enviromenent variables to code that will be used in the build process
+    new webpack.DefinePlugin({
+      "process.env.FLAVOUR": JSON.stringify(process.env.FLAVOUR),
+    }),
+  ],
 };

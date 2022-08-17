@@ -10,12 +10,12 @@ module.exports = {
       "entitlements-inherit": "./process/entitlements.plist",
       hardenedRuntime: true,
     },
-    // osxNotarize: {
-    //   appBundleId: "com.nw-builder.bestcyclingtv",
-    //   appleId: process.env.APPLE_ID,
-    //   appleIdPassword: process.env.APPLE_ID_PASSWORD,
-    //   ascProvider: "YMCHSA4437",
-    // },
+    osxNotarize: {
+      appBundleId: "com.nw-builder.bestcyclingtv",
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_ID_PASSWORD,
+      ascProvider: "YMCHSA4437",
+    },
   },
   makers: [
     {
