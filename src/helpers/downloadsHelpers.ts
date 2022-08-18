@@ -31,6 +31,10 @@ export const deleteAllDownloads = () => {
   }
 };
 
+/**
+ * @param file
+ * @returns true if the file is a valid download file {id}_{mediaType} or ajustes.mp4
+ */
 export const isValidDownloadFilename = (file: string): boolean => {
   if (file === "ajustes.mp4") return true;
 

@@ -364,39 +364,58 @@ class DownloadsDataModel implements DownloadsData {
   }
 
   /**
-   * Checks the files in a download and import those that are download files
+   * Checks the files in a folder and import those that are download files
    */
   importFromFolder(folder: string): void {
+    log("Importing from folder: " + folder);
     // Check if files are download files
     const files = fs.readdirSync(folder);
-    sendToast("Iportando clases descargadas", null, 3);
-    files.forEach((file) => {
-      if (isValidDownloadFilename(file)) {
-        const source = path.join(folder, file);
-        const dest = path.join(SettingsData.downloadsPath, file);
+    const downloadFiles = files.filter((file) => isValidDownloadFilename(file));
+    sendToast("Importando clases descargadas", null, 3);
 
-        fs.copyFile(source, dest, fs.constants.COPYFILE_EXCL, (err) => {
-          if (err) return;
-          const downloadedFile = downloadStatsFromFile(file);
-          if (downloadedFile === "ajustes") {
-            this.hasAdjustVideo = true;
-            return;
-          }
+    let imported = 0;
+    downloadFiles.forEach((file) => {
+      const source = path.join(folder, file);
+      const dest = path.join(SettingsData.downloadsPath, file);
 
-          const { id, mediaType } = downloadedFile;
-          if (!this.offlineTrainingClasses[id + "-" + mediaType]) {
-            const offline = new OfflineTrainingClass(id, mediaType);
-            offline.status = "downloaded";
+      fs.copyFile(source, dest, fs.constants.COPYFILE_EXCL, (err) => {
+        imported++;
+        if (imported == downloadFiles.length - 1) {
+          sendToast("Importación finalizada", null, 3);
+        }
+        if (err) {
+          logError(`Deleting ${file}`, err);
+          return;
+        }
+        log(`Imported ${file}`);
 
-            // TODO: add the training class to the TrainingClassesList
-            TrainingClassesData.addTraining(id);
+        const downloadedFile = downloadStatsFromFile(file);
+        if (downloadedFile === "ajustes") {
+          this.hasAdjustVideo = true;
+          return;
+        }
 
-            this.offlineTrainingClasses[id + "-" + mediaType] = offline;
-          }
-        });
-      }
+        const { id, mediaType } = downloadedFile;
+        if (!this.offlineTrainingClasses[id + "-" + mediaType]) {
+          const offline = new OfflineTrainingClass(
+            id,
+            mediaType,
+            null,
+            "downloaded",
+            true,
+            100
+          );
+          offline.status = "downloaded";
+
+          // TODO: add the training class to the TrainingClassesList
+          TrainingClassesData.addTraining(id);
+
+          this.offlineTrainingClasses[id + "-" + mediaType] = offline;
+          informDownloadsState();
+          this.saveToDb();
+        }
+      });
     });
-    sendToast("Importación finalizada", null, 3);
   }
 
   removeDownload(id: string, mediaType: mediaType, inform = true): void {
@@ -444,18 +463,22 @@ class DownloadsDataModel implements DownloadsData {
     log("Removing all downloads from " + SettingsData.downloadsPath);
 
     const files = fs.readdirSync(SettingsData.downloadsPath);
-    if (!files.length) {
-      sendToast("No hay clases descargadas a eliminar", "warn");
-    }
+
     this.stopDownloading();
 
     const trainingsFound: string[] = [];
-    files.forEach((file, i) => {
-      if (!isValidDownloadFilename(file)) return;
+    const downloadFiles = files.filter((file) => isValidDownloadFilename(file));
 
+    if (downloadFiles.length === 0) {
+      sendToast("No hay clases descargadas", "warn", 3);
+    }
+
+    let nDownloadsDeleted = 0;
+    downloadFiles.forEach((file) => {
       const filePath = path.join(SettingsData.downloadsPath, file);
       if (file === "ajustes.mp4") {
         fs.rm(filePath, (err) => {
+          nDownloadsDeleted++;
           if (err) {
             logError("Couldn't delete ajustes.mp4", err);
             return;
@@ -467,10 +490,13 @@ class DownloadsDataModel implements DownloadsData {
       }
 
       fs.rm(filePath, (err) => {
+        nDownloadsDeleted++;
+
         if (err) {
           logError("Couldn't delete file: " + file, err);
           return;
         }
+        log(`${file} deleted`);
 
         const download = downloadStatsFromFile(file);
         const { id, mediaType } = download as {
@@ -480,14 +506,16 @@ class DownloadsDataModel implements DownloadsData {
         trainingsFound.push(id + "-" + mediaType);
         delete this.offlineTrainingClasses[id + "-" + mediaType];
 
-        // TODO: do it just once
+        if (nDownloadsDeleted === downloadFiles.length - 1) {
+          sendToast("Descargas eliminadas", null, 3);
+        }
         this.saveToDb();
         informDownloadsState();
       });
     });
-    sendToast("Clases eliminadas", null, 3);
 
-    // Check the offlineTrainingClasses really exist
+    // Check the offlineTrainingClasses files that had been found coincide
+    // with the data stored
     Object.keys(this.offlineTrainingClasses).forEach((key) => {
       if (trainingsFound.includes(key)) return;
       delete this.offlineTrainingClasses[key];

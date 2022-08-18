@@ -34,4 +34,8 @@ const config = {
   devprod,
 };
 
+console.log("====================================================");
+console.log("Config:", config[env]);
+console.log("====================================================");
+
 export default config[env];

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, session, shell } from "electron";
 import os from "os";
+import config from "./config";
 import { LocalServerInstance } from "./core/LocalServer";
 import {
   DB,
@@ -9,7 +10,7 @@ import {
   TrainingClassesData,
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
-import { log, logError } from "./helpers/loggers";
+import { log, logError, logWarn } from "./helpers/loggers";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -81,12 +82,16 @@ const createWindow = async () => {
   // can be used for any kind of request.
   session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
     if (details.resourceType == "mainFrame") {
+      log("Redirection to:", details.url);
+
       const isExternalPage =
+        !details.url.startsWith(config.WEBBASE) &&
         !details.url.includes("/app") &&
         !details.url.includes("main_window") &&
-        !details.url.includes("devtools");
+        !details.url.startsWith("devtools://");
 
       if (isExternalPage) {
+        logWarn(`Blocking external request: ${details.url}`);
         // if (process.env.NODE_ENV == "production") {
         shell.openExternal(details.url);
         // } else if (process.env.NODE_ENV == "development") {
