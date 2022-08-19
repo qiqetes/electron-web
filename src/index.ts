@@ -1,7 +1,7 @@
-import { app, BrowserWindow, ipcMain, session, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import os from "os";
-import config from "./config";
 import { LocalServerInstance } from "./core/LocalServer";
+import { avoidExternalPageRequests } from "./helpers";
 import {
   DB,
   DownloadsData,
@@ -10,7 +10,7 @@ import {
   TrainingClassesData,
 } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
-import { log, logError, logWarn } from "./helpers/loggers";
+import { log, logError } from "./helpers/loggers";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -78,32 +78,7 @@ const createWindow = async () => {
     shell.openExternal(url);
   });
 
-  // This is executed every request, we use it to prevent the app from visiting external sites
-  // can be used for any kind of request.
-  session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
-    if (details.resourceType == "mainFrame") {
-      log("Redirection to:", details.url);
-
-      const isExternalPage =
-        !details.url.startsWith(config.WEBBASE) &&
-        !details.url.includes("/app") &&
-        !details.url.includes("main_window") &&
-        !details.url.startsWith("devtools://");
-
-      if (isExternalPage) {
-        logWarn(`Blocking external request: ${details.url}`);
-        // if (process.env.NODE_ENV == "production") {
-        shell.openExternal(details.url);
-        // } else if (process.env.NODE_ENV == "development") {
-        //   const nB = new BrowserWindow({});
-        //   nB.loadURL(details.url);
-        // }
-        cb({ redirectURL: mainWindow.webContents.getURL() });
-        return;
-      }
-    }
-    cb({});
-  });
+  avoidExternalPageRequests();
 };
 
 app.on("ready", () => {

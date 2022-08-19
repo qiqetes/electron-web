@@ -11,7 +11,7 @@ module.exports = {
       hardenedRuntime: true,
     },
 
-    // Commenting out this object will disable code signing for OS X.
+    // // Commenting out this object will disable code signing for OS X.
     // osxNotarize: {
     //   appBundleId: "com.nw-builder.bestcyclingtv",
     //   appleId: process.env.APPLE_ID,

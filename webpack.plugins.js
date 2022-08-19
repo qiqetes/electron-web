@@ -6,5 +6,8 @@ module.exports = [
   // Swith enviromenent variables to code that will be used in the build process
   new webpack.DefinePlugin({
     "process.env.FLAVOUR": JSON.stringify(process.env.FLAVOUR),
+    "process.env.NODE_ENV": JSON.stringify(
+      process.env.ENV == "dev" ? "development" : "production"
+    ),
   }),
 ];

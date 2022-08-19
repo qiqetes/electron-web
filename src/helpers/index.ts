@@ -1,5 +1,8 @@
+import { shell } from "electron";
+
+import config from "../config";
 import { mainWindow } from "../index";
-import { log, logError } from "./loggers";
+import { log, logError, logWarn } from "./loggers";
 
 export const getLocalStoragePrefs = async () => {
   log("GETTING LOCALSTORAGE");
@@ -14,4 +17,27 @@ export const getLocalStoragePrefs = async () => {
   } catch (err) {
     logError("webContents weren't yet initialized", err);
   }
+};
+
+/**
+ * This is executed every request, we use it to prevent the app from visiting external sites,
+ * can be used for any kind of request.
+ **/
+export const avoidExternalPageRequests = () => {
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    const isExternalPage =
+      !url.startsWith(config.WEBBASE + "/app") &&
+      !url.includes("/main_window") && // TODO: improve this
+      !url.startsWith("devtools://");
+
+    if (isExternalPage) {
+      logWarn(`Blocking external request: ${url}`);
+
+      shell.openExternal(url);
+
+      event.preventDefault();
+
+      return;
+    }
+  });
 };
