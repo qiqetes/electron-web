@@ -3,7 +3,7 @@
 ### Cómo correr:
 
 `npm install`
-Y luego crear un launch.json para correrla desde VScode y poder debuggearla. **Importante:** La cuando le das a 🔄 no se ejecuta el beforeQuit y hay cambios que no se guardan, hay que cerrar bien con _cmd+Q_ o bien con el botón rojo.
+Y luego crear un launch.json para correrla desde VScode y poder debuggearla.
 
 ### Code Signing
 

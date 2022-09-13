@@ -1,21 +1,35 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  // This file is used to launch the application with the debugger
+  // attached in vscode
+
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "pwa-node",
+      "name": "ELECTRON",
+      "type": "node",
       "request": "launch",
-      "name": "Launch Program",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "program": "${workspaceFolder}/.webpack/main",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ]
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "start"]
     }
   ]
 }
+
+// Previously this configuration was used and it was much faster,
+// but now it doesn't work anymore
+// "version": "0.2.0",
+// "configurations": [
+//   {
+//     "type": "pwa-node",
+//     "request": "launch",
+//     "name": "Launch Program",
+//     "skipFiles": [
+//       "<node_internals>/**"
+//     ],
+//     "program": "${workspaceFolder}/.webpack/main",
+//     "preLaunchTask": "tsc: build - tsconfig.json",
+//     "outFiles": [
+//       "${workspaceFolder}/dist/**/*.js"
+//     ]
+//   }
+// ]

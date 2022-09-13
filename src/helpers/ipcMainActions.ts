@@ -1,14 +1,13 @@
 import { LocalServerInstance } from "../core/LocalServer";
-
 import { dialog, ipcMain } from "electron";
 import { api, DownloadsData, SettingsData } from "./init";
-
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
 import { log } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
+
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
 });
