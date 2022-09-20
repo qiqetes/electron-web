@@ -719,6 +719,7 @@ class DownloadsDataModel implements DownloadsData {
 
     if (!accessToken) {
       logWarn("Trying to download help video without access token");
+      this.isDownloading = false;
       return;
     }
 

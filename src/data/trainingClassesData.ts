@@ -92,7 +92,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
           return this.trainingClasses[id];
         }
       } catch (err) {
-        logError("fetching TRAINING CLASS from API");
+        logError("fetching TRAINING CLASS from API", err);
         return null;
       }
     }

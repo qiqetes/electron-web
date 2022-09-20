@@ -15,21 +15,19 @@
   ]
 }
 
-// Previously this configuration was used and it was much faster,
-// but now it doesn't work anymore
-// "version": "0.2.0",
-// "configurations": [
-//   {
-//     "type": "pwa-node",
-//     "request": "launch",
-//     "name": "Launch Program",
-//     "skipFiles": [
-//       "<node_internals>/**"
-//     ],
-//     "program": "${workspaceFolder}/.webpack/main",
-//     "preLaunchTask": "tsc: build - tsconfig.json",
-//     "outFiles": [
-//       "${workspaceFolder}/dist/**/*.js"
-//     ]
-//   }
-// ]
+// // Previously this configuration was used and it was much faster,
+// // but now it doesn't work anymore
+// {
+//   "version": "0.2.0",
+//   "configurations": [
+//     {
+//       "type": "pwa-node",
+//       "request": "launch",
+//       "name": "Launch Program",
+//       "skipFiles": ["<node_internals>/**"],
+//       "program": "${workspaceFolder}/.webpack/main",
+//       "preLaunchTask": "tsc: build - tsconfig.json",
+//       "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+//     }
+//   ]
+// }

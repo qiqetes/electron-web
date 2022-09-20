@@ -8,7 +8,7 @@ import { log, logError, logWarn } from "./loggers";
 import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
-import { showModal } from "./ipcMainActions";
+import { sendToast, showModal } from "./ipcMainActions";
 
 type Pckg = { url: string };
 
@@ -34,7 +34,7 @@ const isNewVersionNuber = (actual: string, incoming: string) => {
 
 const registerAutoUpdaterEvents = () => {
   autoUpdater.on("error", (err) => {
-    logError(err);
+    logError("Registering auto updater events", err);
   });
 
   autoUpdater.on("checking-for-update", () =>
@@ -43,12 +43,9 @@ const registerAutoUpdaterEvents = () => {
 
   autoUpdater.on("update-available", () => {
     log("Update available, updating");
-    showModal(
-      "Hay disponible una nueva versión de la aplicación ¿Desea actualizar?",
-      "Sí",
-      "No, gracias",
-      () => autoUpdater.quitAndInstall()
-    );
+    sendToast("Se ha encontrado una actualización. Descargando...");
+
+    autoUpdater.quitAndInstall();
   });
 
   autoUpdater.on("update-not-available", () => logWarn("Update not available"));
@@ -60,8 +57,10 @@ const registerAutoUpdaterEvents = () => {
 
 // TODO: esta función apunta a partes temporales de s3, cambiarlo cuando esté decidido.
 // TODO: anyadir tags para que se mire a diferentes manifest
-// Sets the autoUpdater to check the s3 manifest and check wether there are updates
-// to be downloaded.
+/**
+ * Sets the autoUpdater to check the s3 manifest and check wether there are updates
+ * to be downloaded.
+ * */
 export const setAutoUpdater = async () => {
   // AVOID TO RUN THE AUTOUPDATER THE FIRST TIME THE APP RUNS IN WINDOWS BY ALL MEANS
   // if (AppData.FIRST_TIME_IT_RUNS) return;
@@ -75,11 +74,13 @@ export const setAutoUpdater = async () => {
   if (!isNewVersionNuber(projectInfo.version, manifest.version)) return;
 
   const version = manifest.version;
-  if (isUpdateAlreadyDownloaded(version)) return;
+  if (isUpdateAlreadyDownloaded(version)) {
+    log("Update already downloaded, installing");
+    autoUpdater.quitAndInstall();
+  }
   log(`THERE IS AN UPDATE AVAILABLE: ${version}`);
 
   let platform: string = os.platform();
-  const arch = os.arch();
 
   if (platform == "darwin") platform = "mac64";
 

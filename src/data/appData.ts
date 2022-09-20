@@ -1,6 +1,7 @@
 import config from "../config";
 import { DB } from "../helpers/init";
-import { logError } from "../helpers/loggers";
+import { log, logError } from "../helpers/loggers";
+import pack from "../../package.json";
 
 export class AppDataModel implements AppData {
   WEBAPP_WEBASE!: string;
@@ -13,9 +14,11 @@ export class AppDataModel implements AppData {
   LAST_VERSION_DOWNLOADED: null | string = null;
   LAST_LOGIN: null | number = null; // timestamp value
   ONLINE = true;
+  VERSION = pack.version;
 
   constructor() {
     this.init();
+    log("Running Desktop version: ", this.VERSION);
   }
 
   init() {

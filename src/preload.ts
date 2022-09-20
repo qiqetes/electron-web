@@ -5,7 +5,7 @@ console.log("Preload: config", config);
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
-
+  appVersion: config.version,
   baseURL: config.WEBBASE,
   loginPath: config.LOGIN_PATH,
 

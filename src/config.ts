@@ -1,3 +1,5 @@
+import pack from "../package.json";
+
 // config.js
 const env: "development" | "production" | "devprod" = process.env.FLAVOUR
   ? "devprod"
@@ -38,4 +40,4 @@ console.log("====================================================");
 console.log("Config:", config[env]);
 console.log("====================================================");
 
-export default config[env];
+export default { ...config[env], version: pack.version };
