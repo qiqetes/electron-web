@@ -337,7 +337,7 @@ class DownloadsDataModel implements DownloadsData {
         });
 
         res.on("end", () => {
-          console.log("Download ended");
+          log("Download ended");
           informDownloadsState();
         });
       })

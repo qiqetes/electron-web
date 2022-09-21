@@ -49,7 +49,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
       })
       .catch((err: any) => {
         this.trainingClassesToFetch.push(id);
-        console.log(err);
+        logError(err);
       });
   }
 

@@ -1,8 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import config from "./config";
 
-console.log("Preload: config", config);
-
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
   appVersion: config.version,
