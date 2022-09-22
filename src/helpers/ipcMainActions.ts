@@ -7,6 +7,7 @@ import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
 import { log } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
+import { ErrorReporter } from "./errorReporter";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -25,6 +26,11 @@ ipcMain.on("setAuth", (_, auth) => {
   AppData.LAST_LOGIN = +new Date();
   api.headers.Authorization = AppData.AUTHORIZATION;
   DownloadsData.downloadHelpVideo();
+});
+
+ipcMain.on("setUser", (_, user: User) => {
+  console.log("setting user", user);
+  AppData.USER = user;
 });
 
 ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
@@ -132,7 +138,7 @@ ipcMain.on("readTagMp3", async (event, file: string, pathFile: string) => {
 
 export const sendToast = (
   message: string,
-  variation: null | "warn" | "error" = null,
+  variation: null | "warn" | "error" | "success" = null,
   duration = 5
 ) => {
   mainWindow.webContents.send("toast", message, variation, duration);
@@ -163,3 +169,7 @@ export const informDownloadsState = () => {
 export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
+
+ipcMain.on("sendReport", (_, report) => {
+  ErrorReporter.sendReport(report);
+});

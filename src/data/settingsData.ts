@@ -27,7 +27,6 @@ class SettingsDataModel implements SettingsData {
   async saveToDb(): Promise<void> {
     if (!DB.data) return;
     DB.data.settings = this;
-    await DB.write();
   }
 
   init(): void {
@@ -54,7 +53,7 @@ class SettingsDataModel implements SettingsData {
 
   getFromDb(): void {
     if (!DB.data) return;
-    Object.assign(this, DB.data.settings);
+    if (DB.data.settings) Object.assign(this, DB.data.settings);
   }
 
   // Saves an old setting to new Settings

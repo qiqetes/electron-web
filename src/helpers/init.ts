@@ -1,8 +1,6 @@
 import * as fs from "fs-extra";
 import { app, crashReporter } from "electron";
-
 import Kitsu from "kitsu";
-import { join } from "path";
 import { JSONFile, Low } from "@commonify/lowdb";
 import { AppData } from "../data/appData";
 import DownloadsDataModel from "../data/downloadsData";
@@ -12,9 +10,11 @@ import { setAutoUpdater } from "./updater";
 import { log, logWarn } from "./loggers";
 import url from "url";
 import dayjs from "dayjs";
+import { getDBPath } from ".";
+import { ErrorReporter } from "./errorReporter";
 
 // Use JSON file for storage
-const file = join(app.getPath("userData"), "db.json");
+const file = getDBPath();
 log("DB file in: ", url.pathToFileURL(file));
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
@@ -94,6 +94,7 @@ const initDB = async () => {
       trainingClasses: TrainingClassesData,
       downloads: DownloadsData,
       appData: AppData,
+      errorReporter: ErrorReporter,
     };
     void DB.write();
   } else {

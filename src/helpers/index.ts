@@ -1,5 +1,5 @@
-import { shell } from "electron";
-
+import { app, shell } from "electron";
+import { join } from "path";
 import config from "../config";
 import { mainWindow } from "../index";
 import { log, logError, logWarn } from "./loggers";
@@ -40,4 +40,11 @@ export const avoidExternalPageRequests = () => {
       return;
     }
   });
+};
+
+/**
+ * Returns the path where the data is stored
+ */
+export const getDBPath = () => {
+  return join(app.getPath("userData"), "db.json");
 };

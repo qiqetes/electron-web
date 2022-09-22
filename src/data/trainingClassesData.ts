@@ -56,7 +56,6 @@ class TrainingClassesDataModel implements TrainingClassesData {
   async saveToDb(): Promise<void> {
     if (!DB.data) return;
     DB.data.trainingClasses = this;
-    await DB.write();
   }
 
   getFromDb(): void {

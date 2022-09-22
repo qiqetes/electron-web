@@ -45,6 +45,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   changeConnectionStatus: (online: boolean) => {
     ipcRenderer.send("changeConnectionStatus", online);
   },
+
+  sendReport: (report: string) => {
+    ipcRenderer.send("sendReport", report);
+  },
+
+  setUser: (user: User) => {
+    ipcRenderer.send("setUser", user);
+  },
 });
 
 contextBridge.exposeInMainWorld("downloadsAPI", {

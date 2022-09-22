@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
+import { AppData } from "./data/appData";
 import { avoidExternalPageRequests } from "./helpers";
 import {
   DB,
@@ -106,8 +107,9 @@ app.on("activate", () => {
 });
 
 const saveAll = async () => {
-  await SettingsData.saveToDb();
-  await TrainingClassesData.saveToDb();
+  AppData.saveToDb();
+  SettingsData.saveToDb();
+  TrainingClassesData.saveToDb();
   DownloadsData.saveToDb();
   await DB.write();
 };

@@ -15,6 +15,7 @@ export class AppDataModel implements AppData {
   LAST_LOGIN: null | number = null; // timestamp value
   ONLINE = true;
   VERSION = pack.version;
+  USER: User | null = null;
 
   constructor() {
     this.init();
@@ -33,11 +34,12 @@ export class AppDataModel implements AppData {
       logError("AppData doesn't exist in the DB");
       return;
     }
-    const { FIRST_TIME_IT_RUNS, LAST_VERSION_DOWNLOADED, LAST_LOGIN } =
+    const { FIRST_TIME_IT_RUNS, LAST_VERSION_DOWNLOADED, LAST_LOGIN, USER } =
       DB.data!.appData;
     this.FIRST_TIME_IT_RUNS = FIRST_TIME_IT_RUNS;
     this.LAST_VERSION_DOWNLOADED = LAST_VERSION_DOWNLOADED;
     this.LAST_LOGIN = LAST_LOGIN;
+    this.USER = USER;
   }
 
   saveToDb(): void {
@@ -45,6 +47,7 @@ export class AppDataModel implements AppData {
       FIRST_TIME_IT_RUNS: this.FIRST_TIME_IT_RUNS,
       LAST_VERSION_DOWNLOADED: this.LAST_VERSION_DOWNLOADED,
       LAST_LOGIN: this.LAST_LOGIN,
+      USER: this.USER,
     };
   }
 }

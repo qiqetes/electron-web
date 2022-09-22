@@ -3,4 +3,5 @@ type DataBase = {
   trainingClasses: TrainingClassesData;
   downloads: DownloadsDataDB;
   appData: AppDataDB;
+  errorReporter: ErrorReporterDB;
 };
