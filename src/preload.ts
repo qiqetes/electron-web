@@ -100,3 +100,11 @@ contextBridge.exposeInMainWorld("mixmeixterApi", {
     return ipcRenderer.sendSync("readTagMp3", file, path);
   },
 });
+
+contextBridge.exposeInMainWorld("bluetoothAPI", {
+  handleReceiveHRDevices: (
+    callback: (event: Event, device: Electron.BluetoothDevice) => void
+  ) => ipcRenderer.on("hrDevicesList", callback),
+  hrDeviceSelected: (deviceName: string) =>
+    ipcRenderer.send("hrDeviceSelected", deviceName),
+});

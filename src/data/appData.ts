@@ -1,7 +1,6 @@
+import pack from "../../package.json";
 import config from "../config";
 import { DB } from "../helpers/init";
-import { log, logError } from "../helpers/loggers";
-import pack from "../../package.json";
 
 export class AppDataModel implements AppData {
   WEBAPP_WEBASE!: string;
@@ -19,7 +18,6 @@ export class AppDataModel implements AppData {
 
   constructor() {
     this.init();
-    log("Running Desktop version: ", this.VERSION);
   }
 
   init() {
@@ -31,7 +29,6 @@ export class AppDataModel implements AppData {
 
   getFromDb(): void {
     if (!DB.data?.appData) {
-      logError("AppData doesn't exist in the DB");
       return;
     }
     const { FIRST_TIME_IT_RUNS, LAST_VERSION_DOWNLOADED, LAST_LOGIN, USER } =

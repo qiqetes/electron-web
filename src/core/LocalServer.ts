@@ -3,7 +3,7 @@ import * as child_process from "child_process";
 
 import EventEmitter from "events";
 import * as path from "node:path";
-import { logError } from "../helpers/loggers";
+import { log, logError } from "../helpers/loggers";
 
 export default class LocalServer extends EventEmitter {
   port: string;
@@ -33,7 +33,7 @@ export default class LocalServer extends EventEmitter {
     // Random port
     this.port = Math.floor(Math.random() * 20000 + 42666).toString();
 
-    console.log("STARTING LOCAL SERVER");
+    log("STARTING LOCAL SERVER");
     if (!downloadsPath) {
       logError("NO ROOT PATH");
       return;
@@ -43,7 +43,7 @@ export default class LocalServer extends EventEmitter {
       console.warn();
     }
 
-    console.log(
+    log(
       "Starting local server in path:",
       path.join(path.dirname(__dirname), "libs", "ThreadStreaming.js")
     );
@@ -54,13 +54,12 @@ export default class LocalServer extends EventEmitter {
       "ThreadStreaming.js"
     );
 
-    console.log(`Started LocalServer serving media in port ${this.port}`);
+    log(`Started LocalServer serving media in port ${this.port}`);
     const options = {
       cwd: path.dirname(process.execPath),
     };
 
-    console.log("PORT", this.port);
-    console.log("DOWNLOADS PATH", downloadsPath);
+    log("DOWNLOADS PATH", downloadsPath);
     this.streamingServer = child_process.fork(
       scriptPath,
       [this.port, "offline", downloadsPath],
@@ -76,11 +75,11 @@ export default class LocalServer extends EventEmitter {
     });
 
     this.streamingServer.on("close", (code) => {
-      console.log("CLOSE SERVER " + code);
+      log("CLOSE SERVER " + code);
       this.emit("stop");
     });
     this.streamingServer.on("exit", (code) => {
-      console.log("EXIT SERVER " + code);
+      log("EXIT SERVER " + code);
     });
     // streamingServer.on("message", (_) => {});
     this.streamingServer.on("error", (code) => {
@@ -88,7 +87,7 @@ export default class LocalServer extends EventEmitter {
       this.emit("error");
     });
     this.streamingServer.on("disconnect", (code: any) => {
-      console.log("DISCONN SERVER " + code);
+      log("DISCONN SERVER " + code);
       this.emit("stop");
     });
     process.on("exit", this.stop);
@@ -99,7 +98,7 @@ export default class LocalServer extends EventEmitter {
 
   stop() {
     if (this.streamingServer) {
-      console.log(`Stopped LocalServer serving media in port ${this.port}`);
+      log(`Stopped LocalServer serving media in port ${this.port}`);
 
       this.streamingServer.emit("EXIT");
       this.streamingServer.kill();

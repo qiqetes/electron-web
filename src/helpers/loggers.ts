@@ -1,4 +1,6 @@
-import { ErrorReporter } from "./errorReporter";
+import ErrorReporterModel from "./errorReporter";
+
+export const ErrorReporter = new ErrorReporterModel();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const logWarn = (...args: any[]) => {

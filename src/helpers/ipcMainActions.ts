@@ -5,9 +5,8 @@ import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
-import { log } from "./loggers";
+import { ErrorReporter, log } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
-import { ErrorReporter } from "./errorReporter";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);

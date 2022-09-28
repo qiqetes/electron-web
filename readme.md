@@ -15,9 +15,10 @@ Para notarizar la app para osx se necesita crear un archivo .env en el root del 
 
 Aunque nuestra app no tenga renderer, por un bug de Electron-forge hay que mantener los archivos `renderer.ts` e `index.html` para que no falle webpack. Está ya subido y abierto el issue https://github.com/electron-userland/electron-forge/issues/2859.
 
+**Bluetooth MacOS**:Para probar la parte del bluetooth tendrás que permitir que Chromium y VScode tengan acceso al bluetooth desde preferencias del sistema.
+
 # TODO:
 
 - Quitar el webSecurity: false y servir la clase de ajuste y la música de espera por LocalServer
-- Automatic updates
 - Notarizar app windows
 - InnoSetup windows.

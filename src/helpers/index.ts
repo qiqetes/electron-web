@@ -1,10 +1,10 @@
-import { app, shell } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import { join } from "path";
 import config from "../config";
-import { mainWindow } from "../index";
+
 import { log, logError, logWarn } from "./loggers";
 
-export const getLocalStoragePrefs = async () => {
+export const getLocalStoragePrefs = async (mainWindow: BrowserWindow) => {
   log("GETTING LOCALSTORAGE");
 
   try {
@@ -23,7 +23,7 @@ export const getLocalStoragePrefs = async () => {
  * This is executed every request, we use it to prevent the app from visiting external sites,
  * can be used for any kind of request.
  **/
-export const avoidExternalPageRequests = () => {
+export const avoidExternalPageRequests = (mainWindow: BrowserWindow) => {
   mainWindow.webContents.on("will-navigate", (event, url) => {
     const isExternalPage =
       !url.startsWith(config.WEBBASE + "/app") &&

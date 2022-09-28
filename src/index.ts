@@ -1,17 +1,13 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
-import { AppData } from "./data/appData";
 import { avoidExternalPageRequests } from "./helpers";
-import {
-  DB,
-  DownloadsData,
-  init,
-  SettingsData,
-  TrainingClassesData,
-} from "./helpers/init";
+
+import { DownloadsData, init } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
+import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
+import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -28,7 +24,6 @@ app.commandLine.appendSwitch("remote-debugging-port", "8181");
 
 export let mainWindow: BrowserWindow;
 const createWindow = async () => {
-  log("STARTING APP: creating window");
   await init();
 
   mainWindow = new BrowserWindow({
@@ -44,6 +39,7 @@ const createWindow = async () => {
       webSecurity: false, // TODO: Remove this and serve the audio+video files over http
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: true,
+
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
@@ -79,7 +75,9 @@ const createWindow = async () => {
     shell.openExternal(url);
   });
 
-  avoidExternalPageRequests();
+  avoidExternalPageRequests(mainWindow);
+  const hrService = new HeartRateDeviceService(ipcMain);
+  hrService.registerBluetoothEvents(mainWindow);
 };
 
 app.on("ready", () => {
@@ -105,11 +103,3 @@ app.on("activate", () => {
     createWindow();
   }
 });
-
-const saveAll = async () => {
-  AppData.saveToDb();
-  SettingsData.saveToDb();
-  TrainingClassesData.saveToDb();
-  DownloadsData.saveToDb();
-  await DB.write();
-};

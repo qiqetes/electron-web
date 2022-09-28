@@ -1,16 +1,16 @@
 import { app, crashReporter } from "electron";
 import fs from "fs-extra";
-import { log, logError } from "./loggers";
 import path from "path";
 import nodemailer from "nodemailer";
 import os from "os";
+import url from "url";
 import { getDBPath } from ".";
-import { DB } from "./init";
 import { AppData } from "../data/appData";
 import { sendToast } from "./ipcMainActions";
+import { log, logError } from "./loggers";
 
 // TODO: Add the automatic crashDump
-class ErrorReporterModel implements ErrorReporter {
+class ErrorReporterModel {
   errorsPath = app.getPath("crashDumps");
   sessionErrorReportFile = path.join(
     this.errorsPath,
@@ -20,7 +20,10 @@ class ErrorReporterModel implements ErrorReporter {
 
   constructor() {
     this.init();
-    crashReporter.start({ submitURL: this.sessionErrorReportFile }); // FIXME: don't really know if this is working
+    crashReporter.start({
+      submitURL: url.pathToFileURL(this.sessionErrorReportFile).href,
+      uploadToServer: false,
+    }); // FIXME: don't really know if this is working
     // need to force errors
   }
 
@@ -50,12 +53,13 @@ class ErrorReporterModel implements ErrorReporter {
 
   report(...errors: any[]) {
     const errorString = errors.map((e) => e.toString()).join(" ") + "\n";
-    fs.appendFile(this.sessionErrorReportFile, errorString);
+    fs.appendFile(this.sessionErrorReportFile, errorString).catch((err) => {
+      console.log("Error appending to error file", err);
+    });
   }
 
   async sendReport(reportMessage: string) {
     this.lastReportDate = Date.now();
-    // const testAccount = await nodemailer.createTestAccount();
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
@@ -88,7 +92,6 @@ class ErrorReporterModel implements ErrorReporter {
         ],
       });
 
-      console.log("Message sent: %s", JSON.stringify(info));
       sendToast(
         "Reporte enviado correctamente, gracias por tu ayuda!",
         "success",
@@ -116,18 +119,6 @@ class ErrorReporterModel implements ErrorReporter {
     );
     filesToDelete.forEach((f) => fs.remove(path.join(this.errorsPath, f)));
   }
-
-  getFromDb() {
-    if (DB.data?.errorReporter) {
-      this.lastReportDate = DB.data.errorReporter.lastReportDate;
-    }
-  }
-
-  saveToDb() {
-    DB.data!.errorReporter = {
-      lastReportDate: this.lastReportDate,
-    };
-  }
 }
 
-export const ErrorReporter = new ErrorReporterModel();
+export default ErrorReporterModel;

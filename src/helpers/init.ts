@@ -7,15 +7,12 @@ import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
 import { setAutoUpdater } from "./updater";
-import { log, logWarn } from "./loggers";
-import url from "url";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
-import { ErrorReporter } from "./errorReporter";
+import { log, logWarn } from "./loggers";
 
 // Use JSON file for storage
 const file = getDBPath();
-log("DB file in: ", url.pathToFileURL(file));
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -23,6 +20,8 @@ export const DB = new Low(adapter);
 export const SettingsData = new SettingsDataModel();
 export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();
+
+log("DB file in: ", getDBPath());
 
 // Gets the chromium preferences from the old directory if they exist and
 // saves them to be accesible from the webapp localStorage
@@ -94,7 +93,6 @@ const initDB = async () => {
       trainingClasses: TrainingClassesData,
       downloads: DownloadsData,
       appData: AppData,
-      errorReporter: ErrorReporter,
     };
     void DB.write();
   } else {
