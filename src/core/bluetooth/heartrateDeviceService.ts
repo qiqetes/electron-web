@@ -11,6 +11,11 @@ export class HeartRateDeviceService {
       log("Device selected", deviceId);
       this.callback(deviceId);
     });
+
+    ipcMain.on("hrDeviceSelectionCancelled", () => {
+      log("Device selection cancelled");
+      this.callback("");
+    });
   }
 
   registerBluetoothEvents = (mainWindow: BrowserWindow) => {

@@ -107,4 +107,6 @@ contextBridge.exposeInMainWorld("bluetoothAPI", {
   ) => ipcRenderer.on("hrDevicesList", callback),
   hrDeviceSelected: (deviceName: string) =>
     ipcRenderer.send("hrDeviceSelected", deviceName),
+  hrDeviceSelectionCancelled: () =>
+    ipcRenderer.send("hrDeviceSelectionCancelled"),
 });
