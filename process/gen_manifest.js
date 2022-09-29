@@ -84,7 +84,7 @@ const uploadManifest = async () => {
       url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${pack.productName.replace(
         " ",
         "+"
-      )}-${os.platform()}-${os.arch()}-${pack.version}.zip`,
+      )}-${os.platform()}-universal-${pack.version}.zip`,
     };
   } else if (platform == "win32") {
     const platforms = ["win32", "win64"];

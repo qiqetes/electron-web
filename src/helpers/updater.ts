@@ -8,7 +8,7 @@ import { log, logError, logWarn } from "./loggers";
 import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
-import { sendToast, showModal } from "./ipcMainActions";
+import { sendToast } from "./ipcMainActions";
 
 type Pckg = { url: string };
 
@@ -45,14 +45,16 @@ const registerAutoUpdaterEvents = () => {
     log("Update available, updating");
     sendToast("Se ha encontrado una actualización. Descargando...");
 
-    autoUpdater.quitAndInstall();
+    // autoUpdater.quitAndInstall();
   });
 
   autoUpdater.on("update-not-available", () => logWarn("Update not available"));
 
-  autoUpdater.on("update-downloaded", () =>
-    log("Update downloaded, ready for install")
-  );
+  autoUpdater.on("update-downloaded", () => {
+    log("Update downloaded, ready for install");
+    sendToast("Instalando actualización. Se reiniciará la aplicación...");
+    autoUpdater.quitAndInstall();
+  });
 };
 
 // TODO: esta función apunta a partes temporales de s3, cambiarlo cuando esté decidido.
@@ -74,10 +76,6 @@ export const setAutoUpdater = async () => {
   if (!isNewVersionNuber(projectInfo.version, manifest.version)) return;
 
   const version = manifest.version;
-  if (isUpdateAlreadyDownloaded(version)) {
-    log("Update already downloaded, installing");
-    autoUpdater.quitAndInstall();
-  }
   log(`THERE IS AN UPDATE AVAILABLE: ${version}`);
 
   let platform: string = os.platform();
@@ -131,6 +129,9 @@ export const setAutoUpdater = async () => {
   }
 };
 
+/**
+ * @deprecated since the update is now always installed
+ * */
 const isUpdateAlreadyDownloaded = (ver: string) => {
   if (AppData.LAST_VERSION_DOWNLOADED == ver) {
     // Check if the file already exists
