@@ -38,8 +38,7 @@ const createWindow = async () => {
     webPreferences: {
       webSecurity: false, // TODO: Remove this and serve the audio+video files over http
       autoplayPolicy: "no-user-gesture-required",
-      nodeIntegration: true,
-
+      nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
