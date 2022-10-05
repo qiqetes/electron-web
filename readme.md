@@ -4,6 +4,7 @@
 
 `npm install`
 Y luego crear un launch.json para correrla desde VScode y poder debuggearla.
+Si se debuggea con `npm start` se habrá de correr a la vez la webapp en el puerto 8080.
 
 ### Code Signing
 

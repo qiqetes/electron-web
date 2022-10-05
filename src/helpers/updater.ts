@@ -28,6 +28,7 @@ const isNewVersionNuber = (actual: string, incoming: string) => {
     const inc = incoming.split(".")[i];
 
     if (inc > act) return true;
+    if (act > inc) return false;
   }
   return false;
 };
@@ -53,7 +54,11 @@ const registerAutoUpdaterEvents = () => {
   autoUpdater.on("update-downloaded", () => {
     log("Update downloaded, ready for install");
     sendToast("Instalando actualización. Se reiniciará la aplicación...");
-    autoUpdater.quitAndInstall();
+    try {
+      autoUpdater.quitAndInstall();
+    } catch (err) {
+      logError("Installing update", err);
+    }
   });
 };
 
@@ -73,7 +78,10 @@ export const setAutoUpdater = async () => {
 
   const manifest: UpdateManifest = resManifest.data;
 
-  if (!isNewVersionNuber(projectInfo.version, manifest.version)) return;
+  if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
+    log("No new version found");
+    return;
+  }
 
   const version = manifest.version;
   log(`THERE IS AN UPDATE AVAILABLE: ${version}`);

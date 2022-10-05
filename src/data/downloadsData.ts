@@ -309,7 +309,9 @@ class DownloadsDataModel implements DownloadsData {
             sendToast(
               `Clase descargada ${
                 TrainingClassesData.trainingClasses[download.id].title
-              }`
+              }`,
+              "success",
+              3
             );
             log("Ended download id: " + download.id + "-" + download.mediaType);
             download.status = "downloaded";
