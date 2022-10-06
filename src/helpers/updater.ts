@@ -24,8 +24,8 @@ type UpdateManifest = {
 
 const isNewVersionNuber = (actual: string, incoming: string) => {
   for (let i = 0; i < 3; i++) {
-    const act = actual.split(".")[i];
-    const inc = incoming.split(".")[i];
+    const act = parseInt(actual.split(".")[i]);
+    const inc = parseInt(incoming.split(".")[i]);
 
     if (inc > act) return true;
     if (act > inc) return false;
@@ -51,15 +51,22 @@ const registerAutoUpdaterEvents = () => {
 
   autoUpdater.on("update-not-available", () => logWarn("Update not available"));
 
-  autoUpdater.on("update-downloaded", () => {
-    log("Update downloaded, ready for install");
-    sendToast("Instalando actualización. Se reiniciará la aplicación...");
-    try {
-      autoUpdater.quitAndInstall();
-    } catch (err) {
-      logError("Installing update", err);
+  autoUpdater.on(
+    "update-downloaded",
+    (_, releaseNotes, releaseName, releaseDate, updateUrl) => {
+      log("Update downloaded, ready for install");
+      log("Release notes: ", releaseNotes);
+      log("Release name: ", releaseName);
+      log("Release date: ", releaseDate);
+      log("Update url: ", updateUrl);
+      sendToast("Instalando actualización. Se reiniciará la aplicación...");
+      try {
+        autoUpdater.quitAndInstall();
+      } catch (err) {
+        logError("Installing update", err);
+      }
     }
-  });
+  );
 };
 
 // TODO: esta función apunta a partes temporales de s3, cambiarlo cuando esté decidido.
@@ -117,23 +124,40 @@ export const setAutoUpdater = async () => {
   };
 
   const setAutoUpdaterWin = async () => {
-    download(
-      tempPath,
-      "RELEASES",
-      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/RELEASES",
-      () => {
-        AppData.LAST_VERSION_DOWNLOADED = version;
-        autoUpdater.setFeedURL({ url: tempPath });
-        autoUpdater.checkForUpdates();
+    log("RELEASES downloaded in temp folder", tempPath);
+    fs.readFile(path.join(tempPath, "RELEASES"), "utf8", (err, data) => {
+      if (err) {
+        logError("Reading RELEASES file", err);
+        return;
       }
-    );
+      const nupkgName = data.split(" ")[1];
+      log("NUPKG NAME:", nupkgName);
+      download(
+        tempPath,
+        nupkgName,
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${nupkgName}`,
+        () => {
+          log("NUPKG downloaded in temp folder", tempPath);
+          autoUpdater.setFeedURL({
+            url: tempPath,
+          });
+          autoUpdater.checkForUpdates();
+          AppData.LAST_VERSION_DOWNLOADED = version;
+        }
+      );
+    });
   };
 
   registerAutoUpdaterEvents();
   if (os.platform() == "darwin") {
     download(tempPath, "update.zip", updateUrl, setAutoUpdaterMac);
   } else if (os.platform() == "win32") {
-    download(tempPath, "update.nupkg", updateUrl, setAutoUpdaterWin);
+    download(
+      tempPath,
+      "RELEASES",
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/RELEASES",
+      setAutoUpdaterWin
+    );
   }
 };
 

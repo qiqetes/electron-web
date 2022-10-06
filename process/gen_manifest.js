@@ -22,10 +22,11 @@ import os from "os";
 
 const isNewVersionNuber = (actual, incoming) => {
   for (let i = 0; i < 3; i++) {
-    const act = actual.split(".")[i];
-    const inc = incoming.split(".")[i];
+    const act = parseInt(actual.split(".")[i]);
+    const inc = parseInt(incoming.split(".")[i]);
 
     if (inc > act) return true;
+    if (act > inc) return false;
   }
   return false;
 };
