@@ -65,6 +65,7 @@ class DownloadsDataModel implements DownloadsData {
     TrainingClassesData.addTraining(dr.trainingClass, false);
 
     this.offlineTrainingClasses[id + "-" + dr.mediaType] = offlineTrainingClass;
+
     if (inform) {
       informDownloadsState();
       this.startDownloads();

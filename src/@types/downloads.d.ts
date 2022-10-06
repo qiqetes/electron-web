@@ -44,6 +44,7 @@ type webappDownload = {
   trainingClass: TrainingClass;
   offline: boolean;
 };
+
 // The downloadsState that the webapp expects
 // TODO: mejorar esto que es un desastre, pero se usa igual en toda la webapp
 type downloadsStateWebapp = {

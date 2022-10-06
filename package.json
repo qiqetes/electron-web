@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "5.0.5",
+  "version": "5.0.6",
   "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
@@ -41,7 +41,7 @@
     "aws-sdk": "^2.1225.0",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
-    "electron": "^21.0.1",
+    "electron": "^19.0.0",
     "eslint": "^8.24.0",
     "eslint-import-resolver-typescript": "^3.5.1",
     "eslint-plugin-import": "^2.26.0",

@@ -73,7 +73,7 @@ class ErrorReporterModel {
     try {
       const info = await transporter.sendMail({
         from: process.env.EMAIL_ADDRESS,
-        to: ["enrique@bestcycling.es"],
+        to: ["info@bestcycling.es"],
         subject: `DESKTOP-REPORT from ${
           AppData.USER?.membership === "gimnasios" ? "gym" : "user"
         }: ${AppData.USER?.name}`,

@@ -3,8 +3,8 @@ import { describe, expect, it } from "@jest/globals";
 
 const isNewVersionNuber = (actual: string, incoming: string) => {
   for (let i = 0; i < 3; i++) {
-    const act = actual.split(".")[i];
-    const inc = incoming.split(".")[i];
+    const act = parseInt(actual.split(".")[i]);
+    const inc = parseInt(incoming.split(".")[i]);
 
     if (inc > act) return true;
     if (act > inc) return false;
@@ -16,8 +16,8 @@ describe("UPDATER version checker", () => {
   it("From ver 5.0.4, ver 5.0.4 should not be considered new version ", () => {
     expect(isNewVersionNuber("5.0.4", "5.0.4")).toBeFalsy();
   });
-  it("Fromver 5.0.4, ver 5.0.5 should be considered new version ", () => {
-    expect(isNewVersionNuber("5.0.4", "5.0.5")).toBeTruthy();
+  it("Fromver 5.9.4, ver 5.11.5 should be considered new version ", () => {
+    expect(isNewVersionNuber("5.9.4", "5.11.5")).toBeTruthy();
   });
   it("From ver 5.0.4, ver 5.1.0 should be considered new version ", () => {
     expect(isNewVersionNuber("5.0.4", "5.1.0")).toBeTruthy();

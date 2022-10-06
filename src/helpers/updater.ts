@@ -79,12 +79,16 @@ export const setAutoUpdater = async () => {
   const manifest: UpdateManifest = resManifest.data;
 
   if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
-    log("No new version found");
+    log(
+      `No new version found.\nActual: ${projectInfo.version} - Manifest: ${manifest.version}`
+    );
     return;
   }
 
   const version = manifest.version;
-  log(`THERE IS AN UPDATE AVAILABLE: ${version}`);
+  log(
+    `THERE IS AN UPDATE AVAILABLE: ${version}. Current: ${projectInfo.version}`
+  );
 
   let platform: string = os.platform();
 
