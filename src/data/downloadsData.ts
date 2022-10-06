@@ -185,11 +185,12 @@ class DownloadsDataModel implements DownloadsData {
     download.status = "downloading";
 
     // Check if near the download limit
-    if (this.totalDownloadsSize() > SettingsData.maxDownloadsSize * 0.8) {
+    const totalDownloadsSize = this.totalDownloadsSize();
+    const maxDownloadsSize = SettingsData.maxDownloadsSize;
+    if (totalDownloadsSize > maxDownloadsSize * 0.8) {
       const toDelete = this.getDeleteCandidate();
-      if (toDelete) {
-        this.removeDownload(toDelete.id, toDelete.mediaType, false);
-      }
+      if (!toDelete) return;
+      this.removeDownload(toDelete.id, toDelete.mediaType, false);
     }
 
     this.currentDownload = download;

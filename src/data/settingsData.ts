@@ -93,6 +93,9 @@ class SettingsDataModel implements SettingsData {
       case "C11":
         this.autoStartGymsScheduler = value == "1";
         break;
+      case "C13":
+        this.maxDownloadsSize = parseInt(value);
+        break;
       case "waiting_music_file":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         this.waitingMusicPath = value;
