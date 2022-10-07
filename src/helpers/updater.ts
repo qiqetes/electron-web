@@ -45,8 +45,6 @@ const registerAutoUpdaterEvents = () => {
   autoUpdater.on("update-available", () => {
     log("Update available, updating");
     sendToast("Se ha encontrado una actualización. Descargando...");
-
-    // autoUpdater.quitAndInstall();
   });
 
   autoUpdater.on("update-not-available", () => logWarn("Update not available"));

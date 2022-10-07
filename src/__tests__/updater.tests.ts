@@ -16,7 +16,7 @@ describe("UPDATER version checker", () => {
   it("From ver 5.0.4, ver 5.0.4 should not be considered new version ", () => {
     expect(isNewVersionNuber("5.0.4", "5.0.4")).toBeFalsy();
   });
-  it("Fromver 5.9.4, ver 5.11.5 should be considered new version ", () => {
+  it("From ver 5.9.4, ver 5.11.5 should be considered new version ", () => {
     expect(isNewVersionNuber("5.9.4", "5.11.5")).toBeTruthy();
   });
   it("From ver 5.0.4, ver 5.1.0 should be considered new version ", () => {

@@ -4,7 +4,6 @@ import { sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
-import TrainingClassesDataModel from "../data/trainingClassesData";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",

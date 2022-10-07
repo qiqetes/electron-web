@@ -357,13 +357,15 @@ class DownloadsDataModel implements DownloadsData {
     this.isDownloading = false;
   }
 
-  saveToDb(): void {
+  saveToDb(writeToDb = false): void {
     DB.data!.downloads = {
       offlineTrainingClasses: this.offlineTrainingClasses,
       trainingClassesScheduled: this.trainingClassesScheduled,
       hasAdjustVideo: this.hasAdjustVideo,
       isDownloading: false,
     };
+
+    if (writeToDb) DB.write();
   }
 
   /**
