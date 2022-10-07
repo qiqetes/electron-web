@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   },
 
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
+  getDefaultsDownloadsPath: () => ipcRenderer.invoke("getDefaultsDownloadsPath"),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>

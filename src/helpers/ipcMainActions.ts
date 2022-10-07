@@ -2,7 +2,7 @@ import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { dialog, ipcMain } from "electron";
-import { api, DownloadsData, SettingsData } from "./init";
+import { api, DB, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -117,6 +117,14 @@ ipcMain.on("restoreDefaults", () => {
 
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
+});
+
+ipcMain.handle("getDefaultsDownloadsPath", (): string => {
+  
+  if(DB.data) {
+    return DB!.data!.settings.downloadsPath;
+  }
+  return "";
 });
 
 ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
