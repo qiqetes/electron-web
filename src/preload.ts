@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   getMediaUrl: (id: number, media: mediaType = "video_hd") =>
     ipcRenderer.sendSync("getMediaUrl", id, media),
 
+  getAdjustVideoPath: () => ipcRenderer.send("getAdjustVideoPath"),
   requestDownloadsState: () => ipcRenderer.invoke("requestDownloadsState"),
 });
 

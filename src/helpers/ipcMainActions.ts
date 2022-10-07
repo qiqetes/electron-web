@@ -1,3 +1,5 @@
+import path from "path";
+import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { dialog, ipcMain } from "electron";
 import { api, DownloadsData, SettingsData } from "./init";
@@ -171,4 +173,11 @@ export const informDownloadState = () => {
 
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
+});
+
+ipcMain.on("getAdjustVideoPath", () => {
+  const adjustVideoPath = url.pathToFileURL(
+    path.join(SettingsData.downloadsPath, "ajustes.mp4")
+  ).href;
+  return adjustVideoPath;
 });
