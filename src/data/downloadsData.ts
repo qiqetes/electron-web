@@ -190,7 +190,7 @@ class DownloadsDataModel implements DownloadsData {
     const maxDownloadsSize = SettingsData.maxDownloadsSize;
     if (totalDownloadsSize > maxDownloadsSize * 0.8) {
       const toDelete = this.getDeleteCandidate();
-      if (!toDelete) return;
+      if (!toDelete || !AppData.ONLINE) return;
       this.removeDownload(toDelete.id, toDelete.mediaType, false);
     }
 
@@ -659,22 +659,25 @@ class DownloadsDataModel implements DownloadsData {
       const source = path.join(downloadsPath, file);
       const dest = path.join(folder, file);
 
-      fs.rename(source, dest, (err) => {
+      fs.copyFile(source, dest, (err) => {
         if (err) {
           logError("Couldn't move file " + file, err);
-          if (err.code === "EEXIST") return;
 
-          const downloadFile = downloadStatsFromFile(file);
-          if (downloadFile === "ajustes") {
+          const donwloadFile = downloadStatsFromFile(file);
+          if (donwloadFile === "ajustes") {
             this.hasAdjustVideo = false;
             return;
           }
 
-          const { id, mediaType } = downloadFile;
+          const { id, mediaType } = donwloadFile;
           delete this.offlineTrainingClasses[id + "-" + mediaType];
           informDownloadsState();
           return;
         }
+        log(`File ${source} moved to ${dest}`);
+        fs.unlink(source, (err) => {
+          logError("Couldn't delete file " + file, err);
+        });
       });
     });
 

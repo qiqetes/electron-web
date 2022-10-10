@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setUser: (user: User) => {
     ipcRenderer.send("setUser", user);
   },
+
+  getSetting: (setting: string) => ipcRenderer.sendSync("getSetting", setting),
 });
 
 contextBridge.exposeInMainWorld("downloadsAPI", {

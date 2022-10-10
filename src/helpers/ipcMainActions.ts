@@ -181,3 +181,62 @@ ipcMain.on("getAdjustVideoPath", () => {
   ).href;
   return adjustVideoPath;
 });
+
+ipcMain.on("getSetting", (event, setting) => {
+  log("Webapp ask for setting: " + setting);
+  let toReturn: any;
+  switch (setting) {
+    case "default_room":
+      toReturn = SettingsData.defaultRoom;
+      break;
+    case "updated_to_life":
+      toReturn = SettingsData.updated_to_life;
+      break;
+    case "first_experience_status":
+      toReturn = SettingsData.first_experience_status;
+      break;
+    case "C1": {
+      toReturn = SettingsData.downloadsPath;
+      break;
+    }
+    case "C7":
+      toReturn = SettingsData.playerVolume;
+      break;
+    case "C8":
+      toReturn = SettingsData.gymsLogoPath;
+      break;
+    case "C9":
+      toReturn = SettingsData.offlineResolution === "hd" ? "1" : "0";
+      break;
+    case "C10":
+      toReturn = SettingsData.resolutionCreateMP4 === "hd" ? "1" : "0";
+      break;
+    case "C11":
+      toReturn = SettingsData.autoStartGymsScheduler ? "1" : "0";
+      break;
+    case "C13":
+      toReturn = SettingsData.maxDownloadsSize.toString();
+      break;
+    case "waiting_music_file":
+      toReturn = SettingsData.waitingMusicPath;
+      break;
+    case "C14":
+      toReturn = SettingsData.download_scheduled_training_classes ? "1" : "0";
+      break;
+    case "videoHD":
+      toReturn = SettingsData.videoHD;
+      break;
+    case "C22":
+      toReturn = SettingsData.showMonitorView ? "1" : "0";
+      break;
+    case "show_external_setup_video":
+      toReturn = SettingsData.show_external_setup_video ? "1" : "0";
+      break;
+    case "ask_graph_intro_video":
+      toReturn = SettingsData.ask_graph_intro_video ? "1" : "0";
+      break;
+    default:
+      toReturn = null;
+  }
+  event.returnValue = toReturn;
+});
