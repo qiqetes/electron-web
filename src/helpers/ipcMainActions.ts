@@ -119,14 +119,6 @@ ipcMain.on("restoreDefaults", () => {
   mainWindow.webContents.session.clearStorageData();
 });
 
-ipcMain.handle("getDefaultsDownloadsPath", (): string => {
-  
-  if(DB.data) {
-    return DB!.data!.settings.downloadsPath;
-  }
-  return "";
-});
-
 ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
   if (AppData.ONLINE != online) {
     AppData.ONLINE = online;
