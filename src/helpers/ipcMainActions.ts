@@ -1,7 +1,7 @@
 import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { dialog, ipcMain } from "electron";
+import { dialog, ipcMain, app } from "electron";
 import { api, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
@@ -112,11 +112,11 @@ ipcMain.on("restoreDefaults", () => {
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
-
-  console.log(DownloadsData.offlineTrainingClasses);
-
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
+
+  app.relaunch();
+  app.exit();
 });
 
 ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
@@ -175,9 +175,9 @@ ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
 
-ipcMain.on("getAdjustVideoPath", () => {
+ipcMain.on("getAdjustVideoPath", (event) => {
   const adjustVideoPath = url.pathToFileURL(
     path.join(SettingsData.downloadsPath, "ajustes.mp4")
   ).href;
-  return adjustVideoPath;
+  event.returnValue = adjustVideoPath;
 });
