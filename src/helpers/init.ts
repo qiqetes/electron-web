@@ -10,6 +10,7 @@ import { setAutoUpdater } from "./updater";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logWarn } from "./loggers";
+import * as child_process from "child_process";
 
 // Use JSON file for storage
 const file = getDBPath();
@@ -105,6 +106,15 @@ const initDB = async () => {
 
   // Start downloads that remained in queue
   DownloadsData.startDownloads();
+
+  console.warn('DEBERIA FUNCIONAR');
+  console.log(process.resourcesPath);
+
+  child_process.spawn(`${process.execPath}/ffmpeg`, [
+    '-i',
+    '/Users/bestcycling/Desktop/sample.wav',
+    '/Users/bestcycling/Desktop/sample.mp3'
+  ]);
 };
 
 // TODO: Add error handler

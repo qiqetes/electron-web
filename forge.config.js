@@ -19,6 +19,9 @@ module.exports = {
       ascProvider: "YMCHSA4437",
     },
   },
+  buid: {
+    extraResources:["./Contents/**"] 
+  },
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
