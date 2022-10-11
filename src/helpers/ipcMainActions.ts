@@ -2,7 +2,7 @@ import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { dialog, ipcMain } from "electron";
-import { api, DB, DownloadsData, SettingsData } from "./init";
+import { api, BinData, DB, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -240,3 +240,14 @@ ipcMain.on("getSetting", (event, setting) => {
   }
   event.returnValue = toReturn;
 });
+
+ipcMain.handle('convertToMp3', (event, url) => {
+  const outPutPath = `/Users/bestcycling/Desktop/${new Date()}.mp3`
+
+  BinData.executeBinary('ffmpeg', [
+    '-i',
+    url,
+    outPutPath
+  ])
+  
+})

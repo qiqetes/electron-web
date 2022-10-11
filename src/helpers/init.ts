@@ -50,12 +50,6 @@ export const init = async () => {
   // setStartingUrl();
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
-
-  BinData.executeBinary('ffmpeg', [
-    '-i',
-    '/Users/bestcycling/Desktop/sample.wav',
-    '/Users/bestcycling/Desktop/sample.mp3'
-  ]);
 };
 
 /**
