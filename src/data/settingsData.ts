@@ -1,7 +1,8 @@
-import { DB } from "../helpers/init";
 import { app } from "electron";
+import { DB, DownloadsData } from "../helpers/init";
 import { sendToast } from "../helpers/ipcMainActions";
 import { log } from "../helpers/loggers";
+import path from "path";
 
 class SettingsDataModel implements SettingsData {
   ask_graph_intro_video = true; // Mostrar popup de ajuste bicicleta en pantalla externa
@@ -9,7 +10,7 @@ class SettingsDataModel implements SettingsData {
   C16 = false; // Aceleración generador MP4
   defaultRoom = 1;
   download_scheduled_training_classes = false;
-  downloadsPath = app.getPath("userData") + "/Default/offline"; // Directorio de descarga de clases C1
+  downloadsPath = path.join(app.getPath("userData"), "Default", "offline"); // Directorio de descarga de clases C1
   first_experience_status: "idle" = "idle"; // Ocultar primera experiencia first_experience_status
   gymsLogoPath = ""; // Archivo logo gimnasios C8
   maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
@@ -35,7 +36,11 @@ class SettingsDataModel implements SettingsData {
     this.C16 = false; // Aceleración generador MP4
     this.defaultRoom = 1;
     this.download_scheduled_training_classes = false;
-    this.downloadsPath = app.getPath("userData") + "/Default/offline"; // Directorio de descarga de clases C1
+    this.downloadsPath = path.join(
+      app.getPath("userData"),
+      "Default",
+      "offline"
+    ); // Directorio de descarga de clases C1
     this.first_experience_status = "idle"; // Ocultar primera experiencia first_experience_status
     this.gymsLogoPath = ""; // Archivo logo gimnasios C8
     this.maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
@@ -93,9 +98,14 @@ class SettingsDataModel implements SettingsData {
       case "C11":
         this.autoStartGymsScheduler = value == "1";
         break;
-      case "C13":
+      case "C13": {
+        const prevSize = this.maxDownloadsSize;
         this.maxDownloadsSize = parseInt(value);
+        if (prevSize < this.maxDownloadsSize) {
+          DownloadsData.startDownloads();
+        }
         break;
+      }
       case "waiting_music_file":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         this.waitingMusicPath = value;
@@ -122,7 +132,7 @@ class SettingsDataModel implements SettingsData {
     }
 
     if (validSetting) {
-      console.log(`Setting ${setting} saved`);
+      log(`Setting ${setting} saved`);
       this.saveToDb();
       if (process.env.NODE_ENV === "development") {
         sendToast("Preferencia guardada", null, 5);

@@ -166,7 +166,7 @@ export const setAutoUpdater = async () => {
 /**
  * @deprecated since the update is now always installed
  * */
-const isUpdateAlreadyDownloaded = (ver: string) => {
+export const isUpdateAlreadyDownloaded = (ver: string) => {
   if (AppData.LAST_VERSION_DOWNLOADED == ver) {
     // Check if the file already exists
     const tempPath = path.join(app.getPath("temp"), "updateVersion");

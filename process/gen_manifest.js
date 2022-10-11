@@ -120,4 +120,9 @@ const uploadManifest = async () => {
   });
 };
 
+const checkPublish = () => {
+  console.log(process.argv);
+};
+
+console.log(checkPublish());
 await uploadManifest();

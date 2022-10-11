@@ -2,7 +2,7 @@ import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { dialog, ipcMain } from "electron";
-import { api, DB, DownloadsData, SettingsData } from "./init";
+import { api, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
