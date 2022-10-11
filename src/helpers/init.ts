@@ -3,6 +3,7 @@ import { app, crashReporter } from "electron";
 import Kitsu from "kitsu";
 import { JSONFile, Low } from "@commonify/lowdb";
 import { AppData } from "../data/appData";
+import BinDataModel from "../data/binData";
 import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
@@ -18,6 +19,7 @@ const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
 // Data
+export const BinData = new BinDataModel();
 export const SettingsData = new SettingsDataModel();
 export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();
@@ -48,6 +50,12 @@ export const init = async () => {
   // setStartingUrl();
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
+
+  BinData.executeBinary('ffmpeg', [
+    '-i',
+    '/Users/bestcycling/Desktop/sample.wav',
+    '/Users/bestcycling/Desktop/sample.mp3'
+  ]);
 };
 
 /**
@@ -106,15 +114,6 @@ const initDB = async () => {
 
   // Start downloads that remained in queue
   DownloadsData.startDownloads();
-
-  console.warn('DEBERIA FUNCIONAR');
-  console.log(process.resourcesPath);
-
-  child_process.spawn(`${process.execPath}/ffmpeg`, [
-    '-i',
-    '/Users/bestcycling/Desktop/sample.wav',
-    '/Users/bestcycling/Desktop/sample.mp3'
-  ]);
 };
 
 // TODO: Add error handler
