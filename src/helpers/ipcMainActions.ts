@@ -241,13 +241,17 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.handle('convertToMp3', (event, url) => {
-  const outPutPath = `/Users/bestcycling/Desktop/${new Date()}.mp3`
+ipcMain.handle('convertToMp3', async (_, url: string) => {
+  const name = url.split('/').reverse()[0].split('.')[0];
+  const outPutPath = `/Users/bestcycling/Desktop/${name}.mp3`;
 
-  BinData.executeBinary('ffmpeg', [
-    '-i',
-    url,
-    outPutPath
-  ])
-  
+  const response = await new Promise((resolve) => {
+    BinData.executeBinary('ffmpeg', [
+      '-i',
+      url,
+      outPutPath
+    ]).stdout.once('end', () => resolve(outPutPath));
+  });
+
+  return response;
 })

@@ -14,7 +14,7 @@ class BinDataModel implements BinData {
   }
 
   getBinaryPath() {
-    if (process.env.NODE_ENV == "development") {
+    if (process.env.NODE_ENV === 'development') {
       return path.join('extraResource', this.macPath); 
     }
 
@@ -27,7 +27,7 @@ class BinDataModel implements BinData {
         break;
     }
 
-    return path.join(path.join(path.dirname(__dirname), osPath));
+    return path.join(process.resourcesPath, osPath);
   }
 
   executeBinary(command: BinTypes, args: string[]) {
