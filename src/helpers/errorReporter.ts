@@ -52,7 +52,8 @@ class ErrorReporterModel {
   }
 
   report(...errors: any[]) {
-    const errorString = errors.map((e) => e.toString()).join(" ") + "\n";
+    const errorString =
+      errors.map((e) => e?.toString() || "NULL").join(" ") + "\n";
     fs.appendFile(this.sessionErrorReportFile, errorString).catch((err) => {
       console.log("Error appending to error file", err);
     });

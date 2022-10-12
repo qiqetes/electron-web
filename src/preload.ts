@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   baseURL: config.WEBBASE,
   loginPath: config.LOGIN_PATH,
 
+  mainLoaded: () => ipcRenderer.send("mainLoaded"),
+
   // Sqes settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);
@@ -55,6 +57,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   getSetting: (setting: string) => ipcRenderer.sendSync("getSetting", setting),
+
+  handleSettingChange: (
+    callback: (event: Event, setting: string, value: any) => void
+  ) => {
+    ipcRenderer.on("settingChange", callback);
+  },
 });
 
 contextBridge.exposeInMainWorld("downloadsAPI", {

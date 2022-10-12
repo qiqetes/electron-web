@@ -1,22 +1,24 @@
-import { app } from "electron";
+import { app, ipcMain } from "electron";
 import { DB, DownloadsData } from "../helpers/init";
-import { sendToast } from "../helpers/ipcMainActions";
-import { log } from "../helpers/loggers";
+import { informSettingState, sendToast } from "../helpers/ipcMainActions";
+import { log, logError } from "../helpers/loggers";
+import { defaultDownloadsPath } from "../helpers/downloadsHelpers";
 import path from "path";
+import fs from "fs";
+import { mainWindow } from "../index";
 
 class SettingsDataModel implements SettingsData {
   ask_graph_intro_video = true; // Mostrar popup de ajuste bicicleta en pantalla externa
   autoStartGymsScheduler = false; // Iniciar planificador de gimnasios automáticamente, C11
   C16 = false; // Aceleración generador MP4
   defaultRoom = 1;
-  download_scheduled_training_classes = false;
+  download_scheduled_training_classes = true;
   downloadsPath = path.join(app.getPath("userData"), "Default", "offline"); // Directorio de descarga de clases C1
-  first_experience_status: "idle" = "idle"; // Ocultar primera experiencia first_experience_status
   gymsLogoPath = ""; // Archivo logo gimnasios C8
   maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
   offlineResolution: "hd" | "hq" = "hd"; // Calidad videos al descargar offline C9
   playerVolume = 1.0; // Volumen reproductor C7
-  playOnlyOffline = false; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
+  playOnlyOffline = true; // Siempre se trata de reproducir una clase offline desde el planificador play_only_offline_classes
   resolutionCreateMP4: "hd" | "hq" = "hq"; // Calidad HD al generar mp4, C10
   show_external_setup_video = false; // Mostrar video de ajuste en pantalla externa
   showMonitorView = false; // Mostrar vista monitor
@@ -41,7 +43,6 @@ class SettingsDataModel implements SettingsData {
       "Default",
       "offline"
     ); // Directorio de descarga de clases C1
-    this.first_experience_status = "idle"; // Ocultar primera experiencia first_experience_status
     this.gymsLogoPath = ""; // Archivo logo gimnasios C8
     this.maxDownloadsSize = 50; // Espacio máximo en GB ocupado por descargas C13
     this.offlineResolution = "hd"; // Calidad videos al descargar offline C9
@@ -59,6 +60,7 @@ class SettingsDataModel implements SettingsData {
   getFromDb(): void {
     if (!DB.data) return;
     if (DB.data.settings) Object.assign(this, DB.data.settings);
+    this.ensureDownloadsPathExists();
   }
 
   // Saves an old setting to new Settings
@@ -71,10 +73,6 @@ class SettingsDataModel implements SettingsData {
       case "updated_to_life":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         this.updated_to_life = value;
-        break;
-      case "first_experience_status":
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        this.first_experience_status = value;
         break;
       case "C1":
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -138,6 +136,39 @@ class SettingsDataModel implements SettingsData {
         sendToast("Preferencia guardada", null, 5);
       }
     }
+  }
+
+  ensureDownloadsPathExists(): void {
+    if (!fs.existsSync(this.downloadsPath)) {
+      logError("Downloads path does not exist", this.downloadsPath);
+
+      if (!fs.existsSync(defaultDownloadsPath())) {
+        fs.mkdirSync(defaultDownloadsPath());
+      }
+      this.downloadsPath = defaultDownloadsPath();
+      DB.data!.downloads = {
+        offlineTrainingClasses: {},
+        trainingClassesScheduled: [],
+        isDownloading: false,
+        hasAdjustVideo: false,
+      };
+    }
+
+    ipcMain.once("mainLoaded", async () => {
+      const webDownloadsPath = await this.getWebSetting("C1");
+      if (webDownloadsPath !== this.downloadsPath) {
+        informSettingState("C1", this.downloadsPath);
+      }
+    });
+  }
+
+  async getWebSetting(settingCode: string): Promise<any> {
+    const settingsRaw = await mainWindow.webContents.executeJavaScript(
+      `localStorage.getItem("settings");`,
+      true
+    );
+    const settings = JSON.parse(settingsRaw);
+    return settings[settingCode] ?? null;
   }
 }
 

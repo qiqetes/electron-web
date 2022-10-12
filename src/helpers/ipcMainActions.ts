@@ -171,6 +171,13 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
+/**
+ * Will notify the renderer process that main process changed a setting
+ */
+export const informSettingState = (settingCode: string, value: any) => {
+  mainWindow.webContents.send("settingChange", settingCode, value);
+};
+
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
@@ -191,9 +198,6 @@ ipcMain.on("getSetting", (event, setting) => {
       break;
     case "updated_to_life":
       toReturn = SettingsData.updated_to_life;
-      break;
-    case "first_experience_status":
-      toReturn = SettingsData.first_experience_status;
       break;
     case "C1": {
       toReturn = SettingsData.downloadsPath;

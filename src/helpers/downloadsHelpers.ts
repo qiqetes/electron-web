@@ -1,6 +1,6 @@
 import { SettingsData, TrainingClassesData } from "./init";
 import * as fs from "fs-extra";
-import { sendToast } from "./ipcMainActions";
+import { informSettingState, sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
@@ -120,17 +120,6 @@ export const checkCorrectDownloadSize = async (
 
 export const defaultDownloadsPath = () => {
   return path.join(app.getPath("userData"), "Default", "offline");
-};
-
-export const ensureDownloadsPathExists = () => {
-  if (!fs.existsSync(SettingsData.downloadsPath)) {
-    logError("Downloads path does not exist", SettingsData.downloadsPath);
-
-    if (!fs.existsSync(defaultDownloadsPath())) {
-      fs.mkdirSync(defaultDownloadsPath());
-    }
-    SettingsData.downloadsPath = defaultDownloadsPath();
-  }
 };
 
 export const downloadSize = (id: string, mediaType: mediaType) => {

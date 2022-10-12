@@ -1,4 +1,4 @@
-import { app, autoUpdater } from "electron";
+import { app, autoUpdater, BrowserWindow } from "electron";
 import projectInfo from "../../package.json";
 import path from "path";
 import { AppData } from "../../src/data/appData";
@@ -59,7 +59,18 @@ const registerAutoUpdaterEvents = () => {
       log("Update url: ", updateUrl);
       sendToast("Instalando actualización. Se reiniciará la aplicación...");
       try {
-        autoUpdater.quitAndInstall();
+        // https://github.com/electron-userland/electron-builder/issues/6120
+        setImmediate(() => {
+          app.removeAllListeners("window-all-closed");
+          const browserWindows = BrowserWindow.getAllWindows();
+          log(
+            `closing ${browserWindows.length} BrowserWindows for autoUpdater.quitAndInstall`
+          );
+          for (const browserWindow of browserWindows) {
+            browserWindow.close();
+          }
+          autoUpdater.quitAndInstall();
+        });
       } catch (err) {
         logError("Installing update", err);
       }
