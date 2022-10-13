@@ -253,9 +253,9 @@ ipcMain.on('removeTempMp3', (event, fileName)  => {
         `Couldn't delete file for download: ${fileName}, error: `,
         err
       );
-      log('removeTempMp3');
       return;
     }
+    log('removeTempMp3');
   });
 })
 
@@ -280,9 +280,6 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
       'false',
       outPutPath
     ]);
-
-    // hz 44100
-    // bitrate constant
     
     execution.stdout.once('end', () => resolve(outPutPath));
     execution.stdout.once('error', () => reject(''));
