@@ -247,14 +247,32 @@ ipcMain.on("getSetting", (event, setting) => {
 
 ipcMain.handle('convertToMp3', async (_, url: string) => {
   const name = url.split('/').reverse()[0].split('.')[0];
-  const outPutPath = `/Users/bestcycling/Desktop/${name}.mp3`;
+  const date = new Date().getTime();
+
+  console.log(date);
+
+  const outPutPath = `/Users/bestcycling/Desktop/${name}_${date}.mp3`;
 
   return await new Promise((resolve, reject) => {
     const execution = BinData.executeBinary('ffmpeg', [
+      '-y',
       '-i',
       url,
+      '-codec:a',
+      'libmp3lame',
+      '-b:a',
+      '320k',
+      '-ar',
+      '44100',
+      '-write_xing',
+      'false',
       outPutPath
-    ])
+    ]);
+
+    console.log(execution);
+
+    // hz 44100
+    // bitrate constant
     
     execution.stdout.once('end', () => resolve(outPutPath));
     execution.stdout.once('error', () => reject(''));

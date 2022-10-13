@@ -18,7 +18,7 @@ class BinDataModel implements BinData {
       return path.join('extraResource', this.macPath); 
     }
 
-    let osPath = '';
+    let osPath = this.macPath;
 
     switch (os.platform()) {
       case 'darwin': osPath = this.macPath;
