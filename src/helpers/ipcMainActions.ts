@@ -1,14 +1,15 @@
 import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain } from "electron";
 import { api, BinData, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
-import { ErrorReporter, log } from "./loggers";
+import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
+import * as fs from "fs";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -245,13 +246,24 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
+ipcMain.on('removeTempMp3', (event, fileName)  => {
+  fs.rm(path.join(app.getPath('temp'), fileName), (err) => {
+    if (err) {
+      logError(
+        `Couldn't delete file for download: ${fileName}, error: `,
+        err
+      );
+      log('removeTempMp3');
+      return;
+    }
+  });
+})
+
 ipcMain.handle('convertToMp3', async (_, url: string) => {
   const name = url.split('/').reverse()[0].split('.')[0];
   const date = new Date().getTime();
 
-  console.log(date);
-
-  const outPutPath = `/Users/bestcycling/Desktop/${name}_${date}.mp3`;
+  const outPutPath = path.join(app.getPath('temp'), `${name}_${date}.mp3`);
 
   return await new Promise((resolve, reject) => {
     const execution = BinData.executeBinary('ffmpeg', [
@@ -268,8 +280,6 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
       'false',
       outPutPath
     ]);
-
-    console.log(execution);
 
     // hz 44100
     // bitrate constant
