@@ -1,9 +1,10 @@
-import { SettingsData } from "./init";
+import { SettingsData, TrainingClassesData } from "./init";
 import * as fs from "fs-extra";
-import { sendToast } from "./ipcMainActions";
+import { informSettingState, sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
+import { app } from "electron";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -115,4 +116,16 @@ export const checkCorrectDownloadSize = async (
   // const fileSizeInBytes = stats.size;
   // return fileSizeInBytes === size;
   return true;
+};
+
+export const defaultDownloadsPath = () => {
+  return path.join(app.getPath("userData"), "Default", "offline");
+};
+
+export const downloadSize = (id: string, mediaType: mediaType) => {
+  const trainingClass = TrainingClassesData.getTraingClass(id);
+  if (!trainingClass) return null;
+  const media = trainingClass.media.find((m) => m.type === mediaType);
+  if (!media) return null;
+  return media.size;
 };

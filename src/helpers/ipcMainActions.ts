@@ -2,7 +2,7 @@ import path from "path";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { dialog, ipcMain } from "electron";
-import { api, BinData, DB, DownloadsData, SettingsData } from "./init";
+import { api, BinData, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -171,6 +171,13 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
+/**
+ * Will notify the renderer process that main process changed a setting
+ */
+export const informSettingState = (settingCode: string, value: any) => {
+  mainWindow.webContents.send("settingChange", settingCode, value);
+};
+
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
@@ -191,9 +198,6 @@ ipcMain.on("getSetting", (event, setting) => {
       break;
     case "updated_to_life":
       toReturn = SettingsData.updated_to_life;
-      break;
-    case "first_experience_status":
-      toReturn = SettingsData.first_experience_status;
       break;
     case "C1": {
       toReturn = SettingsData.downloadsPath;
@@ -245,13 +249,14 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
   const name = url.split('/').reverse()[0].split('.')[0];
   const outPutPath = `/Users/bestcycling/Desktop/${name}.mp3`;
 
-  const response = await new Promise((resolve) => {
-    BinData.executeBinary('ffmpeg', [
+  return await new Promise((resolve, reject) => {
+    const execution = BinData.executeBinary('ffmpeg', [
       '-i',
       url,
       outPutPath
-    ]).stdout.once('end', () => resolve(outPutPath));
+    ])
+    
+    execution.stdout.once('end', () => resolve(outPutPath));
+    execution.stdout.once('error', () => reject(''));
   });
-
-  return response;
 })

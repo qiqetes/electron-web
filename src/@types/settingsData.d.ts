@@ -1,7 +1,7 @@
 interface SettingsData extends IndexableData {
   showSecondaryDisplay: boolean; // Mostrar Display secundario y pausar al inicio
   updated_to_life: boolean;
-  first_experience_status: "idle"; // Ocultar primera experiencia first_experience_status
+
   downloadsPath: string; // Directorio de descarga de clases C1
   playerVolume: number; // Volumen reproductor C7
   gymsLogoPath: string; // Archivo logo gimnasios C8
