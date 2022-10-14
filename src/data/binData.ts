@@ -9,8 +9,11 @@ class BinDataModel implements BinData {
   win32Path = 'win32';
   win64Path = 'win64';
 
+  currentSystem: SystemsAllowed = 'WIN';
+
   constructor() {
     this.binaryPath = this.getBinaryPath();
+    this.currentSystem = this.binaryPath.split('/').reverse()[0] === this.macPath ? 'MAC' : 'WIN';
   }
 
   getBinaryPath() {
@@ -25,16 +28,18 @@ class BinDataModel implements BinData {
         break;
       case 'win32': osPath = this.win32Path;
         break;
+      
+      default: osPath = this.win64Path;
     }
 
     return path.join(process.resourcesPath, `extraResource/${osPath}`);
   }
 
   executeBinary(command: BinTypes, args: string[], options?: Record<string, unknown>) {
-    // Deberia de añadirse \C o /C (no recuerdo) si es windows antes del fullCommand/binaryPath
     const fullCommand = path.join(this.binaryPath, command);
+    const finalCommand = this.currentSystem === 'WIN' ? `\\c ${fullCommand}` : fullCommand;
 
-    return child_process.spawn(fullCommand, args, options);
+    return child_process.spawn(finalCommand, args, options);
   }
 
 }
