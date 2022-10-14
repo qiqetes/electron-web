@@ -27,7 +27,7 @@ class BinDataModel implements BinData {
         break;
     }
 
-    return path.join(process.resourcesPath, osPath);
+    return path.join(process.resourcesPath, `extraResource/${osPath}`);
   }
 
   executeBinary(command: BinTypes, args: string[]) {
