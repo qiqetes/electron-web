@@ -10,7 +10,7 @@ module.exports = {
       "entitlements-inherit": "./process/entitlements.plist",
       hardenedRuntime: true,
     },
-    extraResource: "extraResource/",
+    extraResource: "bin/",
 
     // Commenting out this object will disable code signing for OS X.
     // osxNotarize: {

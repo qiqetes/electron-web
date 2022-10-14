@@ -18,7 +18,7 @@ class BinDataModel implements BinData {
 
   getBinaryPath() {
     if (process.env.NODE_ENV === 'development') {
-      return path.join('extraResource', this.macPath); 
+      return path.join('bin', this.macPath); 
     }
 
     let osPath = this.macPath;
@@ -32,7 +32,7 @@ class BinDataModel implements BinData {
       default: osPath = this.win64Path;
     }
 
-    return path.join(process.resourcesPath, `extraResource/${osPath}`);
+    return path.join(process.resourcesPath, 'bin', osPath);
   }
 
   executeBinary(command: BinTypes, args: string[], options?: Record<string, unknown>) {
