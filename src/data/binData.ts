@@ -30,10 +30,11 @@ class BinDataModel implements BinData {
     return path.join(process.resourcesPath, osPath);
   }
 
-  executeBinary(command: BinTypes, args: string[]) {
+  executeBinary(command: BinTypes, args: string[], options?: Record<string, unknown>) {
+    // Deberia de añadirse \C o /C (no recuerdo) si es windows antes del fullCommand/binaryPath
     const fullCommand = path.join(this.binaryPath, command);
 
-    return child_process.spawn(fullCommand, args);
+    return child_process.spawn(fullCommand, args, options);
   }
 
 }

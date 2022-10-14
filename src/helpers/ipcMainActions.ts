@@ -246,7 +246,9 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on('removeTempMp3', (event, fileName)  => {
+ipcMain.on('removeTempMp3', (_, fileName)  => {
+  if (!fileName) return;
+
   fs.rm(path.join(app.getPath('temp'), fileName), (err) => {
     if (err) {
       logError(
@@ -255,6 +257,7 @@ ipcMain.on('removeTempMp3', (event, fileName)  => {
       );
       return;
     }
+
     log('removeTempMp3');
   });
 })
@@ -265,7 +268,22 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
 
   const outPutPath = path.join(app.getPath('temp'), `${name}_${date}.mp3`);
 
+  const inform = await new Promise((resolve, reject) => {
+    log('Getting data from file...');
+
+    const data = BinData.executeBinary('ffmpeg', ['-i', url]);
+
+    data.stderr.once('data', (data) => resolve(data.toString()));
+    data.stdout.once('error', () => reject(''));
+  });
+
+  console.log(inform);
+
+  // Procesar inform y comprobar la extension. Si no es wav fuera
+
   return await new Promise((resolve, reject) => {
+    log('Creating mp3 from wav...');
+
     const execution = BinData.executeBinary('ffmpeg', [
       '-y',
       '-i',
@@ -278,6 +296,8 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
       '44100',
       '-write_xing',
       'false',
+      '-f',
+      'mp3',
       outPutPath
     ]);
     
