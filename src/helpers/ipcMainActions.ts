@@ -268,18 +268,32 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
 
   const outPutPath = path.join(app.getPath('temp'), `${name}_${date}.mp3`);
 
-  const inform = await new Promise((resolve, reject) => {
+  const isValid = await new Promise((resolve, reject) => {
     log('Getting data from file...');
 
     const data = BinData.executeBinary('ffmpeg', ['-i', url]);
+    const buff: number[] = [];
 
-    data.stderr.once('data', (data) => resolve(data.toString()));
+    data.stderr.on('data', (data) => buff.push(data.toString()));
+    data.stderr.once('end', () => {
+      // Formats buffer as an array with valid words
+      const output = buff.splice(2).join().split(/\s|\n/).filter(out => out);
+
+      // Calculate index of Input word to find extension
+      const firstEntry = output.indexOf('Input');
+      const entryPoint = output.indexOf('Input', firstEntry + 1) + 2;
+
+      const valid = output[entryPoint].includes('wav');
+
+      resolve(valid);
+    });
     data.stdout.once('error', () => reject(''));
   });
 
-  console.log(inform);
-
-  // Procesar inform y comprobar la extension. Si no es wav fuera
+  if (!isValid) {
+    logError('convertToMp3: isValid => Error converting to mp3. Entry extension must be wav');
+    return '';
+  }
 
   return await new Promise((resolve, reject) => {
     log('Creating mp3 from wav...');
