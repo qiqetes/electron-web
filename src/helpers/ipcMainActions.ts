@@ -287,7 +287,7 @@ ipcMain.handle('convertToMp3', async (_, url: string) => {
 
       resolve(valid);
     });
-    data.stdout.once('error', () => reject(''));
+    data.stdout.once('error', () => reject(false));
   });
 
   if (!isValid) {
