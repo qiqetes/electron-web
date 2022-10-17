@@ -1,4 +1,6 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+
+import path from "path";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import { avoidExternalPageRequests } from "./helpers";
@@ -79,7 +81,14 @@ const createWindow = async () => {
   hrService.registerBluetoothEvents(mainWindow);
 };
 
-app.on("ready", () => {
+const reactDevToolsPath = path.join(
+  process.cwd(),
+  "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
+);
+
+app.on("ready", async () => {
+  if (process.env.NODE_ENV === "development")
+    await session.defaultSession.loadExtension(reactDevToolsPath);
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();
 });
