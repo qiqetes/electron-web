@@ -39,6 +39,14 @@ class BinDataModel implements BinData {
     const fullCommand = path.join(this.binaryPath, command);
     const finalCommand = this.currentSystem === 'WIN' ? `\\c ${fullCommand}` : fullCommand;
 
+    /**
+     * TO-DO: Needs to be tested
+     * For windows command should be something like:
+     * command => cmd.exe (entry point for command line, not the parameter command)
+     * args => ['c/', paramCommand, paramArgs]
+     * 
+     * return child_process.spawn('cmd.exe', ['c/', command, ...args]);
+     */
     return child_process.spawn(finalCommand, args, options);
   }
 
