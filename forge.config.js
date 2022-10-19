@@ -10,14 +10,15 @@ module.exports = {
       "entitlements-inherit": "./process/entitlements.plist",
       hardenedRuntime: true,
     },
+    extraResource: "bin/",
 
     // Commenting out this object will disable code signing for OS X.
-    osxNotarize: {
-      appBundleId: "com.nw-builder.bestcyclingtv",
-      appleId: process.env.APPLE_ID,
-      appleIdPassword: process.env.APPLE_ID_PASSWORD,
-      ascProvider: "YMCHSA4437",
-    },
+    // osxNotarize: {
+    //   appBundleId: "com.nw-builder.bestcyclingtv",
+    //   appleId: process.env.APPLE_ID,
+    //   appleIdPassword: process.env.APPLE_ID_PASSWORD,
+    //   ascProvider: "YMCHSA4437",
+    // },
   },
   makers: [
     {
