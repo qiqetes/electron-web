@@ -1,4 +1,5 @@
 import path from "path";
+import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { app, dialog, ipcMain } from "electron";
@@ -246,76 +247,88 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on('removeTempMp3', (_, fileName)  => {
+ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  fs.rm(path.join(app.getPath('temp'), fileName), (err) => {
+  fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
-      logError(
-        `Couldn't delete file for download: ${fileName}, error: `,
-        err
-      );
+      logError(`Couldn't delete file for download: ${fileName}, error: `, err);
       return;
     }
 
-    log('removeTempMp3');
+    log("removeTempMp3");
   });
-})
+});
 
-ipcMain.handle('convertToMp3', async (_, url: string) => {
-  const name = url.split('/').reverse()[0].split('.')[0];
+ipcMain.handle("convertToMp3", async (_, url: string) => {
+  const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  const name = url.split(path.sep).reverse()[0].split(".")[0];
   const date = new Date().getTime();
 
-  const outPutPath = path.join(app.getPath('temp'), `${name}_${date}.mp3`);
+  const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
 
   const isValid = await new Promise((resolve, reject) => {
-    log('Getting data from file...');
+    log("Getting data from file...");
 
-    const data = BinData.executeBinary('ffmpeg', ['-i', url]);
+    const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
     const buff: number[] = [];
 
-    data.stderr.on('data', (data) => buff.push(data.toString()));
-    data.stderr.once('end', () => {
+    data.stderr.on("data", (data) => buff.push(data.toString()));
+    data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
-      const output = buff.splice(2).join().split(/\s|\n/).filter(out => out);
+      const output = buff
+        .splice(2)
+        .join()
+        .split(/\s|\n/)
+        .filter((out) => out);
 
       // Calculate index of Input word to find extension
-      const firstEntry = output.indexOf('Input');
-      const entryPoint = output.indexOf('Input', firstEntry + 1) + 2;
+      const firstEntry = output.indexOf("Input");
+      const entryPoint = output.indexOf("Input", firstEntry + 1) + 2;
 
-      const valid = output[entryPoint].includes('wav');
+      const valid = output[entryPoint].includes("wav");
 
       resolve(valid);
     });
-    data.stdout.once('error', () => reject(false));
+    data.stdout.once("error", (err) => {
+      logError("Error getting data from file: ", err);
+      reject(false);
+    });
   });
 
   if (!isValid) {
-    logError('convertToMp3: isValid => Error converting to mp3. Entry extension must be wav');
-    return '';
+    logError(
+      "convertToMp3: isValid => Error converting to mp3. Entry extension must be wav"
+    );
+    return "";
   }
 
   return await new Promise((resolve, reject) => {
-    log('Creating mp3 from wav...');
+    log("Creating mp3 from wav...");
 
-    const execution = BinData.executeBinary('ffmpeg', [
-      '-y',
-      '-i',
+    const execution = BinData.executeBinary(ffmpegBin, [
+      "-y",
+      "-i",
       url,
-      '-codec:a',
-      'libmp3lame',
-      '-b:a',
-      '320k',
-      '-ar',
-      '44100',
-      '-write_xing',
-      'false',
-      '-f',
-      'mp3',
-      outPutPath
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "320k",
+      "-ar",
+      "44100",
+      "-write_xing",
+      "false",
+      "-f",
+      "mp3",
+      outPutPath,
     ]);
-    
-    execution.stdout.once('end', () => resolve(outPutPath));
-    execution.stdout.once('error', () => reject(''));
+
+    execution.stdout.once("end", () => {
+      resolve(outPutPath);
+    });
+    execution.stdout.once("error", (err) => {
+      logError("convertToMp3: Error converting to mp3: ", err);
+      reject("");
+    });
   });
-})
+});
