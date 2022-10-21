@@ -10,6 +10,7 @@ import { sendToast } from "./helpers/ipcMainActions";
 import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
 import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService";
+import { AppData } from "./data/appData";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -71,7 +72,10 @@ const createWindow = async () => {
 
   mainWindow.on("close", async () => await saveAll());
 
-  mainWindow.webContents.on("new-window", function (e, url) {
+  mainWindow.webContents.on("new-window", (e, url) => {
+    const isExternalPlayer =
+      url.startsWith(AppData.WEBAPP_WEBASE!) && url.endsWith("/external.html");
+    if (isExternalPlayer) return;
     e.preventDefault();
     shell.openExternal(url);
   });

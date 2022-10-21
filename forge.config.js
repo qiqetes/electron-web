@@ -1,4 +1,5 @@
 require("dotenv").config();
+const makeUniversalApp = require("@electron/universal").makeUniversalApp;
 
 module.exports = {
   packagerConfig: {
@@ -11,14 +12,18 @@ module.exports = {
       hardenedRuntime: true,
     },
     extraResource: "bin/",
+    osxUniversal: {
+      x64ArchFiles: "Contents/Resources/bin/mac/ffmpeg",
+      force: true,
+    },
 
     // Commenting out this object will disable code signing for OS X.
-    // osxNotarize: {
-    //   appBundleId: "com.nw-builder.bestcyclingtv",
-    //   appleId: process.env.APPLE_ID,
-    //   appleIdPassword: process.env.APPLE_ID_PASSWORD,
-    //   ascProvider: "YMCHSA4437",
-    // },
+    osxNotarize: {
+      appBundleId: "com.nw-builder.bestcyclingtv",
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_ID_PASSWORD,
+      ascProvider: "YMCHSA4437",
+    },
   },
   makers: [
     {
