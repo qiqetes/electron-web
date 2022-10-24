@@ -191,7 +191,11 @@ class DownloadsDataModel implements DownloadsData {
     if (totalDownloadsSize > maxDownloadsSize * 0.8) {
       logWarn("Downloads limit reached");
       const deleteCandidate = this.getDeleteCandidate();
-      if (!deleteCandidate || !AppData.ONLINE) return;
+      if (!deleteCandidate || !AppData.ONLINE) {
+        download.status = "queued";
+        this.isDownloading = false;
+        return;
+      }
       log(`Delete candidate ${deleteCandidate.id}`);
       this.removeDownload(deleteCandidate.id, deleteCandidate.mediaType, false);
     }
@@ -244,14 +248,15 @@ class DownloadsDataModel implements DownloadsData {
     let url = `${mediaUrl}&access_token=${accessToken}`;
 
     // In development we will use a test video to reduce cloudfront usage
-    if (process.env.NODE_ENV == "development") {
-      url =
-        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
-    }
+    // if (process.env.NODE_ENV == "development") {
+    //   url =
+    //     "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+    // }
 
     // START THE DOWNLOAD PROCESS
     const writeStream = fs.createWriteStream(filename);
-    const htProtocol = process.env.NODE_ENV === "development" ? http : https;
+    // const htProtocol = process.env.NODE_ENV === "development" ? http : https;
+    const htProtocol = https;
 
     this.currentTask = htProtocol
       .get(url, (res) => {
@@ -737,6 +742,27 @@ class DownloadsDataModel implements DownloadsData {
     Object.keys(this.offlineTrainingClasses).forEach((key) => {
       if (foundDownloads.includes(key)) return;
       delete this.offlineTrainingClasses[key];
+    });
+
+    // Add unregistered downloads
+    foundDownloads.forEach((key) => {
+      if (this.offlineTrainingClasses[key]) return;
+
+      const id = key.split("-")[0];
+      const mediaType = key.split("-")[1] as mediaType;
+      log("Adding unregistered download " + key);
+      TrainingClassesData.addTraining(id, true);
+      this.offlineTrainingClasses[key] = {
+        id: id,
+        mediaType: mediaType,
+        status: "downloaded",
+        progress: 100,
+        size: fs.statSync(path.join(folder, filenameStealth(id, mediaType)))
+          .size,
+        downloaded: true,
+        retries: 0,
+        timestamp: null,
+      };
     });
   }
 

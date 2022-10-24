@@ -5,12 +5,14 @@ import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import { avoidExternalPageRequests } from "./helpers";
 
-import { DownloadsData, init } from "./helpers/init";
+import { DownloadsData, init, SettingsData } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
 import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
 import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService";
 import { AppData } from "./data/appData";
+import { filenameStealth } from "./helpers/downloadsHelpers";
+import fs from "fs";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -97,15 +99,18 @@ app.on("ready", async () => {
   createWindow();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on("window-all-closed", async () => {
+  const download = DownloadsData.getDownloading();
+  if (download) {
+    log("Removing download before app close");
+    const filename = filenameStealth(download.id, download.mediaType);
+    fs.unlinkSync(path.join(SettingsData.downloadsPath, filename));
+  }
+
   LocalServerInstance.stop();
   await saveAll();
-  // if (process.platform !== "darwin") {
+
   app.quit();
-  // }
 });
 
 app.on("activate", () => {

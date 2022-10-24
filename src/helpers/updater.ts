@@ -121,6 +121,13 @@ export const setAutoUpdater = async () => {
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
 
   const setAutoUpdaterMac = () => {
+    if (!app.isInApplicationsFolder()) {
+      logError("Tried updating from a non-app folder, aborting");
+      sendToast(
+        "Por favor, instala la aplicación arrastrándola a la carpeta de aplicaciones"
+      );
+    }
+
     // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.
     const json = {
       url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
@@ -137,6 +144,12 @@ export const setAutoUpdater = async () => {
   };
 
   const setAutoUpdaterWin = async () => {
+    // In windows we need to avoid running an update the first time the app runs
+    const cmd = process.argv[1];
+    if (cmd == "--squirrel-firstrun") {
+      return;
+    }
+
     log("RELEASES downloaded in temp folder", tempPath);
     fs.readFile(path.join(tempPath, "RELEASES"), "utf8", (err, data) => {
       if (err) {
