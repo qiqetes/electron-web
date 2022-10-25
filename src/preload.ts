@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import config from "./config";
+import { UpdaterEvents } from "./helpers/ipcMainActions";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
@@ -33,6 +34,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
       textCancel?: string
     ) => void
   ) => ipcRenderer.on("modal", callback),
+
+  handleUpdaterEvent: (
+    callback: (event: Event, updaterEvent: UpdaterEvents) => void
+  ) => ipcRenderer.on("updaterEvent", callback),
+
   modalOk: () => ipcRenderer.send("modalOk"),
   modalCancel: () => ipcRenderer.send("modalCancel"),
 
@@ -84,7 +90,8 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
 
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
   convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
-  removeTempMp3: (fileName: string) => ipcRenderer.send("removeTempMp3", fileName),
+  removeTempMp3: (fileName: string) =>
+    ipcRenderer.send("removeTempMp3", fileName),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>

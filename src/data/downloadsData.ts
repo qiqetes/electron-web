@@ -248,15 +248,14 @@ class DownloadsDataModel implements DownloadsData {
     let url = `${mediaUrl}&access_token=${accessToken}`;
 
     // In development we will use a test video to reduce cloudfront usage
-    // if (process.env.NODE_ENV == "development") {
-    //   url =
-    //     "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
-    // }
+    if (process.env.NODE_ENV == "development") {
+      url =
+        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+    }
 
     // START THE DOWNLOAD PROCESS
     const writeStream = fs.createWriteStream(filename);
-    // const htProtocol = process.env.NODE_ENV === "development" ? http : https;
-    const htProtocol = https;
+    const htProtocol = process.env.NODE_ENV === "development" ? http : https;
 
     this.currentTask = htProtocol
       .get(url, (res) => {

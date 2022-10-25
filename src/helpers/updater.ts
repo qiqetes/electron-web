@@ -1,4 +1,4 @@
-import { app, autoUpdater, BrowserWindow } from "electron";
+import { app, autoUpdater, BrowserWindow, webContents } from "electron";
 import projectInfo from "../../package.json";
 import path from "path";
 import { AppData } from "../../src/data/appData";
@@ -8,7 +8,7 @@ import { log, logError, logWarn } from "./loggers";
 import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
-import { sendToast } from "./ipcMainActions";
+import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
 
 type Pckg = { url: string };
 
@@ -36,6 +36,7 @@ const isNewVersionNuber = (actual: string, incoming: string) => {
 const registerAutoUpdaterEvents = () => {
   autoUpdater.on("error", (err) => {
     logError("Registering auto updater events", err);
+    sendUpdaterEvent({ type: "update_error", error: err.toString() });
   });
 
   autoUpdater.on("checking-for-update", () =>
@@ -44,7 +45,7 @@ const registerAutoUpdaterEvents = () => {
 
   autoUpdater.on("update-available", () => {
     log("Update available, updating");
-    sendToast("Se ha encontrado una actualización. Descargando...");
+    sendUpdaterEvent({ type: "update_installing" });
   });
 
   autoUpdater.on("update-not-available", () => logWarn("Update not available"));
@@ -71,8 +72,9 @@ const registerAutoUpdaterEvents = () => {
           }
           autoUpdater.quitAndInstall();
         });
-      } catch (err) {
+      } catch (err: any) {
         logError("Installing update", err);
+        sendUpdaterEvent({ type: "update_error", error: err?.toString() });
       }
     }
   );
@@ -123,6 +125,11 @@ export const setAutoUpdater = async () => {
   const setAutoUpdaterMac = () => {
     if (!app.isInApplicationsFolder()) {
       logError("Tried updating from a non-app folder, aborting");
+      sendUpdaterEvent({
+        type: "update_error",
+        error:
+          "Por favor, instala la aplicación arrastrándola a la carpeta de aplicaciones",
+      });
       sendToast(
         "Por favor, instala la aplicación arrastrándola a la carpeta de aplicaciones"
       );
@@ -169,14 +176,24 @@ export const setAutoUpdater = async () => {
           });
           autoUpdater.checkForUpdates();
           AppData.LAST_VERSION_DOWNLOADED = version;
-        }
+        },
+        (percentage) =>
+          sendUpdaterEvent({ type: "update_downloading", progress: percentage })
       );
     });
   };
 
   registerAutoUpdaterEvents();
+  sendUpdaterEvent({ type: "update_found", version });
   if (os.platform() == "darwin") {
-    download(tempPath, "update.zip", updateUrl, setAutoUpdaterMac);
+    download(
+      tempPath,
+      "update.zip",
+      updateUrl,
+      setAutoUpdaterMac,
+      (percentage) =>
+        sendUpdaterEvent({ type: "update_downloading", progress: percentage })
+    );
   } else if (os.platform() == "win32") {
     download(
       tempPath,

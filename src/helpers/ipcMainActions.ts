@@ -147,6 +147,20 @@ export const sendToast = (
   mainWindow.webContents.send("toast", message, variation, duration);
 };
 
+export type UpdaterEvents =
+  | { type: "update_found"; version: string }
+  | { type: "update_downloading"; progress: number }
+  | { type: "update_downloaded" }
+  | { type: "update_installing" }
+  | { type: "update_error"; error: string };
+export const sendUpdaterEvent = (updaterEvent: UpdaterEvents) => {
+  if (!AppData.MAIN_LOADED)
+    preRendererCachedActions.push(() =>
+      mainWindow.webContents.send("updaterEvent", updaterEvent)
+    );
+  mainWindow.webContents.send("updaterEvent", updaterEvent);
+};
+
 export const showModal = (
   message: string,
   textOk = "OK",
@@ -331,4 +345,14 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       reject("");
     });
   });
+});
+
+// There are some actions that need to comunicate with the renderer process
+// but they are launched before the execution of the renderer process
+// so we need to store the actions and execute them when the renderer process
+// is ready
+const preRendererCachedActions: (() => void)[] = [];
+ipcMain.once("mainLoaded", () => {
+  AppData.MAIN_LOADED = true;
+  preRendererCachedActions.forEach((action) => action());
 });
