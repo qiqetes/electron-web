@@ -187,6 +187,10 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
+export const informConversionState = (value: number) => {
+  mainWindow.webContents.send("conversionState", value);
+}
+
 /**
  * Will notify the renderer process that main process changed a setting
  */
@@ -276,7 +280,7 @@ ipcMain.on("removeTempMp3", (_, fileName) => {
 
 ipcMain.handle("convertToMp3", async (_, url: string) => {
   const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
-  const name = url.split(path.sep).reverse()[0].split(".")[0];
+  const name = url.split('/').reverse()[0].split(".")[0];
   const date = new Date().getTime();
 
   const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
@@ -291,7 +295,6 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
       const output = buff
-        .splice(2)
         .join()
         .split(/\s|\n/)
         .filter((out) => out);
@@ -299,8 +302,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       // Calculate index of Input word to find extension
       const firstEntry = output.indexOf("Input");
       const entryPoint = output.indexOf("Input", firstEntry + 1) + 2;
-
-      const valid = output[entryPoint].includes("wav");
+      const valid = output[entryPoint]?.includes("wav");
 
       resolve(valid);
     });
@@ -337,10 +339,43 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       outPutPath,
     ]);
 
-    execution.stdout.once("end", () => {
+    const toSeconds = (date: string) => {
+      const times = [3600, 60, 1];
+      let seconds = 0;
+
+      times.forEach((time, index) => seconds += parseInt(date[index]) * time);
+      return seconds;
+    }
+
+    let durationInSeconds = 0;
+
+    execution.stderr.on('data', (data) => {
+      const buff = data.toString().split(' ');
+      const durationIndex = buff.indexOf('Duration:');
+
+      if (durationIndex !== -1) {
+        const duration = buff[durationIndex + 1].split(',')[0].split(':');
+        durationInSeconds = toSeconds(duration);
+        return;
+      }
+
+      const timeBuff = buff.join('=').split('=');
+      const timeIndex = timeBuff.indexOf('time');
+
+      if (timeIndex !== -1) {
+        const time = timeBuff[timeIndex + 1].split(':');
+        const seconds = toSeconds(time);
+
+        const percent = Math.trunc(100 * seconds / durationInSeconds);
+
+        log(`Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`)
+        informConversionState(percent);
+      }
+    });
+    execution.stderr.once("end", () => {
       resolve(outPutPath);
     });
-    execution.stdout.once("error", (err) => {
+    execution.stderr.once("error", (err) => {
       logError("convertToMp3: Error converting to mp3: ", err);
       reject("");
     });
