@@ -11,7 +11,6 @@ import { setAutoUpdater } from "./updater";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logWarn } from "./loggers";
-import * as child_process from "child_process";
 
 // Use JSON file for storage
 const file = getDBPath();

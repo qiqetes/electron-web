@@ -187,6 +187,10 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
+export const informConversionState = (percent: number) => {
+  mainWindow.webContents.send("conversionState", percent);
+}
+
 /**
  * Will notify the renderer process that main process changed a setting
  */
@@ -261,9 +265,12 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
+ipcMain.on("stopConversion", () => BinData.processes['ffmpeg'].kill());
+
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
+  delete BinData.processes['ffmpeg'];
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -276,12 +283,12 @@ ipcMain.on("removeTempMp3", (_, fileName) => {
 
 ipcMain.handle("convertToMp3", async (_, url: string) => {
   const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  
   const name = url.split(path.sep).reverse()[0].split(".")[0];
   const date = new Date().getTime();
-
   const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
 
-  const isValid = await new Promise((resolve, reject) => {
+  const isMp3 = await new Promise((resolve, reject) => {
     log("Getting data from file...");
 
     const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
@@ -290,19 +297,11 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
-      const output = buff
-        .splice(2)
+      const mp3 = buff
         .join()
-        .split(/\s|\n/)
-        .filter((out) => out);
+        .match(/Input.+ mp3/);
 
-      // Calculate index of Input word to find extension
-      const firstEntry = output.indexOf("Input");
-      const entryPoint = output.indexOf("Input", firstEntry + 1) + 2;
-
-      const valid = output[entryPoint].includes("wav");
-
-      resolve(valid);
+      resolve(mp3);
     });
     data.stdout.once("error", (err) => {
       logError("Error getting data from file: ", err);
@@ -310,12 +309,32 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     });
   });
 
-  if (!isValid) {
-    logError(
-      "convertToMp3: isValid => Error converting to mp3. Entry extension must be wav"
-    );
-    return "";
+  if (isMp3) {
+    log(`Unnecessary conversion detected: returning ${url}`)
+    return url;
   }
+
+  const toSeconds = (date: string) => {
+    const times = [3600, 60, 1];
+    let seconds = 0;
+
+    times.forEach((time, index) => seconds += parseInt(date[index]) * time);
+    return seconds;
+  }
+
+  const onExit = () => {
+    delete BinData.processes['ffmpeg'];
+    fs.rm(outPutPath, (err) => {
+      if (err) {
+        logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
+        return;
+      }
+
+      log("removeTempMp3");
+    });
+  }
+
+  let durationInSeconds = 0;
 
   return await new Promise((resolve, reject) => {
     log("Creating mp3 from wav...");
@@ -337,12 +356,43 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       outPutPath,
     ]);
 
-    execution.stdout.once("end", () => {
-      resolve(outPutPath);
+    execution.stderr.on("data", (data) => {
+      // Looking for Duration in console err output
+      const buff = data.toString().split(' ');
+      const durationIndex = buff.indexOf('Duration:');
+
+      if (durationIndex !== -1) {
+        const duration = buff[durationIndex + 1].split(',')[0].split(':');
+        durationInSeconds = toSeconds(duration);
+        return;
+      }
+
+      // Looking for Time in console err output
+      const timeBuff = buff.join('=').split('=');
+      const timeIndex = timeBuff.indexOf('time');
+
+      if (timeIndex !== -1) {
+        // Convert times to percent
+        const time = timeBuff[timeIndex + 1].split(':');
+        const seconds = toSeconds(time);
+
+        const percent = Math.trunc(100 * seconds / durationInSeconds);
+
+        log(`Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`)
+        informConversionState(percent);
+      }
     });
-    execution.stdout.once("error", (err) => {
+    execution.stderr.once("end", () => resolve(outPutPath));
+    execution.stderr.once("error", (err) => {
+      onExit();
+
       logError("convertToMp3: Error converting to mp3: ", err);
       reject("");
+    });
+    execution.on("exit", () => {
+      if (!execution.killed) return;
+
+      onExit();
     });
   });
 });

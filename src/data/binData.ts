@@ -2,13 +2,14 @@ import * as os from "os";
 import path from "path";
 import child_process from "child_process";
 
-class BinDataModel implements BinData {
+class BinDataModel implements IBinData {
   binaryPath = "";
   macPath = "mac";
   win32Path = "win32";
   // win64Path = "win64";
 
   currentSystem: SystemsAllowed = "WIN";
+  processes: IBinProcessesData  = {}
 
   constructor() {
     this.binaryPath = this.getBinaryPath();
@@ -60,13 +61,19 @@ class BinDataModel implements BinData {
      */
 
     if (os.platform() === "darwin") {
-      return child_process.spawn(fullCommand, args, options);
+      const process = child_process.spawn(fullCommand, args, options);
+
+      this.processes[command] = process;
+      return process;
     } else if (os.platform() === "win32") {
-      return child_process.spawn(
+      const process = child_process.spawn(
         "cmd.exe",
         ["/c", fullCommand, ...args],
         options
       );
+
+      this.processes[command.split('.')[0]] = process;
+      return process;
     } else {
       throw new Error("Platform not supported");
     }

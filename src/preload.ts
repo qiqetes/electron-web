@@ -71,6 +71,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 });
 
+contextBridge.exposeInMainWorld("conversionAPI", {
+  stopConversion: () => ipcRenderer.send("stopConversion"),
+  removeTempMp3: (fileName: string) =>
+    ipcRenderer.send("removeTempMp3", fileName),
+  convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
+
+  handleConversionState: (
+    callback: (event: Event, percent: number) => void
+  ) => {
+    ipcRenderer.on("conversionState", callback);
+  },
+});
+
 contextBridge.exposeInMainWorld("downloadsAPI", {
   startLocalServer: () => ipcRenderer.send("startLocalServer"),
   stopLocalServer: () => ipcRenderer.send("stopLocalServer"),
@@ -89,9 +102,6 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   },
 
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
-  convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
-  removeTempMp3: (fileName: string) =>
-    ipcRenderer.send("removeTempMp3", fileName),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>

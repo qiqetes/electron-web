@@ -53,3 +53,7 @@ type downloadsStateWebapp = {
   downloading: null | OfflineTrainingClass; // Clase actualmente en descarga ({ id: 285303, key: 'audio', progress: 20 })
   trainingClasses: webappDownload[];
 };
+
+type conversionStateWebapp = {
+  percent: number
+}
