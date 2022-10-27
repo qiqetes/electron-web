@@ -187,8 +187,8 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
-export const informConversionState = (conversionState: conversionStateWebapp) => {
-  mainWindow.webContents.send("conversionState", conversionState);
+export const informConversionState = (percent: number) => {
+  mainWindow.webContents.send("conversionState", percent);
 }
 
 /**
@@ -294,18 +294,12 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
     const buff: number[] = [];
 
-    data.stderr.on("data", (data) => {
-      console.log(data.toString());
-      buff.push(data.toString())
-    });
+    data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
       const mp3 = buff
         .join()
         .match(/Input.+ mp3/);
-
-      // Calculate index of Input word to find extension
-      // const firstEntry = output.indexOf("Input");
 
       resolve(mp3);
     });
@@ -385,7 +379,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         const percent = Math.trunc(100 * seconds / durationInSeconds);
 
         log(`Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`)
-        informConversionState({ percent });
+        informConversionState(percent);
       }
     });
     execution.stderr.once("end", () => resolve(outPutPath));
