@@ -89,9 +89,10 @@ contextBridge.exposeInMainWorld("downloadsAPI", {
   },
 
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
-  convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
+  stopConversion: () => ipcRenderer.send("stopConversion"),
   removeTempMp3: (fileName: string) =>
     ipcRenderer.send("removeTempMp3", fileName),
+  convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
   importDownloads: () => ipcRenderer.send("importDownloads"),
   deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
   deleteDownload: (id: number, media: mediaType = "video_hd") =>

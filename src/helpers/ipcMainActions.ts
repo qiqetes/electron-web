@@ -187,8 +187,8 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
-export const informConversionState = (value: number) => {
-  mainWindow.webContents.send("conversionState", value);
+export const informConversionState = (conversionState: conversionStateWebapp) => {
+  mainWindow.webContents.send("conversionState", conversionState);
 }
 
 /**
@@ -264,6 +264,8 @@ ipcMain.on("getSetting", (event, setting) => {
   }
   event.returnValue = toReturn;
 });
+
+ipcMain.on("stopConversion", () => BinData.processes['ffmpeg'].kill());
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
@@ -350,6 +352,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     let durationInSeconds = 0;
 
     execution.stderr.on('data', (data) => {
+      // Looking for Duration in console err output
       const buff = data.toString().split(' ');
       const durationIndex = buff.indexOf('Duration:');
 
@@ -359,19 +362,22 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         return;
       }
 
+      // Looking for Time in console err output
       const timeBuff = buff.join('=').split('=');
       const timeIndex = timeBuff.indexOf('time');
 
       if (timeIndex !== -1) {
+        // Convert times to percent
         const time = timeBuff[timeIndex + 1].split(':');
         const seconds = toSeconds(time);
 
         const percent = Math.trunc(100 * seconds / durationInSeconds);
 
         log(`Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`)
-        informConversionState(percent);
+        informConversionState({ percent });
       }
     });
+    execution.on('exit', () => console.log('should remove on exit event'));
     execution.stderr.once("end", () => {
       resolve(outPutPath);
     });
