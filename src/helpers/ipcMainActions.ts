@@ -321,6 +321,16 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     return "";
   }
 
+  const toSeconds = (date: string) => {
+    const times = [3600, 60, 1];
+    let seconds = 0;
+
+    times.forEach((time, index) => seconds += parseInt(date[index]) * time);
+    return seconds;
+  }
+
+  let durationInSeconds = 0;
+
   return await new Promise((resolve, reject) => {
     log("Creating mp3 from wav...");
 
@@ -341,17 +351,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       outPutPath,
     ]);
 
-    const toSeconds = (date: string) => {
-      const times = [3600, 60, 1];
-      let seconds = 0;
-
-      times.forEach((time, index) => seconds += parseInt(date[index]) * time);
-      return seconds;
-    }
-
-    let durationInSeconds = 0;
-
-    execution.stderr.on('data', (data) => {
+    execution.stderr.on("data", (data) => {
       // Looking for Duration in console err output
       const buff = data.toString().split(' ');
       const durationIndex = buff.indexOf('Duration:');
@@ -377,10 +377,25 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         informConversionState({ percent });
       }
     });
-    execution.on('exit', () => console.log('should remove on exit event'));
+    
     execution.stderr.once("end", () => {
       resolve(outPutPath);
     });
+
+    execution.on("exit", () => {
+      if (!execution.killed) return;
+
+      delete BinData.processes['ffmpeg'];
+      fs.rm(outPutPath, (err) => {
+        if (err) {
+          logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
+          return;
+        }
+
+        log("removeTempMp3");
+      });
+    });
+
     execution.stderr.once("error", (err) => {
       logError("convertToMp3: Error converting to mp3: ", err);
       reject("");
