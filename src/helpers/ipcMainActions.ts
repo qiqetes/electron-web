@@ -270,6 +270,7 @@ ipcMain.on("stopConversion", () => BinData.processes['ffmpeg'].kill());
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
+  delete BinData.processes['ffmpeg'];
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -282,9 +283,9 @@ ipcMain.on("removeTempMp3", (_, fileName) => {
 
 ipcMain.handle("convertToMp3", async (_, url: string) => {
   const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
-  const name = url.split('/').reverse()[0].split(".")[0];
+  
+  const name = url.split(path.sep).reverse()[0].split(".")[0];
   const date = new Date().getTime();
-
   const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
 
   const isValid = await new Promise((resolve, reject) => {
@@ -327,6 +328,18 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
     times.forEach((time, index) => seconds += parseInt(date[index]) * time);
     return seconds;
+  }
+
+  const onExit = () => {
+    delete BinData.processes['ffmpeg'];
+    fs.rm(outPutPath, (err) => {
+      if (err) {
+        logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
+        return;
+      }
+
+      log("removeTempMp3");
+    });
   }
 
   let durationInSeconds = 0;
@@ -377,28 +390,17 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         informConversionState({ percent });
       }
     });
-    
-    execution.stderr.once("end", () => {
-      resolve(outPutPath);
-    });
+    execution.stderr.once("end", () => resolve(outPutPath));
+    execution.stderr.once("error", (err) => {
+      onExit();
 
+      logError("convertToMp3: Error converting to mp3: ", err);
+      reject("");
+    });
     execution.on("exit", () => {
       if (!execution.killed) return;
 
-      delete BinData.processes['ffmpeg'];
-      fs.rm(outPutPath, (err) => {
-        if (err) {
-          logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
-          return;
-        }
-
-        log("removeTempMp3");
-      });
-    });
-
-    execution.stderr.once("error", (err) => {
-      logError("convertToMp3: Error converting to mp3: ", err);
-      reject("");
+      onExit();
     });
   });
 });
