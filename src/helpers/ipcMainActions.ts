@@ -288,26 +288,26 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   const date = new Date().getTime();
   const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
 
-  const isValid = await new Promise((resolve, reject) => {
+  const isMp3 = await new Promise((resolve, reject) => {
     log("Getting data from file...");
 
     const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
     const buff: number[] = [];
 
-    data.stderr.on("data", (data) => buff.push(data.toString()));
+    data.stderr.on("data", (data) => {
+      console.log(data.toString());
+      buff.push(data.toString())
+    });
     data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
-      const output = buff
+      const mp3 = buff
         .join()
-        .split(/\s|\n/)
-        .filter((out) => out);
+        .match(/Input.+ mp3/);
 
       // Calculate index of Input word to find extension
-      const firstEntry = output.indexOf("Input");
-      const entryPoint = output.indexOf("Input", firstEntry + 1) + 2;
-      const valid = output[entryPoint]?.includes("wav");
+      // const firstEntry = output.indexOf("Input");
 
-      resolve(valid);
+      resolve(mp3);
     });
     data.stdout.once("error", (err) => {
       logError("Error getting data from file: ", err);
@@ -315,11 +315,9 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     });
   });
 
-  if (!isValid) {
-    logError(
-      "convertToMp3: isValid => Error converting to mp3. Entry extension must be wav"
-    );
-    return "";
+  if (isMp3) {
+    log(`Unnecessary conversion detected: returning ${url}`)
+    return url;
   }
 
   const toSeconds = (date: string) => {
