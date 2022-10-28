@@ -329,7 +329,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   const onExit = () => {
     BinData.removeProcess('ffmpeg');
-    fs.rm(outPutPath, (err) => {
+    fs.rm(outPutPath.replace(/\\/, '\\'), (err) => {
       if (err) {
         logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
         return;
