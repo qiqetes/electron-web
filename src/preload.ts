@@ -1,11 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 import config from "./config";
+import { UpdaterEvents } from "./helpers/ipcMainActions";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
   appVersion: config.version,
   baseURL: config.WEBBASE,
   loginPath: config.LOGIN_PATH,
+
+  mainLoaded: () => ipcRenderer.send("mainLoaded"),
 
   // Sqes settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
@@ -31,6 +34,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
       textCancel?: string
     ) => void
   ) => ipcRenderer.on("modal", callback),
+
+  handleUpdaterEvent: (
+    callback: (event: Event, updaterEvent: UpdaterEvents) => void
+  ) => ipcRenderer.on("updaterEvent", callback),
+
   modalOk: () => ipcRenderer.send("modalOk"),
   modalCancel: () => ipcRenderer.send("modalCancel"),
 
@@ -52,6 +60,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   setUser: (user: User) => {
     ipcRenderer.send("setUser", user);
+  },
+
+  getSetting: (setting: string) => ipcRenderer.sendSync("getSetting", setting),
+
+  handleSettingChange: (
+    callback: (event: Event, setting: string, value: any) => void
+  ) => {
+    ipcRenderer.on("settingChange", callback);
+  },
+});
+
+contextBridge.exposeInMainWorld("conversionAPI", {
+  stopConversion: () => ipcRenderer.send("stopConversion"),
+  removeTempMp3: (fileName: string) =>
+    ipcRenderer.send("removeTempMp3", fileName),
+  convertToMp3: (url: string) => ipcRenderer.invoke("convertToMp3", url),
+
+  handleConversionState: (
+    callback: (event: Event, percent: number) => void
+  ) => {
+    ipcRenderer.on("conversionState", callback);
   },
 });
 

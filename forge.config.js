@@ -1,4 +1,5 @@
 require("dotenv").config();
+const makeUniversalApp = require("@electron/universal").makeUniversalApp;
 
 module.exports = {
   packagerConfig: {
@@ -9,6 +10,11 @@ module.exports = {
       entitlements: "./process/entitlements.plist",
       "entitlements-inherit": "./process/entitlements.plist",
       hardenedRuntime: true,
+    },
+    extraResource: "bin/",
+    osxUniversal: {
+      x64ArchFiles: "Contents/Resources/bin/mac/ffmpeg",
+      force: true,
     },
 
     // Commenting out this object will disable code signing for OS X.

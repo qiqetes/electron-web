@@ -3,6 +3,7 @@ import { app, crashReporter } from "electron";
 import Kitsu from "kitsu";
 import { JSONFile, Low } from "@commonify/lowdb";
 import { AppData } from "../data/appData";
+import BinDataModel from "../data/binData";
 import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
@@ -17,6 +18,7 @@ const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
 // Data
+export const BinData = new BinDataModel();
 export const SettingsData = new SettingsDataModel();
 export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();

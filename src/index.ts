@@ -1,13 +1,18 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+
+import path from "path";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import { avoidExternalPageRequests } from "./helpers";
 
-import { DownloadsData, init } from "./helpers/init";
+import { DownloadsData, init, SettingsData } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
 import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
 import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService";
+import { AppData } from "./data/appData";
+import { filenameStealth } from "./helpers/downloadsHelpers";
+import fs from "fs";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -69,7 +74,10 @@ const createWindow = async () => {
 
   mainWindow.on("close", async () => await saveAll());
 
-  mainWindow.webContents.on("new-window", function (e, url) {
+  mainWindow.webContents.on("new-window", (e, url) => {
+    const isExternalPlayer =
+      url.startsWith(AppData.WEBAPP_WEBASE!) && url.endsWith("/external.html");
+    if (isExternalPlayer) return;
     e.preventDefault();
     shell.openExternal(url);
   });
@@ -79,20 +87,31 @@ const createWindow = async () => {
   hrService.registerBluetoothEvents(mainWindow);
 };
 
-app.on("ready", () => {
+const reactDevToolsPath = path.join(
+  process.cwd(),
+  "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
+);
+
+app.on("ready", async () => {
+  if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
+    await session.defaultSession.loadExtension(reactDevToolsPath);
+  }
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on("window-all-closed", async () => {
+  const download = DownloadsData.getDownloading();
+  if (download) {
+    log("Removing download before app close");
+    const filename = filenameStealth(download.id, download.mediaType);
+    fs.unlinkSync(path.join(SettingsData.downloadsPath, filename));
+  }
+
   LocalServerInstance.stop();
   await saveAll();
-  // if (process.platform !== "darwin") {
+
   app.quit();
-  // }
 });
 
 app.on("activate", () => {

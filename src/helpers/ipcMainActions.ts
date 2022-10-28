@@ -1,14 +1,16 @@
 import path from "path";
+import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { dialog, ipcMain, app } from "electron";
-import { api, DownloadsData, SettingsData } from "./init";
+import { app, dialog, ipcMain } from "electron";
+import { api, BinData, DownloadsData, SettingsData } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
-import { ErrorReporter, log } from "./loggers";
+import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
+import * as fs from "fs";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -145,6 +147,20 @@ export const sendToast = (
   mainWindow.webContents.send("toast", message, variation, duration);
 };
 
+export type UpdaterEvents =
+  | { type: "update_found"; version: string }
+  | { type: "update_downloading"; progress: number }
+  | { type: "update_downloaded" }
+  | { type: "update_installing" }
+  | { type: "update_error"; error: string };
+export const sendUpdaterEvent = (updaterEvent: UpdaterEvents) => {
+  if (!AppData.MAIN_LOADED)
+    preRendererCachedActions.push(() =>
+      mainWindow.webContents.send("updaterEvent", updaterEvent)
+    );
+  mainWindow.webContents.send("updaterEvent", updaterEvent);
+};
+
 export const showModal = (
   message: string,
   textOk = "OK",
@@ -171,6 +187,17 @@ export const informDownloadState = () => {
   mainWindow.webContents.send("downloadState", DownloadsData.getDownloading());
 };
 
+export const informConversionState = (percent: number) => {
+  mainWindow.webContents.send("conversionState", percent);
+};
+
+/**
+ * Will notify the renderer process that main process changed a setting
+ */
+export const informSettingState = (settingCode: string, value: any) => {
+  mainWindow.webContents.send("settingChange", settingCode, value);
+};
+
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
@@ -180,4 +207,205 @@ ipcMain.on("getAdjustVideoPath", (event) => {
     path.join(SettingsData.downloadsPath, "ajustes.mp4")
   ).href;
   event.returnValue = adjustVideoPath;
+});
+
+ipcMain.on("getSetting", (event, setting) => {
+  log("Webapp ask for setting: " + setting);
+  let toReturn: any;
+  switch (setting) {
+    case "default_room":
+      toReturn = SettingsData.defaultRoom;
+      break;
+    case "updated_to_life":
+      toReturn = SettingsData.updated_to_life;
+      break;
+    case "C1": {
+      toReturn = SettingsData.downloadsPath;
+      break;
+    }
+    case "C7":
+      toReturn = SettingsData.playerVolume;
+      break;
+    case "C8":
+      toReturn = SettingsData.gymsLogoPath;
+      break;
+    case "C9":
+      toReturn = SettingsData.offlineResolution === "hd" ? "1" : "0";
+      break;
+    case "C10":
+      toReturn = SettingsData.resolutionCreateMP4 === "hd" ? "1" : "0";
+      break;
+    case "C11":
+      toReturn = SettingsData.autoStartGymsScheduler ? "1" : "0";
+      break;
+    case "C13":
+      toReturn = SettingsData.maxDownloadsSize.toString();
+      break;
+    case "waiting_music_file":
+      toReturn = SettingsData.waitingMusicPath;
+      break;
+    case "C14":
+      toReturn = SettingsData.download_scheduled_training_classes ? "1" : "0";
+      break;
+    case "videoHD":
+      toReturn = SettingsData.videoHD;
+      break;
+    case "C22":
+      toReturn = SettingsData.showMonitorView ? "1" : "0";
+      break;
+    case "show_external_setup_video":
+      toReturn = SettingsData.show_external_setup_video ? "1" : "0";
+      break;
+    case "ask_graph_intro_video":
+      toReturn = SettingsData.ask_graph_intro_video ? "1" : "0";
+      break;
+    default:
+      toReturn = null;
+  }
+  event.returnValue = toReturn;
+});
+
+ipcMain.on("stopConversion", () => BinData.processes["ffmpeg"].kill());
+
+ipcMain.on("removeTempMp3", (_, fileName) => {
+  if (!fileName) return;
+
+  delete BinData.processes["ffmpeg"];
+  fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
+    if (err) {
+      logError(`Couldn't delete file for download: ${fileName}, error: `, err);
+      return;
+    }
+
+    log("removeTempMp3");
+  });
+});
+
+ipcMain.handle("convertToMp3", async (_, url: string) => {
+  const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
+
+  const name = url.split(path.sep).reverse()[0].split(".")[0];
+  const date = new Date().getTime();
+  const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
+
+  const isMp3 = await new Promise((resolve, reject) => {
+    log("Getting data from file...");
+
+    const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
+    const buff: number[] = [];
+
+    data.stderr.on("data", (data) => buff.push(data.toString()));
+    data.stderr.once("end", () => {
+      // Formats buffer as an array with valid words
+      const mp3 = buff.join().match(/Input.+ mp3/);
+
+      resolve(mp3);
+    });
+    data.stdout.once("error", (err) => {
+      logError("Error getting data from file: ", err);
+      reject(false);
+    });
+  });
+
+  if (isMp3) {
+    log(`Unnecessary conversion detected: returning ${url}`);
+    return url;
+  }
+
+  const toSeconds = (date: string) => {
+    const times = [3600, 60, 1];
+    let seconds = 0;
+
+    times.forEach((time, index) => (seconds += parseInt(date[index]) * time));
+    return seconds;
+  };
+
+  const onExit = () => {
+    delete BinData.processes["ffmpeg"];
+    fs.rm(outPutPath, (err) => {
+      if (err) {
+        logError(
+          `Couldn't delete file for download: ${outPutPath}, error: `,
+          err
+        );
+        return;
+      }
+
+      log("removeTempMp3");
+    });
+  };
+
+  let durationInSeconds = 0;
+
+  return await new Promise((resolve, reject) => {
+    log("Creating mp3 from wav...");
+
+    const execution = BinData.executeBinary(ffmpegBin, [
+      "-y",
+      "-i",
+      url,
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "320k",
+      "-ar",
+      "44100",
+      "-write_xing",
+      "false",
+      "-f",
+      "mp3",
+      outPutPath,
+    ]);
+
+    execution.stderr.on("data", (data) => {
+      // Looking for Duration in console err output
+      const buff = data.toString().split(" ");
+      const durationIndex = buff.indexOf("Duration:");
+
+      if (durationIndex !== -1) {
+        const duration = buff[durationIndex + 1].split(",")[0].split(":");
+        durationInSeconds = toSeconds(duration);
+        return;
+      }
+
+      // Looking for Time in console err output
+      const timeBuff = buff.join("=").split("=");
+      const timeIndex = timeBuff.indexOf("time");
+
+      if (timeIndex !== -1) {
+        // Convert times to percent
+        const time = timeBuff[timeIndex + 1].split(":");
+        const seconds = toSeconds(time);
+
+        const percent = Math.trunc((100 * seconds) / durationInSeconds);
+
+        log(
+          `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
+        );
+        informConversionState(percent);
+      }
+    });
+    execution.stderr.once("end", () => resolve(outPutPath));
+    execution.stderr.once("error", (err) => {
+      onExit();
+
+      logError("convertToMp3: Error converting to mp3: ", err);
+      reject("");
+    });
+    execution.on("exit", () => {
+      if (!execution.killed) return;
+
+      onExit();
+    });
+  });
+});
+
+// There are some actions that need to comunicate with the renderer process
+// but they are launched before the execution of the renderer process
+// so we need to store the actions and execute them when the renderer process
+// is ready
+const preRendererCachedActions: (() => void)[] = [];
+ipcMain.once("mainLoaded", () => {
+  AppData.MAIN_LOADED = true;
+  preRendererCachedActions.forEach((action) => action());
 });

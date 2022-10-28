@@ -189,9 +189,15 @@ class DownloadsDataModel implements DownloadsData {
     const totalDownloadsSize = this.totalDownloadsSize();
     const maxDownloadsSize = SettingsData.maxDownloadsSize;
     if (totalDownloadsSize > maxDownloadsSize * 0.8) {
-      const toDelete = this.getDeleteCandidate();
-      if (!toDelete) return;
-      this.removeDownload(toDelete.id, toDelete.mediaType, false);
+      logWarn("Downloads limit reached");
+      const deleteCandidate = this.getDeleteCandidate();
+      if (!deleteCandidate || !AppData.ONLINE) {
+        download.status = "queued";
+        this.isDownloading = false;
+        return;
+      }
+      log(`Delete candidate ${deleteCandidate.id}`);
+      this.removeDownload(deleteCandidate.id, deleteCandidate.mediaType, false);
     }
 
     this.currentDownload = download;
@@ -659,23 +665,47 @@ class DownloadsDataModel implements DownloadsData {
       const source = path.join(downloadsPath, file);
       const dest = path.join(folder, file);
 
-      fs.rename(source, dest, (err) => {
-        if (err) {
-          logError("Couldn't move file " + file, err);
-          if (err.code === "EEXIST") return;
+      try {
+        fs.copyFileSync(source, dest);
+      } catch (err) {
+        logError("Couldn't copy file " + file, err);
 
-          const downloadFile = downloadStatsFromFile(file);
-          if (downloadFile === "ajustes") {
-            this.hasAdjustVideo = false;
-            return;
-          }
-
-          const { id, mediaType } = downloadFile;
-          delete this.offlineTrainingClasses[id + "-" + mediaType];
-          informDownloadsState();
+        const donwloadFile = downloadStatsFromFile(file);
+        if (donwloadFile === "ajustes") {
+          this.hasAdjustVideo = false;
           return;
         }
-      });
+
+        const { id, mediaType } = donwloadFile;
+        delete this.offlineTrainingClasses[id + "-" + mediaType];
+        informDownloadsState();
+        return;
+      }
+      try {
+        fs.rmSync(source);
+      } catch (err) {
+        logError("Couldn't delete file " + file, err);
+      }
+      // , (err) => {
+      //   if (err) {
+      //     logError("Couldn't move file " + file, err);
+
+      //     const donwloadFile = downloadStatsFromFile(file);
+      //     if (donwloadFile === "ajustes") {
+      //       this.hasAdjustVideo = false;
+      //       return;
+      //     }
+
+      //     const { id, mediaType } = donwloadFile;
+      //     delete this.offlineTrainingClasses[id + "-" + mediaType];
+      //     informDownloadsState();
+      //     return;
+      //   }
+      //   log(`File ${source} moved to ${dest}`);
+      //   fs.unlink(source, (err) => {
+      //     logError("Couldn't delete file " + file, err);
+      //   });
+      // });
     });
 
     SettingsData.downloadsPath = folder;
@@ -711,6 +741,27 @@ class DownloadsDataModel implements DownloadsData {
     Object.keys(this.offlineTrainingClasses).forEach((key) => {
       if (foundDownloads.includes(key)) return;
       delete this.offlineTrainingClasses[key];
+    });
+
+    // Add unregistered downloads
+    foundDownloads.forEach((key) => {
+      if (this.offlineTrainingClasses[key]) return;
+
+      const id = key.split("-")[0];
+      const mediaType = key.split("-")[1] as mediaType;
+      log("Adding unregistered download " + key);
+      TrainingClassesData.addTraining(id, true);
+      this.offlineTrainingClasses[key] = {
+        id: id,
+        mediaType: mediaType,
+        status: "downloaded",
+        progress: 100,
+        size: fs.statSync(path.join(folder, filenameStealth(id, mediaType)))
+          .size,
+        downloaded: true,
+        retries: 0,
+        timestamp: null,
+      };
     });
   }
 

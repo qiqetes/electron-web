@@ -15,6 +15,7 @@ export class AppDataModel implements AppData {
   ONLINE = true;
   VERSION = pack.version;
   USER: User | null = null;
+  MAIN_LOADED = false;
 
   constructor() {
     this.init();

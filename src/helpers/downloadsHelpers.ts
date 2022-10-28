@@ -1,9 +1,10 @@
-import { SettingsData } from "./init";
+import { SettingsData, TrainingClassesData } from "./init";
 import * as fs from "fs-extra";
-import { sendToast } from "./ipcMainActions";
+import { informSettingState, sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
+import { app } from "electron";
 
 const mediaTypeFileCodes = {
   video_hd: "9783",
@@ -79,7 +80,8 @@ export const download = (
   dir: string,
   file: string,
   url: string,
-  onDownloadCb?: () => void
+  onDownloadCb?: () => void,
+  downloadPercentageCb?: (percentage: number) => void
 ) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   const filePath = path.join(dir, file);
@@ -90,7 +92,20 @@ export const download = (
 
     log("Downloading file from", url);
 
+    const downloadSize = parseInt(res.headers["content-length"] as string);
+    let downloaded = 0;
     res.pipe(writeStream);
+    if (downloadPercentageCb) {
+      let lastPercentage = 0;
+      res.addListener("data", (chunk) => {
+        downloaded += chunk.length;
+        const percentage = Math.round((downloaded / downloadSize) * 100);
+        if (Math.floor(percentage) > lastPercentage) {
+          downloadPercentageCb(percentage);
+          lastPercentage = Math.floor(percentage);
+        }
+      });
+    }
 
     writeStream.on("finish", () => {
       writeStream.close();
@@ -115,4 +130,16 @@ export const checkCorrectDownloadSize = async (
   // const fileSizeInBytes = stats.size;
   // return fileSizeInBytes === size;
   return true;
+};
+
+export const defaultDownloadsPath = () => {
+  return path.join(app.getPath("userData"), "Default", "offline");
+};
+
+export const downloadSize = (id: string, mediaType: mediaType) => {
+  const trainingClass = TrainingClassesData.getTraingClass(id);
+  if (!trainingClass) return null;
+  const media = trainingClass.media.find((m) => m.type === mediaType);
+  if (!media) return null;
+  return media.size;
 };
