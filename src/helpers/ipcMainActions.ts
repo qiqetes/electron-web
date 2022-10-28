@@ -265,7 +265,9 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on("stopConversion", () => BinData.processes['ffmpeg']?.kill());
+ipcMain.on("stopConversion", () => {
+  BinData.removeProcess('ffmpeg');
+});
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
@@ -386,7 +388,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       }
     });
     execution.stderr.once("end", () => {
-      if (execution.killed) {
+      if (!BinData.processes['ffmpeg']) {
         onExit();
         resolve({ status: 'canceled' })
       }

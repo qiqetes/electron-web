@@ -43,7 +43,17 @@ class BinDataModel implements IBinData {
     return path.join(process.resourcesPath, "bin", osPath);
   }
 
+  killProcess(pid: string) {
+    if (os.platform() === 'darwin') {
+      this.processes[pid]?.kill();
+    } else {
+      const _pid = this.processes[pid]?.pid
+      child_process.exec('taskkill /pid ' + _pid + ' /T /F');
+    }
+  }
+
   removeProcess(pid: string) {
+    this.killProcess(pid);
     delete this.processes[pid];
   }
 
