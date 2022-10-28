@@ -311,7 +311,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   if (isMp3) {
     log(`Unnecessary conversion detected: returning ${url}`)
-    return url;
+    return { 
+      status: 'success',
+      url: url
+    };
   }
 
   const toSeconds = (date: string) => {
@@ -336,7 +339,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   let durationInSeconds = 0;
 
-  return await new Promise((resolve, reject) => {
+  return await new Promise<ConversionType>((resolve, reject)  => {
     log("Creating mp3 from wav...");
 
     const execution = BinData.executeBinary(ffmpegBin, [
@@ -382,12 +385,17 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         informConversionState(percent);
       }
     });
-    execution.stderr.once("end", () => resolve(outPutPath));
+    execution.stderr.once("end", () => {
+      if (BinData.processes['ffmpeg']) {
+        resolve({ status: 'canceled' })
+      }
+      else resolve({ status: 'success', url: outPutPath })
+    });
     execution.stderr.once("error", (err) => {
       onExit();
 
       logError("convertToMp3: Error converting to mp3: ", err);
-      reject("");
+      reject();
     });
     execution.on("exit", () => {
       if (!execution.killed) return;
