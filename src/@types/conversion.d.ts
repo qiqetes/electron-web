@@ -1,4 +1,4 @@
-type ConversionType =
+type ConversionResponse =
   | {
     status: 'success',
     url: string

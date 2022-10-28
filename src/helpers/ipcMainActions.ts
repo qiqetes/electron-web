@@ -339,7 +339,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   let durationInSeconds = 0;
 
-  return await new Promise<ConversionType>((resolve, reject)  => {
+  return await new Promise<ConversionResponse>((resolve, reject)  => {
     log("Creating mp3 from wav...");
 
     const execution = BinData.executeBinary(ffmpegBin, [
