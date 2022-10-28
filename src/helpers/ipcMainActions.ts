@@ -386,7 +386,8 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       }
     });
     execution.stderr.once("end", () => {
-      if (BinData.processes['ffmpeg']) {
+      if (execution.killed) {
+        onExit();
         resolve({ status: 'canceled' })
       }
       else resolve({ status: 'success', url: outPutPath })
@@ -396,11 +397,6 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
       logError("convertToMp3: Error converting to mp3: ", err);
       reject();
-    });
-    execution.on("exit", () => {
-      if (!execution.killed) return;
-
-      onExit();
     });
   });
 });
