@@ -265,12 +265,12 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on("stopConversion", () => BinData.processes['ffmpeg'].kill());
+ipcMain.on("stopConversion", () => BinData.processes['ffmpeg']?.kill());
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  delete BinData.processes['ffmpeg'];
+  BinData.removeProcess('ffmpeg');
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -323,7 +323,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   }
 
   const onExit = () => {
-    delete BinData.processes['ffmpeg'];
+    BinData.removeProcess('ffmpeg');
     fs.rm(outPutPath, (err) => {
       if (err) {
         logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
@@ -354,7 +354,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       "-f",
       "mp3",
       outPutPath,
-    ]);
+    ], 'ffmpeg');
 
     execution.stderr.on("data", (data) => {
       // Looking for Duration in console err output

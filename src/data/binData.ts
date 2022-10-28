@@ -43,9 +43,14 @@ class BinDataModel implements IBinData {
     return path.join(process.resourcesPath, "bin", osPath);
   }
 
+  removeProcess(pid: string) {
+    delete this.processes[pid];
+  }
+
   executeBinary(
     command: BinTypes,
     args: string[],
+    pid?: string,
     options?: Record<string, unknown>
   ) {
     const fullCommand = path.join(this.binaryPath, command);
@@ -63,7 +68,9 @@ class BinDataModel implements IBinData {
     if (os.platform() === "darwin") {
       const process = child_process.spawn(fullCommand, args, options);
 
-      this.processes[command] = process;
+      if (pid) {
+        this.processes[pid] = process;
+      }
       return process;
     } else if (os.platform() === "win32") {
       const process = child_process.spawn(
@@ -72,7 +79,9 @@ class BinDataModel implements IBinData {
         options
       );
 
-      this.processes[command.split('.')[0]] = process;
+      if (pid) {
+        this.processes[pid] = process;
+      }
       return process;
     } else {
       throw new Error("Platform not supported");
