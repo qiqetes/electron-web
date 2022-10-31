@@ -44,7 +44,7 @@ const recoverOldPrefs = () => {
 export const init = async () => {
   initErrorHandler();
   await initDB();
-  setAutoUpdater();
+  if (process.env.NODE_ENV !== "development") setAutoUpdater();
 
   // setStartingUrl();
   recoverOldPrefs();

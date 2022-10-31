@@ -62,9 +62,9 @@ module.exports = {
     },
   ],
   plugins: [
-    [
-      "@electron-forge/plugin-webpack",
-      {
+    {
+      name: "@electron-forge/plugin-webpack",
+      config: {
         // Electron in development mode launches its own development server where it loads the renderer index.html
         // this option allows to do the fetch to localhost without content security policy errors
         devContentSecurityPolicy:
@@ -84,6 +84,6 @@ module.exports = {
           ],
         },
       },
-    ],
+    },
   ],
 };
