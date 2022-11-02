@@ -265,12 +265,14 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on("stopConversion", () => BinData.processes["ffmpeg"].kill());
+ipcMain.on("stopConversion", () => {
+  BinData.removeProcess('ffmpeg');
+});
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  delete BinData.processes["ffmpeg"];
+  BinData.removeProcess('ffmpeg');
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -296,8 +298,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
     data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
-      // Formats buffer as an array with valid words
-      const mp3 = buff.join().match(/Input.+ mp3/);
+      const regex = /Stream.+Audio: mp3,/;
+      const mp3 = buff
+        .join()
+        .match(regex);
 
       resolve(mp3);
     });
@@ -308,8 +312,11 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   });
 
   if (isMp3) {
-    log(`Unnecessary conversion detected: returning ${url}`);
-    return url;
+    log(`Unnecessary conversion detected: returning ${url}`)
+    return { 
+      status: 'success',
+      url: url
+    };
   }
 
   const toSeconds = (date: string) => {
@@ -321,8 +328,8 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   };
 
   const onExit = () => {
-    delete BinData.processes["ffmpeg"];
-    fs.rm(outPutPath, (err) => {
+    BinData.removeProcess('ffmpeg');
+    fs.rm(outPutPath.replace(/\\/, '\\'), (err) => {
       if (err) {
         logError(
           `Couldn't delete file for download: ${outPutPath}, error: `,
@@ -337,7 +344,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   let durationInSeconds = 0;
 
-  return await new Promise((resolve, reject) => {
+  return await new Promise<ConversionResponse>((resolve, reject)  => {
     log("Creating mp3 from wav...");
 
     const execution = BinData.executeBinary(ffmpegBin, [
@@ -355,7 +362,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       "-f",
       "mp3",
       outPutPath,
-    ]);
+    ], 'ffmpeg');
 
     execution.stderr.on("data", (data) => {
       // Looking for Duration in console err output
@@ -385,17 +392,18 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
         informConversionState(percent);
       }
     });
-    execution.stderr.once("end", () => resolve(outPutPath));
+    execution.stderr.once("end", () => {
+      if (!BinData.processes['ffmpeg']) {
+        onExit();
+        resolve({ status: 'canceled' })
+      }
+      else resolve({ status: 'success', url: outPutPath })
+    });
     execution.stderr.once("error", (err) => {
       onExit();
 
       logError("convertToMp3: Error converting to mp3: ", err);
-      reject("");
-    });
-    execution.on("exit", () => {
-      if (!execution.killed) return;
-
-      onExit();
+      reject();
     });
   });
 });
