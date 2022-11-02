@@ -298,10 +298,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
     data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
-      // Formats buffer as an array with valid words
+      const regex = /Stream.+Audio: mp3,/;
       const mp3 = buff
         .join()
-        .match(/Input.+ mp3/);
+        .match(regex);
 
       resolve(mp3);
     });
