@@ -68,4 +68,5 @@ interface ProgressionWats {
 
 interface TrainingClassesData extends IndexableData {
   trainingClasses: { [id: string]: TrainingClass };
+  trainingClassesToFetch: (number | string)[];
 }

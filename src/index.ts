@@ -93,8 +93,9 @@ const reactDevToolsPath = path.join(
 );
 
 app.on("ready", async () => {
-  if (process.env.NODE_ENV === "development")
+  if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
     await session.defaultSession.loadExtension(reactDevToolsPath);
+  }
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();
 });
