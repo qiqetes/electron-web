@@ -1,6 +1,7 @@
 import { app, crashReporter } from "electron";
 import fs from "fs-extra";
 import path from "path";
+import FormData from "form-data";
 import nodemailer from "nodemailer";
 import os from "os";
 import url from "url";
@@ -8,6 +9,7 @@ import { getDBPath } from ".";
 import { AppData } from "../data/appData";
 import { sendToast } from "./ipcMainActions";
 import { log, logError } from "./loggers";
+import axios from "axios";
 
 // TODO: Add the automatic crashDump
 class ErrorReporterModel {
@@ -60,52 +62,115 @@ class ErrorReporterModel {
   }
 
   async sendReport(reportMessage: string) {
-    this.lastReportDate = Date.now();
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_ADDRESS,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    // this.lastReportDate = Date.now();
+    // const transporter = nodemailer.createTransport({
+    //   host: "smtp.gmail.com",
+    //   port: 587,
+    //   secure: false, // true for 465, false for other ports
+    //   auth: {
+    //     user: process.env.EMAIL_ADDRESS,
+    //     pass: process.env.EMAIL_PASSWORD,
+    //   },
+    // });
 
-    try {
-      const info = await transporter.sendMail({
-        from: process.env.EMAIL_ADDRESS,
-        to: ["info@bestcycling.es"],
-        subject: `DESKTOP-REPORT from ${
-          AppData.USER?.membership === "gimnasios" ? "gym" : "user"
-        }: ${AppData.USER?.name}`,
-        text:
-          `El usuario https://bestcycling.com/admin/users/${AppData.USER?.id}, correo ${AppData.USER?.email}, reporta lo siguiente: \n` +
-          reportMessage,
-        attachments: [
-          {
-            filename: "userDB.json",
-            content: fs.createReadStream(getDBPath()),
-          },
-          ...this.getLastSessionLoggings().map((f) => ({
-            filename: path.basename(f),
-            content: fs.createReadStream(f),
-          })),
-        ],
-      });
+    // try {
+    //   const info = await transporter.sendMail({
+    //     from: process.env.EMAIL_ADDRESS,
+    //     to: ["info@bestcycling.es"],
+    //     subject: `DESKTOP-REPORT from ${
+    //       AppData.USER?.membership === "gimnasios" ? "gym" : "user"
+    //     }: ${AppData.USER?.name}`,
+    //     text:
+    //       `El usuario https://bestcycling.com/admin/users/${AppData.USER?.id}, correo ${AppData.USER?.email}, reporta lo siguiente: \n` +
+    //       reportMessage,
+    //     attachments: [
+    //       {
+    //         filename: "userDB.json",
+    //         content: fs.createReadStream(getDBPath()),
+    //       },
+    //       ...this.getLastSessionLoggings().map((f) => ({
+    //         filename: path.basename(f),
+    //         content: fs.createReadStream(f),
+    //       })),
+    //     ],
+    //   });
 
-      sendToast(
-        "Reporte enviado correctamente, gracias por tu ayuda!",
-        "success",
-        5
-      );
-    } catch (err) {
-      logError("Error sending report", err);
-      sendToast(
-        "Error enviando el reporte, por favor, inténtalo de nuevo más tarde",
-        "error",
-        5
+    //   sendToast(
+    //     "Reporte enviado correctamente, gracias por tu ayuda!",
+    //     "success",
+    //     5
+    //   );
+    // } catch (err) {
+    //   logError("Error sending report", err);
+    //   sendToast(
+    //     "Error enviando el reporte, por favor, inténtalo de nuevo más tarde",
+    //     "error",
+    //     5
+    //   );
+    // }
+
+    const data = new FormData();
+    data.append(
+      "Email subject",
+      `DESKTOP-REPORT from ${
+        AppData.USER?.membership === "gimnasios" ? "gym" : "user"
+      }: ${AppData.USER?.name}. Version: ${app.getVersion()}`
+    );
+    data.append("Email", AppData.USER?.email || "desconocido");
+    data.append("User", AppData.USER?.name || "desconocido");
+    data.append(
+      "Admin user",
+      `https://bestcycling.com/admin/users/${AppData.USER?.id}`
+    );
+    if (AppData.USER?.membership === "gimnasios") {
+      data.append(
+        "Admin gym",
+        `https://bestcycling.com/admin/gyms/${AppData.USER?.id}`
       );
     }
+    //       reportMessage,)
+    data.append("Reporte de usuario", reportMessage);
+    data.append("userDB.json", fs.createReadStream(getDBPath()));
+    this.getLastSessionLoggings()
+      .map((f) => ({
+        filename: path.basename(f),
+        content: fs.createReadStream(f),
+      }))
+      .forEach((f) => data.append(f.filename, f.content));
+
+    const config = {
+      method: "post",
+      url: "https://bestcycling.com/store/go/sendcontact/",
+      headers: {
+        ...data.getHeaders(),
+      },
+      data: data,
+    };
+
+    axios(config)
+      .then((res) => {
+        if (res.statusText === "OK") {
+          sendToast(
+            "Reporte enviado correctamente, gracias por tu ayuda!",
+            "success",
+            5
+          );
+        } else {
+          sendToast(
+            "Error enviando el reporte, por favor, inténtalo de nuevo más tarde",
+            "error",
+            5
+          );
+        }
+      })
+      .catch((err) => {
+        logError("Error sending report", err);
+        sendToast(
+          "Error enviando el reporte, por favor, inténtalo de nuevo más tarde",
+          "error",
+          5
+        );
+      });
   }
 
   /**
