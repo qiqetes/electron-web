@@ -114,11 +114,11 @@ ipcMain.on("restoreDefaults", () => {
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
-
-  console.log(DownloadsData.offlineTrainingClasses);
-
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
+
+  app.relaunch();
+  app.exit();
 });
 
 ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
@@ -189,7 +189,7 @@ export const informDownloadState = () => {
 
 export const informConversionState = (percent: number) => {
   mainWindow.webContents.send("conversionState", percent);
-}
+};
 
 /**
  * Will notify the renderer process that main process changed a setting
@@ -202,11 +202,11 @@ ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
 
-ipcMain.on("getAdjustVideoPath", () => {
+ipcMain.on("getAdjustVideoPath", (event) => {
   const adjustVideoPath = url.pathToFileURL(
     path.join(SettingsData.downloadsPath, "ajustes.mp4")
   ).href;
-  return adjustVideoPath;
+  event.returnValue = adjustVideoPath;
 });
 
 ipcMain.on("getSetting", (event, setting) => {
@@ -265,12 +265,12 @@ ipcMain.on("getSetting", (event, setting) => {
   event.returnValue = toReturn;
 });
 
-ipcMain.on("stopConversion", () => BinData.processes['ffmpeg'].kill());
+ipcMain.on("stopConversion", () => BinData.processes["ffmpeg"].kill());
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  delete BinData.processes['ffmpeg'];
+  delete BinData.processes["ffmpeg"];
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -283,7 +283,7 @@ ipcMain.on("removeTempMp3", (_, fileName) => {
 
 ipcMain.handle("convertToMp3", async (_, url: string) => {
   const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
-  
+
   const name = url.split(path.sep).reverse()[0].split(".")[0];
   const date = new Date().getTime();
   const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
@@ -297,9 +297,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
       // Formats buffer as an array with valid words
-      const mp3 = buff
-        .join()
-        .match(/Input.+ mp3/);
+      const mp3 = buff.join().match(/Input.+ mp3/);
 
       resolve(mp3);
     });
@@ -310,7 +308,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   });
 
   if (isMp3) {
-    log(`Unnecessary conversion detected: returning ${url}`)
+    log(`Unnecessary conversion detected: returning ${url}`);
     return url;
   }
 
@@ -318,21 +316,24 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     const times = [3600, 60, 1];
     let seconds = 0;
 
-    times.forEach((time, index) => seconds += parseInt(date[index]) * time);
+    times.forEach((time, index) => (seconds += parseInt(date[index]) * time));
     return seconds;
-  }
+  };
 
   const onExit = () => {
-    delete BinData.processes['ffmpeg'];
+    delete BinData.processes["ffmpeg"];
     fs.rm(outPutPath, (err) => {
       if (err) {
-        logError(`Couldn't delete file for download: ${outPutPath}, error: `, err);
+        logError(
+          `Couldn't delete file for download: ${outPutPath}, error: `,
+          err
+        );
         return;
       }
 
       log("removeTempMp3");
     });
-  }
+  };
 
   let durationInSeconds = 0;
 
@@ -358,27 +359,29 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
     execution.stderr.on("data", (data) => {
       // Looking for Duration in console err output
-      const buff = data.toString().split(' ');
-      const durationIndex = buff.indexOf('Duration:');
+      const buff = data.toString().split(" ");
+      const durationIndex = buff.indexOf("Duration:");
 
       if (durationIndex !== -1) {
-        const duration = buff[durationIndex + 1].split(',')[0].split(':');
+        const duration = buff[durationIndex + 1].split(",")[0].split(":");
         durationInSeconds = toSeconds(duration);
         return;
       }
 
       // Looking for Time in console err output
-      const timeBuff = buff.join('=').split('=');
-      const timeIndex = timeBuff.indexOf('time');
+      const timeBuff = buff.join("=").split("=");
+      const timeIndex = timeBuff.indexOf("time");
 
       if (timeIndex !== -1) {
         // Convert times to percent
-        const time = timeBuff[timeIndex + 1].split(':');
+        const time = timeBuff[timeIndex + 1].split(":");
         const seconds = toSeconds(time);
 
-        const percent = Math.trunc(100 * seconds / durationInSeconds);
+        const percent = Math.trunc((100 * seconds) / durationInSeconds);
 
-        log(`Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`)
+        log(
+          `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
+        );
         informConversionState(percent);
       }
     });
