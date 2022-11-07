@@ -1,7 +1,9 @@
 import pack from "../package.json";
 
+type EnvironmentType = "development" | "production" | "devprod";
+
 // config.js
-const env: "development" | "production" | "devprod" = process.env.FLAVOUR
+const env: EnvironmentType = process.env.FLAVOUR
   ? "devprod"
   : (process.env.NODE_ENV as "production" | "development");
 
