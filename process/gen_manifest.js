@@ -1,6 +1,7 @@
 import pack from "../package.json" assert { type: "json" };
 import AWS from "aws-sdk";
 import os from "os";
+import { exit } from "process";
 
 // {
 //   "name": "Bestcycling TV",
@@ -34,10 +35,10 @@ const isNewVersionNuber = (actual, incoming) => {
 const fileName = "manifest.json";
 let manifest;
 
-const uploadManifest = async () => {
+const uploadManifest = async (channel) => {
   // LAST MANIFEST
   const res = await fetch(
-    `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json`
+    `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/manifest.json`
   );
   if (res.ok) {
     const lastManifest = await res.json();
@@ -67,11 +68,7 @@ const uploadManifest = async () => {
       name: pack.productName,
       description: pack.description,
       version: pack.version,
-      manifestUrl:
-        "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/" +
-        "qiqe-temp" +
-        "/" +
-        fileName,
+      manifestUrl: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/${fileName}`,
       packages: {},
     };
   }
@@ -82,7 +79,7 @@ const uploadManifest = async () => {
 
   if (platform == "mac64") {
     manifest.packages[platform] = {
-      url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${pack.productName.replace(
+      url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/${pack.productName.replace(
         " ",
         "+"
       )}-${os.platform()}-universal-${pack.version}.zip`,
@@ -92,7 +89,7 @@ const uploadManifest = async () => {
     platforms.forEach(
       (p) =>
         (manifest.packages[platform] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${pack.productName.replace(
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/${pack.productName.replace(
             " ",
             ""
           )}-${pack.version}-full.nupkg`,
@@ -105,7 +102,7 @@ const uploadManifest = async () => {
   const s3 = new AWS.S3();
 
   const bucketName = "bestcycling-production";
-  const key = "desktop/qiqe-temp/manifest.json";
+  const key = `desktop/${channel}/manifest.json`;
   const params = {
     Bucket: bucketName,
     Key: key,
@@ -120,9 +117,37 @@ const uploadManifest = async () => {
   });
 };
 
-const checkPublish = () => {
-  console.log(process.argv);
+const parseOptions = () => {
+  const args = {};
+  process.argv.slice(2, process.argv.length).forEach((arg) => {
+    // long arg
+    if (arg.slice(0, 2) === "--") {
+      const longArg = arg.split("=");
+      const longArgFlag = longArg[0].slice(2, longArg[0].length);
+      const longArgValue = longArg.length > 1 ? longArg[1] : true;
+      args[longArgFlag] = longArgValue;
+    }
+    // flags
+    else if (arg[0] === "-") {
+      const flags = arg.slice(1, arg.length).split("");
+      flags.forEach((flag) => {
+        args[flag] = true;
+      });
+    }
+  });
+  return args;
 };
 
-console.log(checkPublish());
-await uploadManifest();
+const allowedChannels = ["qiqe-temp"];
+const { channel } = parseOptions();
+
+if (!allowedChannels.includes(channel)) {
+  console.info(
+    `Channel ${channel} is not included in allowed channels (${allowedChannels.join(
+      ", "
+    )})`
+  );
+  exit(1);
+}
+
+await uploadManifest(channel);

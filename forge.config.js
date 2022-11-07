@@ -1,5 +1,7 @@
 require("dotenv").config();
-const makeUniversalApp = require("@electron/universal").makeUniversalApp;
+// const makeUniversalApp = require("@electron/universal").makeUniversalApp;
+const packageJson = require(__dirname + "/package.json");
+const { version } = packageJson;
 
 module.exports = {
   packagerConfig: {
@@ -42,21 +44,13 @@ module.exports = {
       name: "@electron-forge/maker-zip",
       platforms: ["darwin"],
     },
-    {
-      name: "@electron-forge/maker-deb",
-      config: {},
-    },
-    {
-      name: "@electron-forge/maker-rpm",
-      config: {},
-    },
   ],
   publishers: [
     {
       name: "@electron-forge/publisher-s3",
       config: {
         bucket: "bestcycling-production",
-        folder: "desktop/qiqe-temp",
+        folder: `desktop/versions/v${version}`,
         public: true,
       },
     },
@@ -68,7 +62,7 @@ module.exports = {
         // Electron in development mode launches its own development server where it loads the renderer index.html
         // this option allows to do the fetch to localhost without content security policy errors
         devContentSecurityPolicy:
-          "default-src 'self' 'unsafe-inline' http://localhost:8080 https://2.bestcycling.com data:; script-src 'self' 'unsafe-eval' 'unsafe-inline' data:",
+          "default-src 'self' 'unsafe-inline' http://localhost:8080 https://2.bestcycling.com https://bestcycling.com data:; script-src 'self' 'unsafe-eval' 'unsafe-inline' data:",
         mainConfig: "./webpack.main.config.js",
         renderer: {
           config: "./webpack.renderer.config.js",
