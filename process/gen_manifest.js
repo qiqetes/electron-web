@@ -79,20 +79,20 @@ const uploadManifest = async (channel) => {
 
   if (platform == "mac64") {
     manifest.packages[platform] = {
-      url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/${pack.productName.replace(
-        " ",
-        "+"
-      )}-${os.platform()}-universal-${pack.version}.zip`,
+      url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${
+        pack.version
+      }/${pack.productName.replace(" ", "+")}-${os.platform()}-universal-${
+        pack.version
+      }.zip`,
     };
   } else if (platform == "win32") {
     const platforms = ["win32", "win64"];
     platforms.forEach(
       (p) =>
         (manifest.packages[platform] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/${pack.productName.replace(
-            " ",
-            ""
-          )}-${pack.version}-full.nupkg`,
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/v${
+            pack.version
+          }/${pack.productName.replace(" ", "")}-${pack.version}-full.nupkg`,
         })
     );
   }
@@ -138,7 +138,7 @@ const parseOptions = () => {
   return args;
 };
 
-const allowedChannels = ["qiqe-temp"];
+const allowedChannels = ["qiqe-temp", "revision", "beta"];
 const { channel } = parseOptions();
 
 if (!allowedChannels.includes(channel)) {

@@ -4,4 +4,7 @@ interface User {
   sex: string;
   name: string;
   membership: string;
+  tags: string[];
+  isBetaTester: boolean;
+  isPreviewTester: boolean;
 }

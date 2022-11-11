@@ -1,4 +1,4 @@
-import { app, autoUpdater, BrowserWindow, webContents } from "electron";
+import { app, autoUpdater, BrowserWindow, ipcMain } from "electron";
 import projectInfo from "../../package.json";
 import path from "path";
 import { AppData } from "../../src/data/appData";
@@ -12,7 +12,7 @@ import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
 
 type Pckg = { url: string };
 
-type UpdateManifest = {
+interface UpdateManifest {
   name: string;
   version: string;
   description: string;
@@ -20,7 +20,9 @@ type UpdateManifest = {
   packages: {
     [bar: string]: Pckg;
   };
-};
+}
+
+type VersionChannel = "beta" | "revision" | "production";
 
 const isNewVersionNuber = (actual: string, incoming: string) => {
   for (let i = 0; i < 3; i++) {
@@ -72,30 +74,62 @@ const registerAutoUpdaterEvents = () => {
           }
           autoUpdater.quitAndInstall();
         });
-      } catch (err: any) {
+      } catch (err) {
         logError("Installing update", err);
-        sendUpdaterEvent({ type: "update_error", error: err?.toString() });
+        sendUpdaterEvent({
+          type: "update_error",
+          error: err?.toString() || "Error installing update",
+        });
       }
     }
   );
 };
 
-// TODO: esta función apunta a partes temporales de s3, cambiarlo cuando esté decidido.
-// TODO: anyadir tags para que se mire a diferentes manifest
+const getMostUpdatedManifest = async (allowedChannels: {
+  revision: boolean | undefined;
+  beta: boolean | undefined;
+}): Promise<UpdateManifest | null> => {
+  const manifestRevision = allowedChannels.revision
+    ? (
+        await axios.get<UpdateManifest>(
+          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/revision/manifest.json"
+        )
+      ).data
+    : null;
+  const manifestBeta = allowedChannels.beta
+    ? (
+        await axios.get<UpdateManifest>(
+          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/beta/manifest.json"
+        )
+      ).data
+    : null;
+  const manifestProduction = (
+    await axios.get<UpdateManifest>(
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/production/manifest.json"
+    )
+  ).data;
+
+  return [manifestRevision, manifestBeta, manifestProduction]
+    .filter((man) => man != null)
+    .reduce((prev, curr) => {
+      if (prev == null) return curr;
+      if (curr == null) return prev;
+      if (isNewVersionNuber(prev.version, curr.version)) return curr;
+      return prev;
+    });
+};
+
 /**
  * Sets the autoUpdater to check the s3 manifest and check wether there are updates
  * to be downloaded.
  * */
-export const setAutoUpdater = async () => {
-  // AVOID TO RUN THE AUTOUPDATER THE FIRST TIME THE APP RUNS IN WINDOWS BY ALL MEANS
-  // if (AppData.FIRST_TIME_IT_RUNS) return;
+export const setAutoUpdater = async (allowedChannels: {
+  revision: boolean | undefined;
+  beta: boolean | undefined;
+}) => {
+  const manifest = await getMostUpdatedManifest(allowedChannels);
 
-  const resManifest = await axios.get(
-    "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json"
-  );
-
-  const manifest: UpdateManifest = resManifest.data;
-
+  if (!manifest) return;
   if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
     log(
       `No new version found.\nActual: ${projectInfo.version} - Manifest: ${manifest.version}`
@@ -133,6 +167,7 @@ export const setAutoUpdater = async () => {
       sendToast(
         "Por favor, instala la aplicación arrastrándola a la carpeta de aplicaciones"
       );
+      return;
     }
 
     // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.

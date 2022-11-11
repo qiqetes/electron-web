@@ -31,10 +31,26 @@ ipcMain.on("setAuth", (_, auth) => {
   DownloadsData.downloadHelpVideo();
 });
 
-ipcMain.on("setUser", (_, user: User) => {
-  console.log("setting user", user);
-  AppData.USER = user;
-});
+ipcMain.on(
+  "setUser",
+  (
+    _,
+    user: {
+      id: number;
+      email: string;
+      sex: string;
+      name: string;
+      membership: string;
+      tags: string[];
+    }
+  ) => {
+    AppData.USER = {
+      ...user,
+      isBetaTester: user.tags.includes("beta"),
+      isPreviewTester: user.tags.includes("preview"),
+    };
+  }
+);
 
 ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
   DownloadsData.addToQueue(downloadRequest);
@@ -266,13 +282,13 @@ ipcMain.on("getSetting", (event, setting) => {
 });
 
 ipcMain.on("stopConversion", () => {
-  BinData.removeProcess('ffmpeg');
+  BinData.removeProcess("ffmpeg");
 });
 
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  BinData.removeProcess('ffmpeg');
+  BinData.removeProcess("ffmpeg");
   fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
     if (err) {
       logError(`Couldn't delete file for download: ${fileName}, error: `, err);
@@ -299,9 +315,7 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     data.stderr.on("data", (data) => buff.push(data.toString()));
     data.stderr.once("end", () => {
       const regex = /Stream.+Audio: mp3,/;
-      const mp3 = buff
-        .join()
-        .match(regex);
+      const mp3 = buff.join().match(regex);
 
       resolve(mp3);
     });
@@ -312,10 +326,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   });
 
   if (isMp3) {
-    log(`Unnecessary conversion detected: returning ${url}`)
-    return { 
-      status: 'success',
-      url: url
+    log(`Unnecessary conversion detected: returning ${url}`);
+    return {
+      status: "success",
+      url: url,
     };
   }
 
@@ -328,8 +342,8 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
   };
 
   const onExit = () => {
-    BinData.removeProcess('ffmpeg');
-    fs.rm(outPutPath.replace(/\\/, '\\'), (err) => {
+    BinData.removeProcess("ffmpeg");
+    fs.rm(outPutPath.replace(/\\/, "\\"), (err) => {
       if (err) {
         logError(
           `Couldn't delete file for download: ${outPutPath}, error: `,
@@ -344,25 +358,29 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
   let durationInSeconds = 0;
 
-  return await new Promise<ConversionResponse>((resolve, reject)  => {
+  return await new Promise<ConversionResponse>((resolve, reject) => {
     log("Creating mp3 from wav...");
 
-    const execution = BinData.executeBinary(ffmpegBin, [
-      "-y",
-      "-i",
-      url,
-      "-codec:a",
-      "libmp3lame",
-      "-b:a",
-      "320k",
-      "-ar",
-      "44100",
-      "-write_xing",
-      "false",
-      "-f",
-      "mp3",
-      outPutPath,
-    ], 'ffmpeg');
+    const execution = BinData.executeBinary(
+      ffmpegBin,
+      [
+        "-y",
+        "-i",
+        url,
+        "-codec:a",
+        "libmp3lame",
+        "-b:a",
+        "320k",
+        "-ar",
+        "44100",
+        "-write_xing",
+        "false",
+        "-f",
+        "mp3",
+        outPutPath,
+      ],
+      "ffmpeg"
+    );
 
     execution.stderr.on("data", (data) => {
       // Looking for Duration in console err output
@@ -393,11 +411,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       }
     });
     execution.stderr.once("end", () => {
-      if (!BinData.processes['ffmpeg']) {
+      if (!BinData.processes["ffmpeg"]) {
         onExit();
-        resolve({ status: 'canceled' })
-      }
-      else resolve({ status: 'success', url: outPutPath })
+        resolve({ status: "canceled" });
+      } else resolve({ status: "success", url: outPutPath });
     });
     execution.stderr.once("error", (err) => {
       onExit();
@@ -411,7 +428,8 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 // There are some actions that need to comunicate with the renderer process
 // but they are launched before the execution of the renderer process
 // so we need to store the actions and execute them when the renderer process
-// is ready
+// is ready.
+// MainLoaded is executed when the preferences context is loaded (login done).
 const preRendererCachedActions: (() => void)[] = [];
 ipcMain.once("mainLoaded", () => {
   AppData.MAIN_LOADED = true;

@@ -18,8 +18,8 @@
     "push:macos:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=universal",
     "push:win:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=ia32,x64",
     "publish": "node process/gen_manifest --channel=qiqe-temp",
-    "publish:beta": "node process/gen_manifest --channel=qiqe-temp",
-    "publish:revision": "node process/gen_manifest --channel=qiqe-temp",
+    "publish:beta": "node process/gen_manifest --channel=beta",
+    "publish:revision": "node process/gen_manifest --channel=revision",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "jest"
   },

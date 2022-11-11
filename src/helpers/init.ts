@@ -1,4 +1,5 @@
 import * as fs from "fs-extra";
+import path from "path";
 import { app, crashReporter } from "electron";
 import Kitsu from "kitsu";
 import { JSONFile, Low } from "@commonify/lowdb";
@@ -29,13 +30,18 @@ log("DB file in: ", getDBPath());
 // saves them to be accesible from the webapp localStorage
 const recoverOldPrefs = () => {
   const userDataPath = app.getPath("userData");
-  const oldLocalStoragePath = userDataPath + "/default/Local Storage";
-  const newLocalStoragePath = userDataPath + "/Local Storage";
+  const oldLocalStoragePath = path.join(
+    userDataPath,
+    "default",
+    "Local Storage"
+  );
+  const newLocalStoragePath = path.join(userDataPath, "Local Storage");
 
   if (!fs.existsSync(oldLocalStoragePath)) return;
 
   fs.copySync(oldLocalStoragePath, newLocalStoragePath);
   fs.rmSync(oldLocalStoragePath, { recursive: true, force: true });
+  log("Old preferences recovered, restarting app...");
 
   app.relaunch();
 };
@@ -44,9 +50,13 @@ const recoverOldPrefs = () => {
 export const init = async () => {
   initErrorHandler();
   await initDB();
-  if (process.env.NODE_ENV !== "development") setAutoUpdater();
+  if (process.env.NODE_ENV !== "development") {
+    setAutoUpdater({
+      revision: AppData.USER?.isPreviewTester,
+      beta: AppData.USER?.isBetaTester,
+    });
+  }
 
-  // setStartingUrl();
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
