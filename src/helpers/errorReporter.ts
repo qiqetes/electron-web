@@ -85,8 +85,7 @@ class ErrorReporterModel {
     data.append("Reporte de usuario", reportMessage);
     data.append("userDB.json", fs.createReadStream(getDBPath()));
     data.append("Desktop version", app.getVersion());
-    // Necessary to get 200/400 response instead of html
-    data.append("x-api", "true");
+    data.append("x-api", "true"); // Necessary to get 200/400 response instead of html
     this.getLastSessionLoggings()
       .map((f) => ({
         filename: path.basename(f),

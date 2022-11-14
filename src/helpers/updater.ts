@@ -22,8 +22,6 @@ interface UpdateManifest {
   };
 }
 
-type VersionChannel = "beta" | "revision" | "production";
-
 const isNewVersionNuber = (actual: string, incoming: string) => {
   for (let i = 0; i < 3; i++) {
     const act = parseInt(actual.split(".")[i]);
@@ -129,7 +127,11 @@ export const setAutoUpdater = async (allowedChannels: {
 }) => {
   const manifest = await getMostUpdatedManifest(allowedChannels);
 
-  if (!manifest) return;
+  if (!manifest) {
+    logError("No manifest found");
+    return;
+  }
+
   if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
     log(
       `No new version found.\nActual: ${projectInfo.version} - Manifest: ${manifest.version}`
@@ -203,7 +205,7 @@ export const setAutoUpdater = async (allowedChannels: {
       download(
         tempPath,
         nupkgName,
-        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/${nupkgName}`,
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/v${manifest.version}/${nupkgName}`,
         () => {
           log("NUPKG downloaded in temp folder", tempPath);
           autoUpdater.setFeedURL({
@@ -233,7 +235,7 @@ export const setAutoUpdater = async (allowedChannels: {
     download(
       tempPath,
       "RELEASES",
-      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/RELEASES",
+      `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/RELEASES`,
       setAutoUpdaterWin
     );
   }
