@@ -47,7 +47,7 @@ ipcMain.on(
     AppData.USER = {
       ...user,
       isBetaTester: user.tags.includes("beta"),
-      isPreviewTester: user.tags.includes("preview"),
+      isPreviewTester: user.tags.includes("revision"),
     };
   }
 );

@@ -105,7 +105,7 @@ const getMostUpdatedManifest = async (allowedChannels: {
     : null;
   const manifestProduction = (
     await axios.get<UpdateManifest>(
-      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/production/manifest.json"
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json" // TODO: change to production
     )
   ).data;
 

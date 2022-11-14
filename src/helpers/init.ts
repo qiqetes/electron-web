@@ -50,12 +50,12 @@ const recoverOldPrefs = () => {
 export const init = async () => {
   initErrorHandler();
   await initDB();
-  if (process.env.NODE_ENV !== "development") {
-    setAutoUpdater({
-      revision: AppData.USER?.isPreviewTester,
-      beta: AppData.USER?.isBetaTester,
-    });
-  }
+  // if (process.env.NODE_ENV !== "development") {
+  setAutoUpdater({
+    revision: AppData.USER?.isPreviewTester,
+    beta: AppData.USER?.isBetaTester,
+  });
+  // }
 
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
