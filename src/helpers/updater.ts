@@ -149,6 +149,7 @@ export const setAutoUpdater = async (allowedChannels: {
   if (platform == "darwin") platform = "mac64";
 
   const updateUrl = manifest.packages[platform]?.url;
+  console.log("updateUrl", updateUrl);
   if (!updateUrl) {
     logError(
       `The update is not available for this platform, you should check either if it wasn't uploaded yet or this platform is not supported. (platform: ${platform})`
@@ -191,6 +192,11 @@ export const setAutoUpdater = async (allowedChannels: {
     // In windows we need to avoid running an update the first time the app runs
     const cmd = process.argv[1];
     if (cmd == "--squirrel-firstrun") {
+      sendUpdaterEvent({
+        type: "update_error",
+        error:
+          "Por favor reinicia la aplicación para instalar la actualización",
+      });
       return;
     }
 
@@ -205,7 +211,7 @@ export const setAutoUpdater = async (allowedChannels: {
       download(
         tempPath,
         nupkgName,
-        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/v${manifest.version}/${nupkgName}`,
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/${nupkgName}`,
         () => {
           log("NUPKG downloaded in temp folder", tempPath);
           autoUpdater.setFeedURL({
@@ -232,12 +238,7 @@ export const setAutoUpdater = async (allowedChannels: {
         sendUpdaterEvent({ type: "update_downloading", progress: percentage })
     );
   } else if (os.platform() == "win32") {
-    download(
-      tempPath,
-      "RELEASES",
-      `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/RELEASES`,
-      setAutoUpdaterWin
-    );
+    download(tempPath, "RELEASES", updateUrl, setAutoUpdaterWin);
   }
 };
 

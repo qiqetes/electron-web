@@ -90,9 +90,7 @@ const uploadManifest = async (channel) => {
     platforms.forEach(
       (p) =>
         (manifest.packages[platform] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/v${
-            pack.version
-          }/${pack.productName.replace(" ", "")}-${pack.version}-full.nupkg`,
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/RELEASES`,
         })
     );
   }
