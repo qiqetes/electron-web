@@ -47,7 +47,7 @@ export default class LocalServer extends EventEmitter {
       "Starting local server in path:",
       path.join(path.dirname(__dirname), "libs", "ThreadStreaming.js")
     );
-    /** Player */
+    /** Player **/
     const scriptPath = path.join(
       path.dirname(__dirname), // TODO: debuggear esto a ver si va a la ruta que toca
       "libs",
