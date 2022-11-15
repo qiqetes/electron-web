@@ -23,6 +23,11 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
+// Avoid creating two instances of the app
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) app.quit();
+app.on("second-instance", () => mainWindow?.focus());
+
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
