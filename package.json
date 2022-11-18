@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "5.1.9",
+  "version": "5.1.10",
   "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
@@ -16,7 +16,7 @@
     "push:macos": "cross-env-shell ENV=prod electron-forge publish --arch=universal",
     "push:win": "cross-env-shell ENV=prod electron-forge publish --arch=ia32,x64",
     "push:macos:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=universal",
-    "push:win:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=ia32,x64",
+    "push:win:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish",
     "publish": "node process/gen_manifest --channel=qiqe-temp",
     "publish:beta": "node process/gen_manifest --channel=beta",
     "publish:revision": "node process/gen_manifest --channel=revision",
