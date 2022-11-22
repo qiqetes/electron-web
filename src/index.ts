@@ -50,7 +50,8 @@ const createWindow = async () => {
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: process.env.NODE_ENV == "development",
+      devTools:
+        process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
 

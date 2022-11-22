@@ -14,7 +14,7 @@ export class HeartRateDeviceService {
 
     ipcMain.on("hrDeviceSelectionCancelled", () => {
       log("Device selection cancelled");
-      this.callback("");
+      // this.callback("");
     });
   }
 

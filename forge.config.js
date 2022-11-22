@@ -52,6 +52,9 @@ module.exports = {
         bucket: "bestcycling-production",
         folder: `desktop/versions/v${version}`,
         public: true,
+        keyResolver: (fileName, platform, arch) => {
+          return `desktop/versions/v${version}/${arch}/${fileName}`;
+        },
       },
     },
   ],
