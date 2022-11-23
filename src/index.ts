@@ -13,7 +13,7 @@ import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService"
 import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
-
+import noble from '@abandonware/noble';
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -100,11 +100,45 @@ const reactDevToolsPath = path.join(
 );
 
 app.on("ready", async () => {
+
+  const BLE= "BLUETOOTH: ";
+  //Vamos a probar aqui los dispositivos
+  console.log(BLE+"state ",noble.state);
+  console.log(BLE+"START SCANING ");
+  noble.on('stateChange', async (state) => {
+    console.log(BLE+"stateChange ",state);
+
+    if (state === 'poweredOn') {
+      await noble.startScanningAsync(['180d'], false);
+    }
+  });
+  noble.on('discover', async (peripheral) => {
+
+    if(peripheral.advertisement.localName != null && peripheral.advertisement.localName != ""){
+      console.log(BLE+" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+    }else{
+      return
+    }
+
+   await noble.stopScanningAsync();
+    await peripheral.connectAsync();
+    const {characteristics} = await peripheral.discoverSomeServicesAndCharacteristicsAsync([], []);
+    console.log("de char ",characteristics)
+    const hearRateMeasure = (await characteristics.find((char) => char.uuid=='2a37')?.readAsync());
+
+    console.log(`${peripheral.address} (${peripheral.advertisement.localName}): ${hearRateMeasure}%`);
+
+   // await peripheral.disconnectAsync();
+    //process.exit(0);
+  });
   if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
     await session.defaultSession.loadExtension(reactDevToolsPath);
   }
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();
+
+
+
 });
 
 app.on("window-all-closed", async () => {
