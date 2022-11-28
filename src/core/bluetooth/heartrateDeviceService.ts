@@ -10,11 +10,13 @@ export class HeartRateDeviceService {
     ipcMain.on("hrDeviceSelected", (_, deviceId) => {
       log("Device selected", deviceId);
       this.callback(deviceId);
+      this.callback = () => null;
     });
 
     ipcMain.on("hrDeviceSelectionCancelled", () => {
       log("Device selection cancelled");
-      // this.callback("");
+      this.callback("");
+      this.callback = () => null;
     });
   }
 

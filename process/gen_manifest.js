@@ -1,7 +1,7 @@
 import pack from "../package.json" assert { type: "json" };
 import AWS from "aws-sdk";
 import os from "os";
-import { exit } from "process";
+import inquirer from "inquirer";
 
 // {
 //   "name": "Bestcycling TV",
@@ -75,22 +75,22 @@ const uploadManifest = async (channel) => {
 
   let platform = process.platform;
   if (process.platform == "darwin") platform = "mac64";
-  // if (process.platform == "win32") platform = "win" + os.arch().substring(1);
 
   if (platform == "mac64") {
     manifest.packages[platform] = {
       url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${
         pack.version
-      }/${pack.productName.replace(" ", "+")}-${os.platform()}-universal-${
-        pack.version
-      }.zip`,
+      }/darwin/${pack.productName.replace(
+        " ",
+        "+"
+      )}-${os.platform()}-universal-${pack.version}.zip`,
     };
   } else if (platform == "win32") {
-    const platforms = ["win32", "win64"];
+    const platforms = ["ia32", "x64"];
     platforms.forEach(
       (p) =>
-        (manifest.packages[platform] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/RELEASES`,
+        (manifest.packages[p] = {
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/${p}/RELEASES`,
         })
     );
   }
@@ -115,37 +115,37 @@ const uploadManifest = async (channel) => {
   });
 };
 
-const parseOptions = () => {
-  const args = {};
-  process.argv.slice(2, process.argv.length).forEach((arg) => {
-    // long arg
-    if (arg.slice(0, 2) === "--") {
-      const longArg = arg.split("=");
-      const longArgFlag = longArg[0].slice(2, longArg[0].length);
-      const longArgValue = longArg.length > 1 ? longArg[1] : true;
-      args[longArgFlag] = longArgValue;
-    }
-    // flags
-    else if (arg[0] === "-") {
-      const flags = arg.slice(1, arg.length).split("");
-      flags.forEach((flag) => {
-        args[flag] = true;
+/// Making the CLI
+inquirer
+  .prompt([
+    {
+      type: "list",
+      name: "channel",
+      message: "¿Dónde quieres que se publique el manifest?",
+      choices: ["Alpha", "Beta", "Production"],
+      filter(val) {
+        if (val == "Alpha") return "revision";
+        if (val == "Beta") return "beta";
+        if (val == "Production")
+          return "qiqe-temp"; // TODO: Change to production
+        else throw new Error("No se ha seleccionado un canal válido");
+      },
+    },
+  ])
+  .then((answers) => {
+    inquirer
+      .prompt([
+        {
+          type: "confirm",
+          name: "confirm",
+          message: `¿Estás seguro de que quieres publicar el manifest en el canal \x1b[31m${answers.channel.toUpperCase()}\x1b[0m? [\x1b[31m${os.platform()}\x1b[0m]`,
+        },
+      ])
+      .then((answers2) => {
+        if (answers2.confirm) {
+          uploadManifest(answers.channel);
+        } else {
+          console.log("No se ha publicado el manifest");
+        }
       });
-    }
   });
-  return args;
-};
-
-const allowedChannels = ["qiqe-temp", "revision", "beta"];
-const { channel } = parseOptions();
-
-if (!allowedChannels.includes(channel)) {
-  console.info(
-    `Channel ${channel} is not included in allowed channels (${allowedChannels.join(
-      ", "
-    )})`
-  );
-  exit(1);
-}
-
-await uploadManifest(channel);

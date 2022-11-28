@@ -20,12 +20,12 @@ module.exports = {
     },
 
     // Commenting out this object will disable code signing for OS X.
-    osxNotarize: {
-      appBundleId: "com.nw-builder.bestcyclingtv",
-      appleId: process.env.APPLE_ID,
-      appleIdPassword: process.env.APPLE_ID_PASSWORD,
-      ascProvider: "YMCHSA4437",
-    },
+    // osxNotarize: {
+    //   appBundleId: "com.nw-builder.bestcyclingtv",
+    //   appleId: process.env.APPLE_ID,
+    //   appleIdPassword: process.env.APPLE_ID_PASSWORD,
+    //   ascProvider: "YMCHSA4437",
+    // },
   },
   makers: [
     {
@@ -53,6 +53,8 @@ module.exports = {
         folder: `desktop/versions/v${version}`,
         public: true,
         keyResolver: (fileName, platform, arch) => {
+          if (arch === "universal")
+            return `desktop/versions/v${version}/darwin/${fileName}`;
           return `desktop/versions/v${version}/${arch}/${fileName}`;
         },
       },

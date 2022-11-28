@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.1",
+  "version": "5.10.0",
   "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
@@ -17,9 +17,7 @@
     "push:win": "cross-env-shell ENV=prod electron-forge publish --arch=ia32,x64",
     "push:macos:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=universal",
     "push:win:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=ia32, x64",
-    "publish": "node process/gen_manifest --channel=qiqe-temp",
-    "publish:beta": "node process/gen_manifest --channel=beta",
-    "publish:revision": "node process/gen_manifest --channel=revision",
+    "publish": "node process/gen_manifest",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "jest"
   },
@@ -34,8 +32,8 @@
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0",
-    "@electron-forge/maker-squirrel": "^6.0.0",
     "@electron-forge/maker-dmg": "^6.0.0",
+    "@electron-forge/maker-squirrel": "^6.0.0",
     "@electron-forge/maker-zip": "^6.0.0",
     "@electron-forge/plugin-webpack": "^6.0.0",
     "@electron-forge/publisher-s3": "^6.0.0",
@@ -51,6 +49,7 @@
     "eslint-import-resolver-typescript": "^3.5.2",
     "eslint-plugin-import": "^2.26.0",
     "fork-ts-checker-webpack-plugin": "^7.2.13",
+    "inquirer": "^9.1.4",
     "jest": "^29.2.2",
     "node-loader": "^2.0.0",
     "style-loader": "^3.3.1",

@@ -132,9 +132,9 @@ class SettingsDataModel implements SettingsData {
     if (validSetting) {
       log(`Setting ${setting} saved`);
       this.saveToDb();
-      if (process.env.NODE_ENV === "development") {
-        sendToast("Preferencia guardada", null, 5);
-      }
+      // if (process.env.NODE_ENV === "development") {
+      //   sendToast("Preferencia guardada", null, 5);
+      // }
     }
   }
 
