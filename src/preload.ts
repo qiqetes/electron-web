@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from "electron";
+import {  contextBridge, ipcRenderer } from "electron";
+import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
 
@@ -139,4 +140,53 @@ contextBridge.exposeInMainWorld("bluetoothAPI", {
     ipcRenderer.send("hrDeviceSelected", deviceName),
   hrDeviceSelectionCancelled: () =>
     ipcRenderer.send("hrDeviceSelectionCancelled"),
+});
+
+contextBridge.exposeInMainWorld("bluetoothApi2", {
+  startScan: () =>
+  { ipcRenderer.send("bluetoothStartScan")},
+
+  stopScan: (
+    callback: (event: Event, device: BluetoothDevice) => void
+  ) => ipcRenderer.on("bluetoothStartScan", callback),
+
+  connectDevice: (id:String) => {
+    ipcRenderer.send("connectDevice",id)
+  },
+
+  disconnectDevice: (id:String) => {
+    console.log("ESTAMOS EN EL disconnectDevice  ");
+
+    ipcRenderer.send("disconnectDevice",id)
+  },
+
+  handleReciveDevices: (
+    callback: (event: Event, device: BluetoothDevice) => void
+  ) => {
+
+    console.log("ESTAMOS EN EL HANDLE RECIVEDEVICES ");
+    ipcRenderer.on("bluetoothDeviceFound", callback);
+  },
+  handleReciveStatusDevices: (
+    callback: (event: Event, device: BluetoothDevice) => void
+  ) => {
+
+    console.log("ESTAMOS EN EL HANDLE bluetoothDeviceState ");
+    ipcRenderer.on("bluetoothDeviceState", callback);
+  },
+  handleHeartRateData: (
+    callback: (event: Event,data:any) => void
+  ) => {
+
+    console.log("ESTAMOS EN EL HANDLE RECIVEDEVICES ");
+    ipcRenderer.on("heartRateData", callback);
+  },
+  removeReciveDevices: (
+  ) => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceFound");
+  },
+
+  readData: (id:string) =>{},
+  subscribeData: (id:string) =>{},
+  getDeviceList:() => {},
 });
