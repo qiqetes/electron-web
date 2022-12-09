@@ -142,7 +142,7 @@ contextBridge.exposeInMainWorld("bluetoothAPI", {
     ipcRenderer.send("hrDeviceSelectionCancelled"),
 });
 
-contextBridge.exposeInMainWorld("bluetoothApi2", {
+contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   startScan: () =>
   { ipcRenderer.send("bluetoothStartScan")},
 
@@ -167,25 +167,33 @@ contextBridge.exposeInMainWorld("bluetoothApi2", {
     console.log("ESTAMOS EN EL HANDLE RECIVEDEVICES ");
     ipcRenderer.on("bluetoothDeviceFound", callback);
   },
+  handleReciveStatus: (
+    callback: (event: Event, status: BluetoothDevice) => void
+  ) => {
+    ipcRenderer.on("stateChange", callback);
+  },
+
   handleReciveStatusDevices: (
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
 
-    console.log("ESTAMOS EN EL HANDLE bluetoothDeviceState ");
     ipcRenderer.on("bluetoothDeviceState", callback);
   },
   handleHeartRateData: (
     callback: (event: Event,data:any) => void
   ) => {
-
-    console.log("ESTAMOS EN EL HANDLE RECIVEDEVICES ");
     ipcRenderer.on("heartRateData", callback);
   },
   removeReciveDevices: (
   ) => {
     ipcRenderer.removeAllListeners("bluetoothDeviceFound");
   },
-
+  syncDevices: () =>{
+    ipcRenderer.send("syncDevices")
+  },
+  syncStatus: () =>{
+    ipcRenderer.send("syncStatus")
+  },
   readData: (id:string) =>{},
   subscribeData: (id:string) =>{},
   getDeviceList:() => {},

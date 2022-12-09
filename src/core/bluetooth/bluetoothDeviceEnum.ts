@@ -12,8 +12,7 @@ export enum BluetoothDeviceState{
   disconnected = "disconnected",
   error = "error"
 }
-
-export const  bluetoothState = {
+export const  BTStatus = {
   unknown: "unknown",
   poweredOff: "poweredOff",
   poweredOn: "poweredOn",
