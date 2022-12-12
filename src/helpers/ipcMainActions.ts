@@ -10,9 +10,7 @@ import { filenameStealth } from "./downloadsHelpers";
 import { modalFunctions } from "../models/modal.model";
 import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
-
 import * as fs from "fs";
-import { BluetoothManager } from "../core/bluetooth/bluetoothManager";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -437,4 +435,3 @@ ipcMain.once("mainLoaded", () => {
   AppData.MAIN_LOADED = true;
   preRendererCachedActions.forEach((action) => action());
 });
-const hr = new BluetoothManager(ipcMain);
