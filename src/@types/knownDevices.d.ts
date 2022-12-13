@@ -1,8 +1,9 @@
 type KnownDevice = {
   id: string;
   name: string;
-  deviceType: BluetoothDeviceTypes | null;
-  autoConnect: Boolean;
+  deviceType: BluetoothDeviceTypes;
+  autoConnect: boolean;
+  broadcast: boolean;
 }
 type KnownDevices =
  {[id: string]: KnownDevice };
@@ -12,10 +13,9 @@ type KnownDevices =
 interface KnownDevicesData extends IndexableData, KnownDevicesDataDB {
   getKnownDevices:() => KnownDevices;
   hasKnownDevices:() => boolean,
-  getKnwonDevice:(string) => KnownDevice|undefined;
+  getKnownDevice:(string) => KnownDevice|undefined;
   saveKnwonDevice:(KnownDevice) => void;
   addFromBluetoothDevice:(BluetoothDevice,boolean) => void;
-  getKnownDevice:(string) => KnownDevice|null;
 }
 
 interface KnownDevicesDataDB extends IndexableData {

@@ -23,22 +23,18 @@ class KnownDevicesDataModel implements KnownDevicesData {
     return this.knownDevices;
   };
 
-  getKnownDevice(id:string): KnownDevice|null {
+  getKnownDevice(id:string): KnownDevice|undefined {
     return this.knownDevices[id];
   };
 
-  getKnwonDevice(id: string): KnownDevice|undefined {
-    if(this.knownDevices != null){
-      return this.knownDevices[id];
-    }
-  };
 
-  addFromBluetoothDevice(device: BluetoothDevice,autoConnect: boolean) {
+  addFromBluetoothDevice(device: BluetoothDevice, autoConnect: boolean) {
     const knownDevice : KnownDevice = {
       id: device.id,
       name: device.name,
       deviceType: device.deviceType,
-      autoConnect: autoConnect
+      autoConnect: autoConnect,
+      broadcast: device.broadcast
     }
 
     console.log("ESTAMS justo antes del save known ",knownDevice)

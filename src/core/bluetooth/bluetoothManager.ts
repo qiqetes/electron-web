@@ -4,14 +4,17 @@ import { mainWindow } from '../../index';
 import {  KnownDevicesData } from "../../helpers/init";
 import {BluetoothDevice} from './bluetoothDevice';
 import { BluetoothDeviceState, BluetoothDeviceTypes, BTStatus } from './bluetoothDeviceEnum';
+import { GattSpecification } from './gattSpecification';
 
 export class BluetoothManager {
 
   knownDevices: KnownDevicesData | undefined;
   allPeriphealList: Map<string,noble.Peripheral>;
   statusBluetooth = BTStatus.unknown;
+  discardDevices: string[];
 
   constructor() {
+    this.discardDevices =[];
     this.allPeriphealList = new Map<string,noble.Peripheral>;
     this.bluetoothStateChange();
 
@@ -46,44 +49,94 @@ export class BluetoothManager {
     console.log(this.knownDevices.getKnownDevices());
 
     if(this.knownDevices.hasKnownDevices()){
-
+      this.enableScan();
     }
   }
 
   enableDiscoverDevices = () =>{
     noble.on('discover', async (peripheral) => {
+      const deviceId = peripheral.uuid.toLowerCase();
+
+      const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
+
+      /*
+      if(this.discardDevices.includes(peripheral.uuid) && knownDevice == undefined){
+        return
+      }*/
       if(peripheral.advertisement.localName != null && peripheral.advertisement.localName != ""){
-        console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+        //console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       }else{
         return
       }
-
-      const foundPeripheral: noble.Peripheral|undefined = this.allPeriphealList.get(peripheral.id);
+      const foundPeripheral: noble.Peripheral|undefined = this.allPeriphealList.get(deviceId);
 
       if(foundPeripheral){
         return
       }
-      console.log("eiiii que estamos aquiii con ",peripheral);
-      const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
+      var bl;
+      bl = this.findBluetoothDevice(peripheral);
+
+      if(knownDevice != undefined){
+        bl = BluetoothDevice.fromPeripheral(peripheral,knownDevice.deviceType);
+      }else{
+        bl = this.findBluetoothDevice(peripheral);
+      }
+      if(bl == null){
+        this.discardDevices.push(peripheral.uuid);
+        return;
+      }
       console.log("emitimos ",bl)
       mainWindow.webContents.send("bluetoothDeviceFound",bl);
       if(!this.allPeriphealList.get(bl.id)){
         this.allPeriphealList.set(bl.id,peripheral);
+      }
+      //Autoconnect
+      if(knownDevice != null && knownDevice.autoConnect){
+        this.connect(bl.id);
       }
       //this.ipcMain.emit("bluetoothDeviceFound",bl)
       console.log("emitido")
     });
   }
 
+  findBluetoothDevice =(peripheal: noble.Peripheral): BluetoothDevice| undefined=>{
+    var blDevice = this.isHeartRate(peripheal);
+
+    if(blDevice != null){
+      return blDevice;
+    }else{
+      blDevice = this.isBike(peripheal);
+    }
+    return blDevice;
+  }
+  isBike = (peripheral: noble.Peripheral): BluetoothDevice| undefined => {
+    if(peripheral.advertisement.serviceUuids != null){
+      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.ftms.services.includes(e));
+
+      if (service != null){
+        return  BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.Bike);
+      }
+    }
+  }
+
+  isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice| undefined=> {
+    if(peripheral.advertisement.serviceUuids != null){
+      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.heartRate.services.includes(e));
+
+      if (service != null){
+        return  BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
+      }
+    }
+  }
   // await peripheral.disconnectAsync();
     //proces
   enableScan = () => {
-
     if(this.statusBluetooth == BTStatus.poweredOn){
       noble.startScanningAsync([], true);
     }
-
   }
+
+
   disconnect = async (id:string) =>{
     const foundPeripheral: noble.Peripheral|undefined = this.allPeriphealList.get(id);
     if(foundPeripheral as noble.Peripheral){
@@ -96,9 +149,11 @@ export class BluetoothManager {
     const foundPeripheral: noble.Peripheral|undefined = this.allPeriphealList.get(id);
     if(foundPeripheral as noble.Peripheral){
       const peripheral = foundPeripheral as noble.Peripheral;
+      const deviceType = this.getDeviceType(id);
 
       peripheral.on('connect',(stream) => {
-        const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
+        const bl = BluetoothDevice.fromPeripheral(peripheral,deviceType);
+
         mainWindow.webContents.send("bluetoothDeviceState",bl);
         if(this.knownDevices != null){
           this.knownDevices.addFromBluetoothDevice(bl,true);
@@ -107,7 +162,7 @@ export class BluetoothManager {
       });
 
       peripheral.on('disconnect',(stream) => {
-        const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
+        const bl = BluetoothDevice.fromPeripheral(peripheral,deviceType);
         if(this.knownDevices != null){
           this.knownDevices.addFromBluetoothDevice(bl,false);
         }
@@ -150,12 +205,28 @@ export class BluetoothManager {
     });
   }
 
+  //Devolvemos todos los dispositivos que hemos encontrado, junto con los que ya conocemos
   syncDevices = async () =>{
+    let foundDevices: string[] = [];
     const peripherals = Array.from(this.allPeriphealList.values());
     peripherals.forEach((peripheral) =>{
-      const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
+      foundDevices.push(peripheral.uuid);
+      const deviceType = this.getDeviceType(peripheral.uuid)
+      const bl = BluetoothDevice.fromPeripheral(peripheral,deviceType);
       mainWindow.webContents.send("bluetoothDeviceFound",bl);
     })
+    const knownDevices = this.knownDevices?.getKnownDevices();
+
+    if(knownDevices != null &&  Object.entries(knownDevices).length > 0)
+
+    Object.keys(knownDevices).forEach(key => {
+      const lowerKey = key.toLowerCase();
+
+      if(!foundDevices.includes(lowerKey) && knownDevices[lowerKey] != null){
+        const bl = BluetoothDevice.fromKnwonDevice(knownDevices[lowerKey]);
+        mainWindow.webContents.send("bluetoothDeviceFound",bl);
+      }
+    });
   }
 
   getConnectedDevices = async () =>{
@@ -163,55 +234,23 @@ export class BluetoothManager {
     return devices.filter((device) =>{
       return device.state == BluetoothDeviceState.connected;
     })
-
   }
+
   startScan = async () =>{
+    this.discardDevices =[];
     await noble.stopScanningAsync();
-    const BLE= "BLUETOOTH: ";
-    //Vamos a probar aqui los dispositivos
-    console.log(BLE+"state ",noble.state);
-    console.log(BLE+"START SCANING ");
+    this.syncDevices();
+    this.enableScan();
+  }
 
-    (await this.getConnectedDevices()).forEach((peripheral) =>{
-      const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
-      console.log("emitimos ",bl)
-      mainWindow.webContents.send("bluetoothDeviceFound",bl);
-    });
-    noble.on('stateChange', async (state) => {
-      console.log(BLE+"stateChange ",state);
-      if (state === BTStatus.poweredOn) {
-        await noble.startScanningAsync(['180d'], false);
+  getDeviceType = (id:string):BluetoothDeviceTypes => {
+    var deviceType = BluetoothDeviceTypes.HeartRate;
+    if(this.knownDevices != null){
+      const knwon = this.knownDevices.getKnownDevice(id.toLowerCase());
+      if(knwon != null){
+        deviceType = knwon.deviceType as BluetoothDeviceTypes;
       }
-    });
-
-
-
-    noble.on('discover', async (peripheral) => {
-      if(peripheral.advertisement.localName != null && peripheral.advertisement.localName != ""){
-        console.log(BLE+" Peripheal DISCOVER  ",peripheral.advertisement.localName);
-      }else{
-        return
-      }
-
-      console.log("eiiii que estamos aquiii con ",peripheral);
-      const bl = BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.HeartRate);
-      console.log("emitimos ",bl)
-      mainWindow.webContents.send("bluetoothDeviceFound",bl);
-      if(!this.allPeriphealList.get(bl.id)){
-        this.allPeriphealList.set(bl.id,peripheral);
-      }
-      //this.ipcMain.emit("bluetoothDeviceFound",bl)
-      console.log("emitido")
-
-      await noble.stopScanningAsync();
-
-
-    // await peripheral.disconnectAsync();
-      //process.exit(0);
-    });
-
-    if(this.statusBluetooth == BTStatus.poweredOn){
-      await noble.startScanningAsync(['180d'], false);
     }
+    return deviceType;
   }
 }
