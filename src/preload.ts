@@ -164,7 +164,6 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
 
-    console.log("ESTAMOS EN EL HANDLE RECIVEDEVICES ");
     ipcRenderer.on("bluetoothDeviceFound", callback);
   },
   handleReciveStatus: (
@@ -193,6 +192,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   },
   syncStatus: () =>{
     ipcRenderer.send("syncStatus")
+  },
+  enableAutoScan: () =>{
+    ipcRenderer.send("enableAutoScan")
   },
   readData: (id:string) =>{},
   subscribeData: (id:string) =>{},

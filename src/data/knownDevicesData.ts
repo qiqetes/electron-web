@@ -37,18 +37,13 @@ class KnownDevicesDataModel implements KnownDevicesData {
       broadcast: device.broadcast
     }
 
-    console.log("ESTAMS justo antes del save known ",knownDevice)
     this.saveKnwonDevice(knownDevice);
-    console.log("************* WWWIIII GUARDAMOS EL KNOWN DEVICE",knownDevice);
     this.saveToDb();
   }
 
   saveKnwonDevice(knownDevice: KnownDevice):void{
     if(this.knownDevices != null){
-      console.log("ahora vamos a setear el known device",knownDevice);
-      console.log("antes de setear ",this.knownDevices)
       this.knownDevices[knownDevice.id] =  knownDevice;
-      console.log("DE KNOEN DEVICES TenemoS ",this.knownDevices);
     }
   }
 
@@ -61,11 +56,7 @@ class KnownDevicesDataModel implements KnownDevicesData {
 
   async saveToDb(writeToDb = false): Promise<void> {
     if (!DB.data) return;
-    console.log("EE AASFASF VAMOS A GUARDAR ESTO ");
     DB.data.knownDevices = this.knownDevices;
-    console.log("********** ** HOOOOOLAAAAA DB WRITE *************",DB.data.knownDevices);
-    await DB.write();
-        console.log("********** ** HOOOOOLAAAAA AHORA SIII*************");
   }
 
   init() {
