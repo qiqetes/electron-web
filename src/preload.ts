@@ -179,9 +179,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.on("bluetoothDeviceState", callback);
   },
   handleHeartRateData: (
-    callback: (event: Event,data:any) => void
+    id:string, callback: (event: Event,data:any) => void
   ) => {
-    ipcRenderer.on("heartRateData", callback);
+    ipcRenderer.on("heartRateData-"+id, callback);
   },
   removeReciveDevices: (
   ) => {
