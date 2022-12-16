@@ -3,6 +3,7 @@ type KnownDevice = {
   name: string;
   deviceType: BluetoothDeviceTypes;
   autoConnect: boolean;
+  parserType: BluetoothParserType;
   broadcast: boolean;
 }
 type KnownDevices =

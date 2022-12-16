@@ -9,6 +9,11 @@ export const  GattSpecification = {
     services: ['1826'],
     measurements: {
       bikeData: '2ad2',
+      feature: '2acc',
+      powerRange: '2ad8',
+      controlPoint: '2ad9',
+      trainingStatus: '2ad3',
+      status: '2ada',
     }
   }
 }

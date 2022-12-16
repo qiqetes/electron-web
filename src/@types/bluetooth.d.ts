@@ -10,3 +10,11 @@ type BluetoothDeviceState =
   "disconnecting"|
   "disconnected"|
   "error"
+
+type BluetoothParserType =
+  "heartrate"|
+  "ftms"|
+  "power"|
+  "bhCustom"|
+  "keiser"|
+  "bhPro"

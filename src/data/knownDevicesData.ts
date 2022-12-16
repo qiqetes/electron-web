@@ -34,7 +34,8 @@ class KnownDevicesDataModel implements KnownDevicesData {
       name: device.name,
       deviceType: device.deviceType,
       autoConnect: autoConnect,
-      broadcast: device.broadcast
+      broadcast: device.broadcast,
+      parserType: device.parserType
     }
 
     this.saveKnwonDevice(knownDevice);
