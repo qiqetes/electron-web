@@ -93,12 +93,13 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
 
       if(this.parserType == 'ftms'){
         const {characteristics}  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services,[GattSpecification.ftms.measurements.bikeData] );
+        console.log("ISIIII ESTAMOS EN EL FTMS CHAR ESTE ")
         if(characteristics != null && characteristics.length > 0){
           this.cacheMeasurement = characteristics;
           const bikeData = characteristics[0];
           this.notify(bikeData, (state:Buffer) => {
-           // console.log("SIiiii los valores de la bicicleta son estos ");
-           // console.log(state);
+            console.log("SIiiii los valores de la bicicleta son estos ");
+            console.log(state);
 
           })
           console.log("Step 3");
@@ -192,7 +193,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
       await this.read(featureChar[0],async (features:any) => {
         this.features = await getFtmsFeatures(features);
       });
-
     }
     const {characteristics:featureRange} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.powerRange]);
     if(featureRange && featureRange.length > 0){
@@ -206,7 +206,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
       this.features.push(BluetoothFeatures.ZycleButton );
     }
 
-    return features;
+    return this.features;
   }
   requestControl():void {
     const data = Buffer.from([0x00]);
