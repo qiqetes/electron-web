@@ -17,10 +17,8 @@ interface BluetoothDeviceInterface {
   getFeatures():Promise<string[]|undefined>;
   connect(): void;
   disconnect():void;
-  startNotify():void;
   serialize():{};
 }
-
 
 export class BluetoothDevice implements BluetoothDeviceInterface{
   id: string;
@@ -32,6 +30,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
   peripheral: Peripheral|undefined;
   cacheMeasurement: Characteristic[];
   notifing: boolean;
+  features:string[];
+  bikeValues:Map<string,any>;
 
   constructor(deviceId:string, deviceName:string,deviceType: BluetoothDeviceTypes, state: BluetoothDeviceState =BluetoothDeviceState.unknown, parserType: BluetoothParserType,peripheral: Peripheral|undefined, broadcast:  boolean=false  ){
     this.id = deviceId;
@@ -43,7 +43,24 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     this.peripheral = peripheral;
     this.cacheMeasurement = [];
     this.notifing = false;
+    this.features =[];
+    this.bikeValues = new Map<string, any>();
   }
+  static fromPeripheral(peripheral: noble.Peripheral, type: BluetoothDeviceTypes, parserType: BluetoothParserType){
+    const statePeripheal = BluetoothDeviceState[peripheral.state] || BluetoothDeviceState.disconnected;
+    const broadcast = !peripheral.connectable;
+    const id = peripheral.uuid.toLowerCase();
+
+    return new BluetoothDevice(id,peripheral.advertisement.localName,type,statePeripheal,parserType, peripheral, broadcast)
+  }
+
+  static fromKnwonDevice(device: KnownDevice){
+    const statePeripheal = BluetoothDeviceState.unknown;
+
+    return new BluetoothDevice(device.id,device.name, device.deviceType,BluetoothDeviceState.unknown, device.parserType, undefined, device.broadcast)
+  }
+
+
   serialize(): {} {
     return {
       id:this.getId(),
@@ -66,28 +83,26 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
       if(characteristics != null && characteristics.length > 0){
         this.cacheMeasurement = characteristics;
         const beatMeasuerment = characteristics[0];
-        console.log("Step 3");
 
-        console.log(`${this.peripheral.address} (${this.peripheral.advertisement.localName}): ${beatMeasuerment}%`);
-        beatMeasuerment.notify(true, (( state) => {
-          console.log("SIIIII EL HEART RATE3  este MEASURE ES ",state,);
-        }))
-
-        beatMeasuerment.on('data',(( state:Buffer, isNotify ) => {
-          console.log("emitimos esto ",state.readInt8(1))
+        this.notify(beatMeasuerment, (state:Buffer) => {
           var data =  state.readInt8(1); //heart rate measurement
           mainWindow.webContents.send("heartRateData-"+this.id,data);
-        }));
-
-        beatMeasuerment.once('notify', ((state) => {
-          console.log("el notifiy state es ",state);
-        }));
+        })
       }
     }else if(this.deviceType == 'bike'){
 
       if(this.parserType == 'ftms'){
         const {characteristics}  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services,[GattSpecification.ftms.measurements.bikeData] );
+        if(characteristics != null && characteristics.length > 0){
+          this.cacheMeasurement = characteristics;
+          const bikeData = characteristics[0];
+          this.notify(bikeData, (state:Buffer) => {
+           // console.log("SIiiii los valores de la bicicleta son estos ");
+           // console.log(state);
 
+          })
+          console.log("Step 3");
+        }
       }
     }
   }
@@ -98,8 +113,9 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     }
     this.peripheral.removeAllListeners('connect');
     this.peripheral.removeAllListeners('disconnect');
-    this.peripheral.on('connect',(stream) => {
+    this.peripheral.on('connect',async (stream) => {
       console.log("AL CONECTAR EL STREAM TENEMOS ESTO ",stream);
+      await this.getFeatures();
       this.state =  BluetoothDeviceState[this.peripheral!.state];
       mainWindow.webContents.send("bluetoothDeviceState",this.serialize());
 
@@ -134,11 +150,18 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
   }
 
   async getFeatures():Promise<string[] | undefined> {
+    if(this.features.length > 0){
+      return this.features;
+    }
+
     if(this.deviceType == 'heartrate'){
-      return [BluetoothFeatures.HeartRate];
+      this.features = [BluetoothFeatures.HeartRate];
+      return this.features;
     }
     else if(this.parserType == 'ftms'){
-      await this.getFeaturesFtms();
+      this.features = await this.getFeaturesFtms();
+      console.log("TEMEMOS DE FEATURES FINAL ",this.features);
+      return this.features;
     }
   }
   getId(): string {
@@ -163,29 +186,52 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     }
     var features:string[] = [];
 
-    const {characteristics} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.feature]);
+    const {characteristics:featureChar} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.feature]);
 
-    if(characteristics){
-      characteristics.forEach(async (char) => {
-        const values = await char.readAsync();
-        features = getFtmsFeatures(values);
-      })
+    if(featureChar && featureChar.length > 0){
+      await this.read(featureChar[0],async (features:any) => {
+        this.features = await getFtmsFeatures(features);
+      });
+
     }
+    const {characteristics:featureRange} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.powerRange]);
+    if(featureRange && featureRange.length > 0){
+      await   this.read(featureRange[0],(values:any) => {
+        this.bikeValues.set(BluetoothFeatures.ResistanceLevelTarget ,values.toString());
+      });
+    }
+
+    const {characteristics:zycleButton} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.powerRange]);
+    if(zycleButton.length > 0 ){
+      this.features.push(BluetoothFeatures.ZycleButton );
+    }
+
     return features;
   }
+  requestControl():void {
+    const data = Buffer.from([0x00]);
+    const data2= Buffer.from('');
+    console.log("antes de l wreite ");
 
-  static fromPeripheral(peripheral: noble.Peripheral, type: BluetoothDeviceTypes, parserType: BluetoothParserType){
-    const statePeripheal = BluetoothDeviceState[peripheral.state] || BluetoothDeviceState.disconnected;
-    const broadcast = !peripheral.connectable;
-    const id = peripheral.uuid.toLowerCase();
-
-
-    return new BluetoothDevice(id,peripheral.advertisement.localName,type,statePeripheal,parserType, peripheral, broadcast)
+    const valueWrite = this.peripheral?.writeHandleAsync(data,data2,false);
+    console.log("valuewrite ",valueWrite);
   }
-  static fromKnwonDevice(device: KnownDevice){
-    const statePeripheal = BluetoothDeviceState.unknown;
 
-    return new BluetoothDevice(device.id,device.name, device.deviceType,BluetoothDeviceState.unknown, device.parserType, undefined, device.broadcast)
+  notify(measurement:Characteristic, callback:Function):void{
+    measurement.notify(true, (( state) => {
+    }))
+
+    measurement.on('data',(( state:Buffer, isNotify ) => {
+      callback(state);
+    }));
+
+    measurement.once('notify', ((state) => {
+    }));
   }
+  async read(measurement:Characteristic, callback:Function):Promise<void>{
+    const values = await measurement.readAsync();
+    callback(values);
+  }
+
 
 }

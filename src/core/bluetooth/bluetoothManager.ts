@@ -5,7 +5,6 @@ import {  KnownDevicesData } from "../../helpers/init";
 import {BluetoothDevice} from './bluetoothDevice';
 import { BluetoothDeviceState, BluetoothDeviceTypes, BTStatus } from './bluetoothDeviceEnum';
 import { GattSpecification } from './gattSpecification';
-import { BluetoothFeatures, getFtmsFeatures } from './bluetoothFeatures';
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
@@ -17,7 +16,6 @@ export class BluetoothManager {
   constructor() {
     this.autoScan = false; //Controlar condición de carrera, se carga antes la webapp que los dispositivos conocidos
     this.allDevicesList = new Map<string,BluetoothDevice>;
-
     this.bluetoothStateChange();
 
     ipcMain.on("bluetoothStartScan", () => {
@@ -66,7 +64,9 @@ export class BluetoothManager {
     const foundDevice: BluetoothDevice|undefined = this.allDevicesList.get(deviceId);
 
     if(foundDevice){
-      return await foundDevice.getFeatures();
+      const features = await foundDevice.getFeatures();
+      console.log("+****Ç* AL FINAL DE FEATRURES TENEMOES ",features);
+      return features;
     }
   }
 
@@ -88,7 +88,7 @@ export class BluetoothManager {
       return false;
     }
     //Si el dispositivo está desconectado pero tiene conexión automática
-    if(device.state == 'disconnected' || device.state == 'disconnecting' && knownDevice?.autoConnect){
+    if(device.state == 'disconnected' && knownDevice?.autoConnect || device.state == 'disconnecting' && knownDevice?.autoConnect){
       return false;
     }
     return true;
@@ -99,14 +99,15 @@ export class BluetoothManager {
       const deviceId = peripheral.uuid.toLowerCase();
       const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
 
-      if(peripheral.advertisement.localName != null && peripheral.advertisement.localName != ""){
-        //console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+      if((peripheral.advertisement.localName != null && peripheral.advertisement.localName != "") || knownDevice != null ){
+        console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       }else{
+        //console.log(" Peripheal DISCOVER NOT FOUND  ",peripheral.id);
+
         return
       }
 
       const foundDevice: BluetoothDevice| undefined = this.allDevicesList.get(deviceId);
-
       if(this.stopScanPeripheral(foundDevice,knownDevice)){
         return
       }
@@ -135,6 +136,7 @@ export class BluetoothManager {
   }
 
   findBluetoothDevice =(peripheal: noble.Peripheral): BluetoothDevice| undefined=>{
+
     blDevice = this.isBike(peripheal);
 
     if(blDevice != null){

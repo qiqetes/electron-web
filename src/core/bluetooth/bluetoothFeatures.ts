@@ -14,7 +14,7 @@ export enum BluetoothFeatures {
   HeartRate = "Pulsaciones",
   Metabolic = "Metabolic",
   ElapsedTime = "Tiempo restante",
-  RemainingTime = "Remaining timre",
+  RemainingTime = "Remaining time",
   Power = "Potencia",
   PowerOutput = "Potencia de salida",
   UserData = "Datos de usuario",
@@ -50,6 +50,9 @@ export enum BluetoothFeatures {
   // PARA ZYCLE
   ZycleButton = "Control manual de botones",
 }
+
+// zycle features readed
+//const buffer = Buffer.from([0x86,0x50,0x00,0x00,0x0c,0xe0,0x00,0x00])
 /* Lista ordenadas de características */
 const FTMSOrderFeaturesRead = [
   BluetoothFeatures.AvgSpeed,
@@ -94,19 +97,24 @@ const  FTMSOrderFeaturesWrite = [
 
 export const getFtmsFeatures = (values: Buffer):string[] => {
   // A ver la ordenación de los bits para controlar esto
-  const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
+  if(values.length< 2){
+    return [''];
+  }
+  const bitsFeaturesRead = intToBinary(values.readUIntBE(0,1)).reverse().concat(intToBinary(values.readUIntBE(1,1)).reverse());
+  //const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
+   var availabe = getAvailableFeatures(bitsFeaturesRead,FTMSOrderFeaturesRead);
 
-  var availabe = getAvailableFeatures(bitsFeaturesRead,FTMSOrderFeaturesRead);
-  if(values.length > 48){
-    const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
+   if(values.length > 5){
+    const bitsFeaturesWrite = intToBinary(values.readUIntBE(4,1)).reverse().concat(intToBinary(values.readUIntBE(5,1)).reverse());
+    //const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
     const availabeWrite = getAvailableFeatures(bitsFeaturesWrite,FTMSOrderFeaturesWrite);
-    availabe.concat(availabeWrite);
+    availabe = availabe.concat(availabeWrite);
   }
 
   return availabe;
 }
 
-const getAvailableFeatures = (bits: Buffer, features: string[]):string[] => {
+const getAvailableFeatures = (bits: Number[], features: string[]):string[] => {
   const sizeFeatures = features.length;
   var availableFeatures:string[] = [];
 
@@ -118,4 +126,17 @@ const getAvailableFeatures = (bits: Buffer, features: string[]):string[] => {
     }
   });
   return availableFeatures;
+}
+
+
+const intToBinary = (value:Number): Number[]  =>{
+
+
+  const result = value
+      .toString(2).padStart(8,'0')
+      .split('')
+      .map((e) => parseInt(e,2))
+;
+
+  return result;
 }
