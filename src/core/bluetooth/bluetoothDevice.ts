@@ -17,6 +17,7 @@ interface BluetoothDeviceInterface {
   getDeviceType():BluetoothDeviceTypes;
   getState():BluetoothDeviceState;
   getFeatures():Promise<string[]|undefined>;
+  getLevelRange():Promise<Map<string, number>|undefined>;
   connect(): void;
   disconnect():void;
   serialize():{};
@@ -34,6 +35,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
   notifing: boolean;
   features:string[];
   bikeValues:Map<string,any>;
+  resistanceRange:Map<string,number> |undefined;
 
   constructor(deviceId:string, deviceName:string,deviceType: BluetoothDeviceTypes, state: BluetoothDeviceState =BluetoothDeviceState.unknown, parserType: BluetoothParserType,peripheral: Peripheral|undefined, broadcast:  boolean=false  ){
     this.id = deviceId;
@@ -47,6 +49,23 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     this.notifing = false;
     this.features =[];
     this.bikeValues = new Map<string,any>();
+    this.resistanceRange =undefined;
+
+  }
+  async getLevelRange():Promise<Map<string, number> | undefined>  {
+    if(this.deviceType == 'bike'){
+      if(this.resistanceRange){
+        return this.resistanceRange;
+      }
+
+      const featureRange  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.powerRange);
+      if(featureRange ){
+        await this.read(featureRange,(values:any) => {
+          this.resistanceRange = BikeDataFeatures.resistanceLevel(values);
+        });
+      }
+      return this.resistanceRange;
+    }
   }
   static fromPeripheral(peripheral: noble.Peripheral, type: BluetoothDeviceTypes, parserType: BluetoothParserType){
     const statePeripheal = BluetoothDeviceState[peripheral.state] || BluetoothDeviceState.disconnected;
@@ -103,6 +122,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
             const valuesFeatures  = bikeDataFeatures.valuesFeatures(values);
             this.bikeValues =  new Map([...Array.from(valuesFeatures.entries()), ...Array.from(this.bikeValues.entries())]);
             console.log("BIKE DATA =  ",this.bikeValues);
+            mainWindow.webContents.send("bikeData-"+this.id,this.bikeValues);
+
           })
         }
       }
@@ -161,7 +182,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     }
     else if(this.parserType == 'ftms'){
       this.features = await this.getFeaturesFtms();
-      console.log("TEMEMOS DE FEATURES FINAL ",this.features);
       return this.features;
     }
   }
@@ -193,14 +213,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
         this.features = await getFtmsFeatures(features);
       });
     }
-    const featureRange  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.powerRange);
 
-    const bikeData = new BikeDataFeatures()
-    if(featureRange ){
-      await this.read(featureRange,(values:any) => {
-        this.bikeValues.set(BluetoothFeatures.ResistanceLevelTarget ,BikeDataFeatures.resistanceLevel(values));
-      });
-    }
 
     const zycleButton  = await this.getMeasurement(GattSpecification.zycleButton.service,GattSpecification.zycleButton.measurements.buttonControl);
     if(zycleButton ){

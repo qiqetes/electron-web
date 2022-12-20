@@ -69,8 +69,8 @@ export class BikeDataFeatures {
   ];
 
 
-  static resistanceLevel = (intValues:number[]):Map<String, number> => {
-    let resistanceData = new Map<String, number>();
+  static resistanceLevel = (intValues:number[]):Map<string, number> => {
+    let resistanceData = new Map<string, number>();
 
     if (intValues.length == 6) {
       const bitsValues = listToBinary(intValues);

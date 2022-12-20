@@ -155,8 +155,6 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   },
 
   disconnectDevice: (id:String) => {
-    console.log("ESTAMOS EN EL disconnectDevice  ");
-
     ipcRenderer.send("disconnectDevice",id)
   },
 
@@ -195,6 +193,11 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   },
   enableAutoScan: () =>{
     ipcRenderer.send("enableAutoScan")
+  },
+  handleBikeData: (
+    id:string, callback: (event: Event,data:any) => void
+  ) => {
+    ipcRenderer.on("bikeData-"+id, callback);
   },
   readData: (id:string) =>{},
   subscribeData: (id:string) =>{},
