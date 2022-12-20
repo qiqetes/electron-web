@@ -1,4 +1,4 @@
-import {  contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
@@ -143,25 +143,26 @@ contextBridge.exposeInMainWorld("bluetoothAPI", {
 });
 
 contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
-  startScan: () =>
-  { ipcRenderer.send("bluetoothStartScan")},
-
-  stopScan: (
-    callback: (event: Event, device: BluetoothDevice) => void
-  ) => ipcRenderer.on("bluetoothStartScan", callback),
-
-  connectDevice: (id:String) => {
-    ipcRenderer.send("connectDevice",id)
+  startScan: () => {
+    ipcRenderer.send("bluetoothStartScan");
   },
 
-  disconnectDevice: (id:String) => {
-    ipcRenderer.send("disconnectDevice",id)
+  stopScan: (callback: (event: Event, device: BluetoothDevice) => void) =>
+    ipcRenderer.on("bluetoothStartScan", callback),
+
+  connectDevice: (id: string) => {
+    ipcRenderer.send("connectDevice", id);
+  },
+
+  disconnectDevice: (id: string) => {
+    console.log("ESTAMOS EN EL disconnectDevice  ");
+
+    ipcRenderer.send("disconnectDevice", id);
   },
 
   handleReciveDevices: (
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
-
     ipcRenderer.on("bluetoothDeviceFound", callback);
   },
   handleReciveStatus: (
@@ -173,33 +174,31 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   handleReciveStatusDevices: (
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
-
     ipcRenderer.on("bluetoothDeviceState", callback);
   },
   handleHeartRateData: (
-    id:string, callback: (event: Event,data:any) => void
+    id: string,
+    callback: (event: Event, data: any) => void
   ) => {
-    ipcRenderer.on("heartRateData-"+id, callback);
+    ipcRenderer.on("heartRateData-" + id, callback);
   },
-  removeReciveDevices: (
-  ) => {
+  removeReciveDevices: () => {
     ipcRenderer.removeAllListeners("bluetoothDeviceFound");
   },
-  syncDevices: () =>{
-    ipcRenderer.send("syncDevices")
+  syncDevices: () => {
+    ipcRenderer.send("syncDevices");
   },
-  syncStatus: () =>{
-    ipcRenderer.send("syncStatus")
+  syncStatus: () => {
+    ipcRenderer.send("syncStatus");
   },
-  enableAutoScan: () =>{
-    ipcRenderer.send("enableAutoScan")
+  getFeatures: (id: string) => ipcRenderer.sendSync("getFeatures", id),
+  enableAutoScan: () => {
+    ipcRenderer.send("enableAutoScan");
   },
-  handleBikeData: (
-    id:string, callback: (event: Event,data:any) => void
-  ) => {
-    ipcRenderer.on("bikeData-"+id, callback);
+  handleBikeData: (id: string, callback: (event: Event, data: any) => void) => {
+    ipcRenderer.on("bikeData-" + id, callback);
   },
-  readData: (id:string) =>{},
-  subscribeData: (id:string) =>{},
-  getDeviceList:() => {},
+  readData: (id: string) => {},
+  subscribeData: (id: string) => {},
+  getDeviceList: () => {},
 });
