@@ -119,8 +119,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
           let bikeDataFeatures = new BikeDataFeatures();
           this.notify(characteristic, (state:Buffer) => {
             const values = bufferToListInt(state);
-            const valuesFeatures  = bikeDataFeatures.valuesFeatures(values);
-            this.bikeValues =  new Map([...Array.from(valuesFeatures.entries()), ...Array.from(this.bikeValues.entries())]);
+            this.bikeValues  = bikeDataFeatures.valuesFeatures(values);
             console.log("BIKE DATA =  ",this.bikeValues);
             mainWindow.webContents.send("bikeData-"+this.id,this.bikeValues);
 
