@@ -1,12 +1,12 @@
 export const  GattSpecification = {
   heartRate: {
-    services: ['180d'],
+    service: '180d',
     measurements: {
       heartRate :'2a37'
     }
   },
   ftms:{
-    services: ['1826'],
+    service: '1826',
     measurements: {
       bikeData: '2ad2',
       feature: '2acc',
@@ -14,6 +14,21 @@ export const  GattSpecification = {
       controlPoint: '2ad9',
       trainingStatus: '2ad3',
       status: '2ada',
+    },
+    controlPoint:{
+      requestControl: [0x00],
+      reset: [0x01],
+      stop:[0x08,0x01],
+      pause:[0x08,0x02],
+      start:[0x07],
+      setResistance: [0x04],
+      setPower: [0x05]
+    }
+  },
+  zycleButton:{
+    service:'beefee024910473cbe46960948c2f59c',
+    measurements: {
+      buttonControl:'beefe0044910473cbe46960948c2f59c'
     }
   }
 }

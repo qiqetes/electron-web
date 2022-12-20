@@ -1,5 +1,7 @@
 import noble, { Characteristic, Peripheral } from '@abandonware/noble';
 import { mainWindow } from '../../index';
+import { BikeDataFeatures } from './bikeDataFeatures';
+import { bufferToListInt } from './bluetoothDataParser';
 import { BluetoothDeviceState } from './bluetoothDeviceEnum';
 import { BluetoothFeatures, getFtmsFeatures } from './bluetoothFeatures';
 import { GattSpecification } from './gattSpecification';
@@ -44,7 +46,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     this.cacheMeasurement = [];
     this.notifing = false;
     this.features =[];
-    this.bikeValues = new Map<string, any>();
+    this.bikeValues = new Map<string,any>();
   }
   static fromPeripheral(peripheral: noble.Peripheral, type: BluetoothDeviceTypes, parserType: BluetoothParserType){
     const statePeripheal = BluetoothDeviceState[peripheral.state] || BluetoothDeviceState.disconnected;
@@ -79,28 +81,30 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     this.peripheral.removeAllListeners('serviceDiscover');
 
     if(this.deviceType == 'heartrate'){
-      const {characteristics}  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.heartRate.services,[GattSpecification.heartRate.measurements.heartRate] );
-      if(characteristics != null && characteristics.length > 0){
-        this.cacheMeasurement = characteristics;
-        const beatMeasuerment = characteristics[0];
 
-        this.notify(beatMeasuerment, (state:Buffer) => {
+      const characteristic  = await this.getMeasurement(GattSpecification.heartRate.service,GattSpecification.heartRate.measurements.heartRate);
+
+      if(characteristic != null ){
+        this.cacheMeasurement = [characteristic];
+
+        this.notify(characteristic, (state:Buffer) => {
           var data =  state.readInt8(1); //heart rate measurement
           mainWindow.webContents.send("heartRateData-"+this.id,data);
         })
       }
     }else if(this.deviceType == 'bike'){
-
       if(this.parserType == 'ftms'){
-        const {characteristics}  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services,[GattSpecification.ftms.measurements.bikeData] );
-        console.log("ISIIII ESTAMOS EN EL FTMS CHAR ESTE ")
-        if(characteristics != null && characteristics.length > 0){
-          this.cacheMeasurement = characteristics;
-          const bikeData = characteristics[0];
-          this.notify(bikeData, (state:Buffer) => {
-            console.log("SIiiii los valores de la bicicleta son estos ");
-            console.log(state);
+        console.log("Step 01");
+        const characteristic  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.bikeData);
 
+        if(characteristic != null ){
+          this.cacheMeasurement = [characteristic];
+          let bikeDataFeatures = new BikeDataFeatures();
+          this.notify(characteristic, (state:Buffer) => {
+            const values = bufferToListInt(state);
+            const valuesFeatures  = bikeDataFeatures.valuesFeatures(values);
+            this.bikeValues =  new Map([...Array.from(valuesFeatures.entries()), ...Array.from(this.bikeValues.entries())]);
+            console.log("BIKE DATA =  ",this.bikeValues);
           })
           console.log("Step 3");
         }
@@ -115,7 +119,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     this.peripheral.removeAllListeners('connect');
     this.peripheral.removeAllListeners('disconnect');
     this.peripheral.on('connect',async (stream) => {
-      console.log("AL CONECTAR EL STREAM TENEMOS ESTO ",stream);
       await this.getFeatures();
       this.state =  BluetoothDeviceState[this.peripheral!.state];
       mainWindow.webContents.send("bluetoothDeviceState",this.serialize());
@@ -187,37 +190,50 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     }
     var features:string[] = [];
 
-    const {characteristics:featureChar} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.feature]);
-
-    if(featureChar && featureChar.length > 0){
-      await this.read(featureChar[0],async (features:any) => {
+    const characteristic  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.feature);
+    if(characteristic){
+      await this.read(characteristic,async (features:any) => {
         this.features = await getFtmsFeatures(features);
       });
     }
-    const {characteristics:featureRange} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.powerRange]);
-    if(featureRange && featureRange.length > 0){
-      await   this.read(featureRange[0],(values:any) => {
-        this.bikeValues.set(BluetoothFeatures.ResistanceLevelTarget ,values.toString());
+    const featureRange  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.powerRange);
+
+    const bikeData = new BikeDataFeatures()
+    if(featureRange ){
+      await this.read(featureRange,(values:any) => {
+        this.bikeValues.set(BluetoothFeatures.ResistanceLevelTarget ,BikeDataFeatures.resistanceLevel(values));
       });
     }
 
-    const {characteristics:zycleButton} = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(GattSpecification.ftms.services, [GattSpecification.ftms.measurements.powerRange]);
-    if(zycleButton.length > 0 ){
+    const zycleButton  = await this.getMeasurement(GattSpecification.zycleButton.service,GattSpecification.zycleButton.measurements.buttonControl);
+    if(zycleButton ){
       this.features.push(BluetoothFeatures.ZycleButton );
     }
 
+    await this.requestControl();
+    await this.startTraining();
     return this.features;
   }
-  requestControl():void {
-    const data = Buffer.from([0x00]);
-    const data2= Buffer.from('');
-    console.log("antes de l wreite ");
+  async startTraining() {
+   if(this.parserType == 'ftms'){
+      const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
+      await this.writeData(GattSpecification.ftms.service,GattSpecification.ftms.measurements.controlPoint,data)
+    }
+  }
+  async requestControl():Promise<void> {
 
-    const valueWrite = this.peripheral?.writeHandleAsync(data,data2,false);
-    console.log("valuewrite ",valueWrite);
+    if(!this.peripheral){
+      return
+    }
+    if(this.parserType == 'ftms'){
+      const data = Buffer.from(GattSpecification.ftms.controlPoint.requestControl);
+     await this.writeData(GattSpecification.ftms.service,GattSpecification.ftms.measurements.controlPoint,data)
+    }
   }
 
-  notify(measurement:Characteristic, callback:Function):void{
+  async notify(measurement:Characteristic, callback:Function):Promise<void>{
+    measurement.on('notify', ((state) => {
+    }));
     measurement.notify(true, (( state) => {
     }))
 
@@ -225,13 +241,32 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
       callback(state);
     }));
 
-    measurement.once('notify', ((state) => {
-    }));
+
   }
   async read(measurement:Characteristic, callback:Function):Promise<void>{
     const values = await measurement.readAsync();
     callback(values);
   }
 
+  async writeData(service:string,char:string,data:Buffer){
+  if(!this.peripheral){
+      return null;
+    }
 
+    const characteristic  = await this.getMeasurement(service,char);
+    if(characteristic ){
+      const valueWrite = await characteristic.write(data,false,(error) =>{
+        if(error){
+          console.error("ERROR ON WRITE ",error );
+        }
+      });
+      return valueWrite;
+    }
+  }
+
+  getMeasurement = async (serviceId: string, charId:string):Promise<Characteristic | undefined> => {
+    if(!this.peripheral) return ;
+    const {characteristics}  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync([serviceId],[charId] );
+    return characteristics.find((char) => char.uuid == charId)
+  }
 }

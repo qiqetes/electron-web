@@ -18,3 +18,5 @@ type BluetoothParserType =
   "bhCustom"|
   "keiser"|
   "bhPro"
+
+  type OrderBytes = 'lso'| 'mso'

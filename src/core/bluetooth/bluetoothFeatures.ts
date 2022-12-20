@@ -1,6 +1,7 @@
+import { getAvailableFeatures, getFeatures, intToBinary } from "./bluetoothDataParser";
 
 export enum BluetoothFeatures {
-  Speed = "Velocidad medi",
+  Speed = "Velocidad media",
   AvgSpeed = "Velocidad media",
   Cadence = "Cadencia",
   TotalDistance = "Distancia total",
@@ -37,6 +38,8 @@ export enum BluetoothFeatures {
   WheelCircunference = "Tamaño de la rueda",
   SpinDown = "Spin down",
   CadenceTarget = "Cadencia objetivo",
+
+
 
   /// FTMS AVAILABLE
   BikeData = "BIKE_DATA",
@@ -102,41 +105,14 @@ export const getFtmsFeatures = (values: Buffer):string[] => {
   }
   const bitsFeaturesRead = intToBinary(values.readUIntBE(0,1)).reverse().concat(intToBinary(values.readUIntBE(1,1)).reverse());
   //const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
-   var availabe = getAvailableFeatures(bitsFeaturesRead,FTMSOrderFeaturesRead);
+   var availabe = getFeatures(bitsFeaturesRead,FTMSOrderFeaturesRead);
 
    if(values.length > 5){
     const bitsFeaturesWrite = intToBinary(values.readUIntBE(4,1)).reverse().concat(intToBinary(values.readUIntBE(5,1)).reverse());
     //const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
-    const availabeWrite = getAvailableFeatures(bitsFeaturesWrite,FTMSOrderFeaturesWrite);
+    const availabeWrite = getFeatures(bitsFeaturesWrite,FTMSOrderFeaturesWrite);
     availabe = availabe.concat(availabeWrite);
   }
 
   return availabe;
-}
-
-const getAvailableFeatures = (bits: Number[], features: string[]):string[] => {
-  const sizeFeatures = features.length;
-  var availableFeatures:string[] = [];
-
-  bits.forEach((value,index) => {
-    if (index < sizeFeatures) {
-      if (value == 1) {
-        availableFeatures.push(features[index]);
-      }
-    }
-  });
-  return availableFeatures;
-}
-
-
-const intToBinary = (value:Number): Number[]  =>{
-
-
-  const result = value
-      .toString(2).padStart(8,'0')
-      .split('')
-      .map((e) => parseInt(e,2))
-;
-
-  return result;
 }

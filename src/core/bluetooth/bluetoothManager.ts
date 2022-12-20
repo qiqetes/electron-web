@@ -150,7 +150,7 @@ export class BluetoothManager {
   isBike = (peripheral: noble.Peripheral): BluetoothDevice| undefined => {
     if(peripheral.advertisement.serviceUuids != null){
 
-      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.ftms.services.includes(e));
+      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.ftms.service == e.toLowerCase());
       var typeParser: BluetoothParserType = 'ftms';
       if (service != null){
         return  BluetoothDevice.fromPeripheral(peripheral,BluetoothDeviceTypes.Bike,typeParser);
@@ -160,7 +160,7 @@ export class BluetoothManager {
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice| undefined=> {
     if(peripheral.advertisement.serviceUuids != null){
-      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.heartRate.services.includes(e));
+      const service = peripheral.advertisement.serviceUuids.find((e)=> GattSpecification.heartRate.service == e.toLowerCase());
       var typeParser: BluetoothParserType = 'heartrate';
 
       if (service != null){
