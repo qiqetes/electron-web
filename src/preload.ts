@@ -191,7 +191,6 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   syncStatus: () => {
     ipcRenderer.send("syncStatus");
   },
-  getFeatures: (id: string) => ipcRenderer.sendSync("getFeatures", id),
   enableAutoScan: () => {
     ipcRenderer.send("enableAutoScan");
   },
@@ -201,4 +200,6 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   readData: (id: string) => {},
   subscribeData: (id: string) => {},
   getDeviceList: () => {},
+  getFeatures: (id: string) => ipcRenderer.sendSync("getFeatures", id),
+  getLevelRange: (id: string) => ipcRenderer.sendSync("getLevelRange", id),
 });

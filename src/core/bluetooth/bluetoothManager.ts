@@ -50,10 +50,14 @@ export class BluetoothManager {
     });
 
     ipcMain.on("getFeatures", async (event, id: string): Promise<void> => {
-      console.log("IID, " + id);
       const features = await this.getFeatures(id);
-      console.log("RESULTADO DEVUELTO", features, new Date().getTime());
       event.returnValue = features;
+    });
+
+    ipcMain.on("getLevelRange", async (event, id: string): Promise<void> => {
+      const levelRange = await this.getLevelRange(id);
+      console.log("RESULTADO DEVUELTO", levelRange);
+      event.returnValue = levelRange;
     });
 
     this.enableDiscoverDevices();
@@ -78,6 +82,17 @@ export class BluetoothManager {
 
     if (foundDevice) {
       return await foundDevice.getFeatures();
+    }
+  }
+
+  async getLevelRange(
+    deviceId: string
+  ): Promise<Map<string, number> | undefined> {
+    const foundDevice: BluetoothDevice | undefined =
+      this.allDevicesList.get(deviceId);
+
+    if (foundDevice) {
+      return await foundDevice.getLevelRange();
     }
   }
 
