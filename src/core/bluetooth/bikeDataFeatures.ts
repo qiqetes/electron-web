@@ -72,10 +72,8 @@ export class BikeDataFeatures {
   static resistanceLevel = (intValues:number[]):Map<String, number> => {
     let resistanceData = new Map<String, number>();
 
-    console.log("EEEII QUE ESTAMOS EN RESISTANCE LEVEL ",intValues);
     if (intValues.length == 6) {
       const bitsValues = listToBinary(intValues);
-      console.log("DE BITS VALUES TENEMOS ESTO ",bitsValues);
       resistanceData.set('min' ,
           listToInt(bitsValues, 0, 16)!);
       resistanceData.set('max',
@@ -83,9 +81,6 @@ export class BikeDataFeatures {
       resistanceData.set('increment',
           listToInt(bitsValues, 32,48)!);
     }
-    console.log("AL FINAL TENEMOS ",resistanceData);
-    existsSync
-
     return resistanceData;
   }
 

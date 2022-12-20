@@ -73,7 +73,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
     }
   }
     async startNotify(): Promise<void> {
-      console.log("Step 0");
 
     if(!this.peripheral){
       return
@@ -94,7 +93,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
       }
     }else if(this.deviceType == 'bike'){
       if(this.parserType == 'ftms'){
-        console.log("Step 01");
         const characteristic  = await this.getMeasurement(GattSpecification.ftms.service,GattSpecification.ftms.measurements.bikeData);
 
         if(characteristic != null ){
@@ -106,7 +104,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface{
             this.bikeValues =  new Map([...Array.from(valuesFeatures.entries()), ...Array.from(this.bikeValues.entries())]);
             console.log("BIKE DATA =  ",this.bikeValues);
           })
-          console.log("Step 3");
         }
       }
     }

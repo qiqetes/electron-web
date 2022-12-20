@@ -100,7 +100,7 @@ export class BluetoothManager {
       const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
 
       if((peripheral.advertisement.localName != null && peripheral.advertisement.localName != "") || knownDevice != null ){
-        console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+       // console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       }else{
         //console.log(" Peripheal DISCOVER NOT FOUND  ",peripheral.id);
 
