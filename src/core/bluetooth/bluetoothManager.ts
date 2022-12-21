@@ -56,7 +56,6 @@ export class BluetoothManager {
 
     ipcMain.on("getLevelRange", async (event, id: string): Promise<void> => {
       const levelRange = await this.getLevelRange(id);
-      console.log("RESULTADO DEVUELTO", levelRange);
       event.returnValue = levelRange;
     });
 
