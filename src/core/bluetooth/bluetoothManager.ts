@@ -54,8 +54,8 @@ export class BluetoothManager {
       event.returnValue = features;
     });
 
-    ipcMain.on("getLevelRange", async (event, id: string): Promise<void> => {
-      const levelRange = await this.getLevelRange(id);
+    ipcMain.on("getLevelRange", async (event): Promise<void> => {
+      const levelRange = await this.getLevelRange();
       event.returnValue = levelRange;
     });
 
@@ -126,27 +126,29 @@ export class BluetoothManager {
 
   async getFeatures(): Promise<string[] | undefined> {
     let features:string[] = [];
-
-    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+    const devices = this.getConnectedDevices(BluetoothDeviceTypes.Bike);
+    for(const device of devices){
       const newFeatures = await device.getFeatures();
       if(newFeatures){
         let array3 = new Set([...features,...newFeatures]);
         features = Array.from(array3);
       }
-    })
+    }
 
     return features;
   }
 
   async getLevelRange(
-    deviceId: string
   ): Promise<Map<string, number> | undefined> {
-    const foundDevice: BluetoothDevice | undefined =
-      this.allDevicesList.get(deviceId);
-
-    if (foundDevice) {
-      return await foundDevice.getLevelRange();
+    let levelRange;
+    const devices = this.getConnectedDevices(BluetoothDeviceTypes.Bike);
+    for( const device of devices){
+      const currentLevelRange = await device.getLevelRange();
+      if(currentLevelRange != null){
+        levelRange = currentLevelRange;
+      }
     }
+    return levelRange
   }
 
   enableAutoScan(): void {

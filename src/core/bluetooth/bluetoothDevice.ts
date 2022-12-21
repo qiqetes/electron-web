@@ -144,7 +144,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         if (characteristic != null) {
           this.cacheMeasurement = [characteristic];
           let bikeDataFeatures = new BikeDataFeatures();
-          this.peripheral.removeAllListeners('notify');
+         // this.peripheral.removeAllListeners('notify');
 
           this.notify(characteristic, (state: Buffer) => {
             const values = bufferToListInt(state);
@@ -268,6 +268,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   async resetTraining() {
     if (this.parserType == "ftms") {
       const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
+
       await this.writeData(
         GattSpecification.ftms.service,
         GattSpecification.ftms.measurements.controlPoint,
@@ -313,6 +314,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         GattSpecification.ftms.measurements.controlPoint,
         data
       );
+      //TODO no se porque hay que volver a notificar, comprobar esto
+      this.startNotify();
     }
   }
 
@@ -320,7 +323,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (this.parserType == "ftms") {
       const values = intToBuffer(resistance);
       const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
-
       await this.writeData(
         GattSpecification.ftms.service,
         GattSpecification.ftms.measurements.controlPoint,
@@ -333,12 +335,12 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   }
 
   async autoMode(enable: boolean): Promise<void> {
+    console.log("en el auto mode ",enable)
     if(!enable){
       await this.stopPowerTarget();
     }else{
       await this.resetTraining();
     }
-    throw new Error("Method not implemented.");
   }
 
   async getLevelRange(): Promise<Map<string, number> | undefined> {
@@ -355,13 +357,18 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         await this.read(featureRange, (values: any) => {
           this.resistanceRange = BikeDataFeatures.resistanceLevel(values);
         });
+        this.startNotify();
       }
+
       return this.resistanceRange;
     }
   }
   async notify(measurement: Characteristic, callback: Function): Promise<void> {
     measurement.on("notify", (state) => {});
-    measurement.notify(true, (state) => {});
+    measurement.notify(true, (state) => {
+
+      console.log("****** HAY UN CAMBIO EN EL NOTIFICADOR ESTE ",state);
+    });
 
     measurement.on("data", (state: Buffer, isNotify) => {
       callback(state);
@@ -379,7 +386,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
     const characteristic = await this.getMeasurement(service, char);
     if (characteristic) {
-    this.lock.acquire(this.lockKey, async (done:any) => {
+    await this.lock.acquire(this.lockKey, async (done:any) => {
         const valueWrite = await characteristic.write(data, false, (error) => {
           if (error) {
             console.error("ERROR ON WRITE ", error);
@@ -388,6 +395,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         done();
         return valueWrite;
       });
+
     }
   }
 
