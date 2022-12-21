@@ -68,7 +68,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.features = [];
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
-    this.lock = new AsyncLock();
+    this.lock = new AsyncLock({timeout: 5000});
   }
   static fromPeripheral(
     peripheral: noble.Peripheral,
@@ -119,8 +119,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (!this.peripheral) {
       return;
     }
-    this.peripheral.removeAllListeners("serviceDiscover");
-
+//    this.peripheral.removeAllListeners("servicesDiscover");
     if (this.deviceType == "heartrate") {
       const characteristic = await this.getMeasurement(
         GattSpecification.heartRate.service,
@@ -145,6 +144,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         if (characteristic != null) {
           this.cacheMeasurement = [characteristic];
           let bikeDataFeatures = new BikeDataFeatures();
+          this.peripheral.removeAllListeners('notify');
+
           this.notify(characteristic, (state: Buffer) => {
             const values = bufferToListInt(state);
             this.bikeValues = bikeDataFeatures.valuesFeatures(values);
@@ -376,17 +377,18 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       return null;
     }
 
+    const characteristic = await this.getMeasurement(service, char);
+    if (characteristic) {
     this.lock.acquire(this.lockKey, async (done:any) => {
-      const characteristic = await this.getMeasurement(service, char);
-      if (characteristic) {
         const valueWrite = await characteristic.write(data, false, (error) => {
           if (error) {
             console.error("ERROR ON WRITE ", error);
           }
         });
+        done();
         return valueWrite;
-      }
-    });
+      });
+    }
   }
 
   getMeasurement = async (
@@ -399,7 +401,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         [serviceId],
         [charId]
       );
-    return characteristics.find((char) => char.uuid == charId);
+
+      return characteristics.find((char) => char.uuid == charId);
   };
 
 
