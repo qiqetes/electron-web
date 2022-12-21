@@ -76,6 +76,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       }
       return this.resistanceRange;
     }
+    return this.resistanceRange;
   }
   static fromPeripheral(
     peripheral: noble.Peripheral,
