@@ -49,8 +49,8 @@ export class BluetoothManager {
       this.enableAutoScan();
     });
 
-    ipcMain.on("getFeatures", async (event, id: string): Promise<void> => {
-      const features = await this.getFeatures(id);
+    ipcMain.on("getFeatures", async (event ): Promise<void> => {
+      const features = await this.getFeatures();
       event.returnValue = features;
     });
 
@@ -124,13 +124,18 @@ export class BluetoothManager {
     })
   }
 
-  async getFeatures(deviceId: string): Promise<string[] | undefined> {
-    const foundDevice: BluetoothDevice | undefined =
-      this.allDevicesList.get(deviceId);
+  async getFeatures(): Promise<string[] | undefined> {
+    let features:string[] = [];
 
-    if (foundDevice) {
-      return await foundDevice.getFeatures();
-    }
+    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+      const newFeatures = await device.getFeatures();
+      if(newFeatures){
+        let array3 = new Set([...features,...newFeatures]);
+        features = Array.from(array3);
+      }
+    })
+
+    return features;
   }
 
   async getLevelRange(
@@ -210,7 +215,7 @@ export class BluetoothManager {
       if (bl == null) {
         return;
       }
-      // console.log("emitimos ", bl.serialize());
+    //   console.log("emitimos ", bl.serialize());
       mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
 
       this.allDevicesList.set(deviceId, bl);
@@ -219,7 +224,7 @@ export class BluetoothManager {
         this.connect(deviceId);
       }
       //this.ipcMain.emit("bluetoothDeviceFound",bl)
-      console.log("emitido");
+      //console.log("emitido",);
     });
   };
 
