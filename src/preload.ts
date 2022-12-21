@@ -202,4 +202,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   getDeviceList: () => {},
   getFeatures: (id: string) => ipcRenderer.sendSync("getFeatures", id),
   getLevelRange: (id: string) => ipcRenderer.sendSync("getLevelRange", id),
+  setPowerTarget: (power:number) => ipcRenderer.sendSync("setPowerTarget", power),
+  stopPowerTarget: () =>  ipcRenderer.sendSync("stopPowerTarget"),
+  setResistanceTarget: (resistance: number) => ipcRenderer.sendSync("setResistanceTarget", resistance),
+  autoMode: (enable: boolean) =>  ipcRenderer.sendSync("autoMode", enable),
+
 });

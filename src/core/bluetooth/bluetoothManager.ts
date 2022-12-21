@@ -59,6 +59,27 @@ export class BluetoothManager {
       event.returnValue = levelRange;
     });
 
+    ipcMain.on("setPowerTarget", async (event,power:number): Promise<void> => {
+      const features = await this.setPowerTarget(power);
+      event.returnValue = null;
+    });
+
+    ipcMain.on("stopPowerTarget", async (event): Promise<void> => {
+      const features = await this.stopPowerTarget();
+      event.returnValue = null;
+    });
+
+        ipcMain.on("setResistanceTarget", async (event, resistance: number): Promise<void> => {
+      const features = await this.setResistanceTarget(resistance);
+      event.returnValue = null;
+    });
+
+    ipcMain.on("autoMode", async (event, enable: boolean): Promise<void> => {
+      const features = await this.autoMode(enable);
+      event.returnValue = null;
+    });
+
+
     this.enableDiscoverDevices();
   }
 
@@ -73,6 +94,34 @@ export class BluetoothManager {
     ) {
       this.enableAutoScan();
     }
+  }
+
+
+  async setPowerTarget(power: number): Promise<void> {
+    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+      await device.setPowerTarget(power);
+    })
+  }
+
+  async stopPowerTarget(): Promise<void> {
+    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+      await device.stopPowerTarget();
+    })
+  }
+
+  async setResistanceTarget(resistance: number): Promise<void> {
+    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+      await device.setResistanceTarget(resistance);
+    })
+
+  }
+
+  async autoMode(enable: boolean): Promise<void> {
+    //TODO Guardar en preferencia
+
+    await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
+      await device.autoMode(enable);
+    })
   }
 
   async getFeatures(deviceId: string): Promise<string[] | undefined> {
@@ -289,10 +338,10 @@ export class BluetoothManager {
       });
   };
 
-  getConnectedDevices = async () => {
+  getConnectedDevices = (deviceType: BluetoothDeviceTypes|undefined) => {
     const devices = Array.from(this.allDevicesList.values());
     return devices.filter((device) => {
-      return device.state == BluetoothDeviceState.connected;
+      return device.state == BluetoothDeviceState.connected && (deviceType == undefined|| device.deviceType == deviceType);
     });
   };
 

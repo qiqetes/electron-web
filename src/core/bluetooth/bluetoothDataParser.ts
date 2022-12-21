@@ -90,3 +90,14 @@ return 0;
 
     return orderedBits;
   }
+
+  export   const intToBuffer = (valueTarget:number): Buffer =>{
+    let rest = 0;
+    let value = valueTarget;
+
+    if (valueTarget > 255) {
+      rest = Math.floor(valueTarget / 255);
+      value = valueTarget % 255;
+    }
+    return Buffer.from([value,rest]);
+  }

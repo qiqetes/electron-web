@@ -1,10 +1,13 @@
+var AsyncLock = require('async-lock');
+
 import noble, { Characteristic, Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { BikeDataFeatures } from "./bikeDataFeatures";
-import { bufferToListInt } from "./bluetoothDataParser";
+import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
 import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
 import { GattSpecification } from "./gattSpecification";
+
 interface BluetoothDeviceInterface {
   // Docs: https://electronjs.org/docs/api/structures/bluetooth-device
   id: string;
@@ -18,6 +21,11 @@ interface BluetoothDeviceInterface {
   getState(): BluetoothDeviceState;
   getFeatures(): Promise<string[] | undefined>;
   getLevelRange(): Promise<Map<string, number> | undefined>;
+  setPowerTarget(power:number): Promise<void>;
+  setResistanceTarget(resistance:number): Promise<void>;
+  stopPowerTarget(): Promise<void>;
+  autoMode(enable:boolean): Promise<void>;
+
   connect(): void;
   disconnect(): void;
   serialize(): {};
@@ -36,6 +44,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   features: string[];
   bikeValues: Map<string, any>;
   resistanceRange: Map<string, number> | undefined;
+  lock: any;
+  lockKey: any;
 
   constructor(
     deviceId: string,
@@ -58,25 +68,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.features = [];
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
-  }
-  async getLevelRange(): Promise<Map<string, number> | undefined> {
-    if (this.deviceType == "bike") {
-      if (this.resistanceRange) {
-        return this.resistanceRange;
-      }
-
-      const featureRange = await this.getMeasurement(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.powerRange
-      );
-      if (featureRange) {
-        await this.read(featureRange, (values: any) => {
-          this.resistanceRange = BikeDataFeatures.resistanceLevel(values);
-        });
-      }
-      return this.resistanceRange;
-    }
-    return this.resistanceRange;
+    this.lock = new AsyncLock();
   }
   static fromPeripheral(
     peripheral: noble.Peripheral,
@@ -260,6 +252,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     await this.startTraining();
     return this.features;
   }
+
   async startTraining() {
     if (this.parserType == "ftms") {
       const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
@@ -270,6 +263,29 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       );
     }
   }
+
+  async resetTraining() {
+    if (this.parserType == "ftms") {
+      const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
+      await this.writeData(
+        GattSpecification.ftms.service,
+        GattSpecification.ftms.measurements.controlPoint,
+        data
+      );
+    }
+  }
+
+  async stopTraining() {
+    if (this.parserType == "ftms") {
+      const data = Buffer.from(GattSpecification.ftms.controlPoint.stop);
+      await this.writeData(
+        GattSpecification.ftms.service,
+        GattSpecification.ftms.measurements.controlPoint,
+        data
+      );
+    }
+  }
+
   async requestControl(): Promise<void> {
     if (!this.peripheral) {
       return;
@@ -286,6 +302,62 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
   }
 
+  async setPowerTarget(power: number): Promise<void> {
+    if (this.parserType == "ftms") {
+      const values = intToBuffer(power);
+      const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setPower),values]);
+
+      await this.writeData(
+        GattSpecification.ftms.service,
+        GattSpecification.ftms.measurements.controlPoint,
+        data
+      );
+    }
+  }
+
+  async setResistanceTarget(resistance: number): Promise<void> {
+    if (this.parserType == "ftms") {
+      const values = intToBuffer(resistance);
+      const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
+
+      await this.writeData(
+        GattSpecification.ftms.service,
+        GattSpecification.ftms.measurements.controlPoint,
+        data
+      );
+    }
+  }
+  async stopPowerTarget(): Promise<void> {
+    await this.startTraining()
+  }
+
+  async autoMode(enable: boolean): Promise<void> {
+    if(!enable){
+      await this.stopPowerTarget();
+    }else{
+      await this.resetTraining();
+    }
+    throw new Error("Method not implemented.");
+  }
+
+  async getLevelRange(): Promise<Map<string, number> | undefined> {
+    if (this.deviceType == "bike") {
+      if (this.resistanceRange) {
+        return this.resistanceRange;
+      }
+
+      const featureRange = await this.getMeasurement(
+        GattSpecification.ftms.service,
+        GattSpecification.ftms.measurements.powerRange
+      );
+      if (featureRange) {
+        await this.read(featureRange, (values: any) => {
+          this.resistanceRange = BikeDataFeatures.resistanceLevel(values);
+        });
+      }
+      return this.resistanceRange;
+    }
+  }
   async notify(measurement: Characteristic, callback: Function): Promise<void> {
     measurement.on("notify", (state) => {});
     measurement.notify(true, (state) => {});
@@ -304,15 +376,17 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       return null;
     }
 
-    const characteristic = await this.getMeasurement(service, char);
-    if (characteristic) {
-      const valueWrite = await characteristic.write(data, false, (error) => {
-        if (error) {
-          console.error("ERROR ON WRITE ", error);
-        }
-      });
-      return valueWrite;
-    }
+    this.lock.acquire(this.lockKey, async (done:any) => {
+      const characteristic = await this.getMeasurement(service, char);
+      if (characteristic) {
+        const valueWrite = await characteristic.write(data, false, (error) => {
+          if (error) {
+            console.error("ERROR ON WRITE ", error);
+          }
+        });
+        return valueWrite;
+      }
+    });
   }
 
   getMeasurement = async (
@@ -327,4 +401,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       );
     return characteristics.find((char) => char.uuid == charId);
   };
+
+
 }
