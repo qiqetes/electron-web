@@ -1,12 +1,13 @@
 var AsyncLock = require('async-lock');
 
-import noble, { Characteristic, Peripheral } from "@abandonware/noble";
+import noble, { Characteristic, Peripheral, Service } from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { BikeDataFeatures } from "./bikeDataFeatures";
 import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
 import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
 import { GattSpecification } from "./gattSpecification";
+import { ButtonMode, ZycleButton } from "./zycleButton";
 
 interface BluetoothDeviceInterface {
   // Docs: https://electronjs.org/docs/api/structures/bluetooth-device
@@ -14,7 +15,7 @@ interface BluetoothDeviceInterface {
   broadcast: boolean;
   parserType: BluetoothParserType;
   peripheral: Peripheral | undefined;
-  cacheMeasurement: Characteristic[];
+  cachedMeasurement: Characteristic[];
   getId(): string;
   getName(): string;
   getDeviceType(): BluetoothDeviceTypes;
@@ -39,13 +40,18 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   broadcast: boolean;
   parserType: BluetoothParserType;
   peripheral: Peripheral | undefined;
-  cacheMeasurement: Characteristic[];
+  cachedMeasurement: Characteristic[];
+  cachedServices: Service[];
+
   notifing: boolean;
   features: string[];
   bikeValues: Map<string, any>;
   resistanceRange: Map<string, number> | undefined;
   lock: any;
   lockKey: any;
+  zycleButton: ZycleButton;
+  powerTarget: number;
+  resistanceTarget:number;
 
   constructor(
     deviceId: string,
@@ -63,12 +69,16 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.broadcast = broadcast;
     this.parserType = parserType;
     this.peripheral = peripheral;
-    this.cacheMeasurement = [];
+    this.cachedMeasurement = [];
+    this.cachedServices = [];
     this.notifing = false;
     this.features = [];
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
     this.lock = new AsyncLock({timeout: 5000});
+    this.zycleButton = new ZycleButton();
+    this.powerTarget = 10;
+    this.resistanceTarget = 10;
   }
   static fromPeripheral(
     peripheral: noble.Peripheral,
@@ -119,7 +129,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (!this.peripheral) {
       return;
     }
-//    this.peripheral.removeAllListeners("servicesDiscover");
+   // this.peripheral.removeAllListeners("notify");
     if (this.deviceType == "heartrate") {
       const characteristic = await this.getMeasurement(
         GattSpecification.heartRate.service,
@@ -127,7 +137,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       );
 
       if (characteristic != null) {
-        this.cacheMeasurement = [characteristic];
 
         this.notify(characteristic, (state: Buffer) => {
           var data = state.readInt8(1); //heart rate measurement
@@ -142,7 +151,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         );
 
         if (characteristic != null) {
-          this.cacheMeasurement = [characteristic];
           let bikeDataFeatures = new BikeDataFeatures();
          // this.peripheral.removeAllListeners('notify');
 
@@ -153,8 +161,48 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
             mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
           });
         }
+
+        if(this.features.find((feature) => feature == BluetoothFeatures.ZycleButton) ){
+          this.startZycleButton();
+
+        }
       }
     }
+  }
+
+  async startZycleButton() {
+
+    const characteristic = await this.getMeasurement(
+      GattSpecification.zycleButton.service,
+      GattSpecification.zycleButton.measurements.buttonControl
+    );
+    if (characteristic != null) {
+
+      this.notify(characteristic, (state: Buffer) => {
+        console.log("😅 PASO 0 SIiiiii ene l notificador del botón")
+        const values = bufferToListInt(state);
+        var dataController = ZycleButton.valuesFeatures(values);
+        console.log("😅 PASO 1 El data controller ",dataController);
+        if(this.zycleButton.changeValues(dataController)){
+          console.log("😅 PASO 1 El CAMBIA EL VALOR ",dataController);
+
+          if(dataController.get(ZycleButton.MODE) == ButtonMode.AUTO){
+            if(dataController.get(ZycleButton.LEVEL) != Math.floor( this.powerTarget /5 ) && this.powerTarget != 10){
+              console.log("😅 PASO 2 envia el valor modo auto ",this.zycleButton.toJson());
+
+              mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
+            }
+          } else {
+            if (dataController.get(ZycleButton.LEVEL) !=
+                Math.floor(this.resistanceTarget)) {
+                  console.log("😅 PASO 2.1 envia el valor modo manual ",this.zycleButton.toJson());
+                  mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
+                }
+          }
+        }
+     });
+    }
+
   }
 
   async connect(): Promise<void> {
@@ -164,6 +212,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.peripheral.removeAllListeners("connect");
     this.peripheral.removeAllListeners("disconnect");
     this.peripheral.on("connect", async (stream) => {
+      this.cachedMeasurement = [];
       await this.getFeatures();
       this.state = BluetoothDeviceState[this.peripheral!.state];
       mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
@@ -175,13 +224,11 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       this.state = BluetoothDeviceState[this.peripheral!.state];
       mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
-      const measuremnts = this.cacheMeasurement;
-      if (measuremnts) {
-        measuremnts.forEach((char) => {
+      const measuremnts = this.cachedMeasurement;
+        for(const char of measuremnts){
           char.notify(false);
           char.removeAllListeners();
-        });
-      }
+        };
       //Desde que emite el disconnect hasta que deja de verse en el discover pasa un tiempo, esperamos para que no haga reconexiones inválidas
       // const sleep = (ms:number) => new Promise(r => setTimeout(r, ms));
       //  await sleep(5000);
@@ -207,6 +254,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       return this.features;
     } else if (this.parserType == "ftms") {
       this.features = await this.getFeaturesFtms();
+
       return this.features;
     }
   }
@@ -262,13 +310,19 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         GattSpecification.ftms.measurements.controlPoint,
         data
       );
+      this.powerTarget = 10;
+      this.zycleButton = new ZycleButton();
+
+
     }
   }
 
   async resetTraining() {
     if (this.parserType == "ftms") {
+      console.log("EEIEIII TENEMOS EL RESET ESTO PARA EL DATA ")
       const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
 
+      console.log(data)
       await this.writeData(
         GattSpecification.ftms.service,
         GattSpecification.ftms.measurements.controlPoint,
@@ -305,6 +359,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   }
 
   async setPowerTarget(power: number): Promise<void> {
+    console.log("ESTMAO EN SET POWER TARGET");
     if (this.parserType == "ftms") {
       const values = intToBuffer(power);
       const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setPower),values]);
@@ -314,12 +369,20 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         GattSpecification.ftms.measurements.controlPoint,
         data
       );
+      console.log("HEMOS AÑADIDO LA POTENCIA ",power)
+      this.powerTarget = power;
+
       //TODO no se porque hay que volver a notificar, comprobar esto
-      this.startNotify();
+     // this.startNotify();
+
+
     }
   }
 
   async setResistanceTarget(resistance: number): Promise<void> {
+    this.resistanceTarget = resistance;
+    console.log("ESTMAO EN SET RESISTANCE TARGET");
+
     if (this.parserType == "ftms") {
       const values = intToBuffer(resistance);
       const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
@@ -328,9 +391,11 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         GattSpecification.ftms.measurements.controlPoint,
         data
       );
+      this.startNotify();
     }
   }
   async stopPowerTarget(): Promise<void> {
+    console.log("EN STOP POWER TARGET");
     await this.startTraining()
   }
 
@@ -340,6 +405,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       await this.stopPowerTarget();
     }else{
       await this.resetTraining();
+      await this.setPowerTarget(this.powerTarget);
     }
   }
 
@@ -366,8 +432,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   async notify(measurement: Characteristic, callback: Function): Promise<void> {
     measurement.on("notify", (state) => {});
     measurement.notify(true, (state) => {
-
-      console.log("****** HAY UN CAMBIO EN EL NOTIFICADOR ESTE ",state);
     });
 
     measurement.on("data", (state: Buffer, isNotify) => {
@@ -399,18 +463,25 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
   }
 
+  cacheMeasurement =  async (
+  ): Promise<void> => {
+    if (!this.peripheral) return;
+    const values  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync([],[]);
+    this.cachedMeasurement = values.characteristics;
+    this.cachedServices = values.services;
+  };
+
+
   getMeasurement = async (
     serviceId: string,
     charId: string
   ): Promise<Characteristic | undefined> => {
-    if (!this.peripheral) return;
-    const { characteristics } =
-      await this.peripheral.discoverSomeServicesAndCharacteristicsAsync(
-        [serviceId],
-        [charId]
-      );
 
-      return characteristics.find((char) => char.uuid == charId);
+    if (!this.peripheral) return;
+    if(this.cachedMeasurement.length == 0 ){
+      await this.cacheMeasurement();
+    }
+    return this.cachedMeasurement.find((char) => char.uuid == charId);
   };
 
 

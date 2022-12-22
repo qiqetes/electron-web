@@ -197,6 +197,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   handleBikeData: (id: string, callback: (event: Event, data: any) => void) => {
     ipcRenderer.on("bikeData-" + id, callback);
   },
+  handleButtonChange: (id: string, callback: (event: Event, data: any) => void) => {
+    ipcRenderer.on("buttonChange-" + id, callback);
+  },
   readData: (id: string) => {},
   subscribeData: (id: string) => {},
   getDeviceList: () => {},
