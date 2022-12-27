@@ -1,6 +1,6 @@
 var AsyncLock = require('async-lock');
 
-import noble, { Characteristic, Peripheral, Service } from "@abandonware/noble";
+import noble, { Advertisement, Characteristic, Peripheral, Service } from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { BikeDataFeatures } from "./bikeDataFeatures";
 import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
@@ -20,6 +20,7 @@ interface BluetoothDeviceInterface {
   getName(): string;
   getDeviceType(): BluetoothDeviceTypes;
   getState(): BluetoothDeviceState;
+  setAdvertisment(advertisement: Advertisement): void;
   getFeatures(): Promise<string[] | undefined>;
   getLevelRange(): Promise<Map<string, number> | undefined>;
   setPowerTarget(power:number): Promise<void>;
@@ -42,7 +43,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   peripheral: Peripheral | undefined;
   cachedMeasurement: Characteristic[];
   cachedServices: Service[];
-
+  heartRateValue: number|undefined;
   notifing: boolean;
   features: string[];
   bikeValues: Map<string, any>;
@@ -80,15 +81,25 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.powerTarget = 10;
     this.resistanceTarget = 10;
   }
+  setAdvertisment(advertisement: noble.Advertisement): void {
+    if(this.deviceType == 'heartrate'){
+     const values = bufferToListInt(advertisement.manufacturerData);
+      this.heartRateValue = values.at(-1);
+      if(this.state == BluetoothDeviceState.connected){
+        mainWindow.webContents.send("heartRateData-" + this.id, this.heartRateValue);
+      }
+    }
+  }
   static fromPeripheral(
     peripheral: noble.Peripheral,
     type: BluetoothDeviceTypes,
-    parserType: BluetoothParserType
+    parserType: BluetoothParserType,
+    broadcast?: boolean
   ) {
     const statePeripheal =
       BluetoothDeviceState[peripheral.state] ||
       BluetoothDeviceState.disconnected;
-    const broadcast = !peripheral.connectable;
+    const isBroadcast = broadcast||false;
     const id = peripheral.uuid.toLowerCase();
 
     return new BluetoothDevice(
@@ -98,7 +109,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       statePeripheal,
       parserType,
       peripheral,
-      broadcast
+      isBroadcast,
     );
   }
 
@@ -116,13 +127,22 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     );
   }
 
+  getValues(){
+    if(this.getDeviceType() == 'heartrate'){
+      return this.heartRateValue;
+    }else{
+      return this.bikeValues;
+    }
+  }
   serialize(): {} {
+    const values = this.getValues();
     return {
       id: this.getId(),
       name: this.getName(),
       deviceType: this.getDeviceType(),
       state: this.getState(),
       broadcast: this.broadcast,
+      data: values,
     };
   }
   async startNotify(): Promise<void> {
@@ -179,23 +199,17 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (characteristic != null) {
 
       this.notify(characteristic, (state: Buffer) => {
-        console.log("😅 PASO 0 SIiiiii ene l notificador del botón")
         const values = bufferToListInt(state);
         var dataController = ZycleButton.valuesFeatures(values);
-        console.log("😅 PASO 1 El data controller ",dataController);
-        if(this.zycleButton.changeValues(dataController)){
-          console.log("😅 PASO 1 El CAMBIA EL VALOR ",dataController);
 
+        if(this.zycleButton.changeValues(dataController)){
           if(dataController.get(ZycleButton.MODE) == ButtonMode.AUTO){
             if(dataController.get(ZycleButton.LEVEL) != Math.floor( this.powerTarget /5 ) && this.powerTarget != 10){
-              console.log("😅 PASO 2 envia el valor modo auto ",this.zycleButton.toJson());
-
               mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
             }
           } else {
             if (dataController.get(ZycleButton.LEVEL) !=
                 Math.floor(this.resistanceTarget)) {
-                  console.log("😅 PASO 2.1 envia el valor modo manual ",this.zycleButton.toJson());
                   mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
                 }
           }
@@ -211,36 +225,48 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
     this.peripheral.removeAllListeners("connect");
     this.peripheral.removeAllListeners("disconnect");
-    this.peripheral.on("connect", async (stream) => {
-      this.cachedMeasurement = [];
-      await this.getFeatures();
-      this.state = BluetoothDeviceState[this.peripheral!.state];
+    if(this.broadcast && !this.peripheral.connectable){
+      this.state = BluetoothDeviceState.connected;
+
       mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
-      this.startNotify();
-    });
+    }
+    else{
+      this.peripheral.on("connect", async (stream) => {
+        this.cachedMeasurement = [];
+        await this.getFeatures();
+        this.state = BluetoothDeviceState[this.peripheral!.state];
+        mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
-    this.peripheral.on("disconnect", async (stream) => {
-      this.state = BluetoothDeviceState[this.peripheral!.state];
-      mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
+        this.startNotify();
+      });
 
-      const measuremnts = this.cachedMeasurement;
-        for(const char of measuremnts){
-          char.notify(false);
-          char.removeAllListeners();
-        };
-      //Desde que emite el disconnect hasta que deja de verse en el discover pasa un tiempo, esperamos para que no haga reconexiones inválidas
-      // const sleep = (ms:number) => new Promise(r => setTimeout(r, ms));
-      //  await sleep(5000);
-      this.peripheral!.removeAllListeners();
-    });
+      this.peripheral.on("disconnect", async (stream) => {
+        this.state = BluetoothDeviceState[this.peripheral!.state];
+        mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
-    await this.peripheral.connectAsync();
+        const measuremnts = this.cachedMeasurement;
+          for(const char of measuremnts){
+            char.notify(false);
+            char.removeAllListeners();
+          };
+        //Desde que emite el disconnect hasta que deja de verse en el discover pasa un tiempo, esperamos para que no haga reconexiones inválidas
+        // const sleep = (ms:number) => new Promise(r => setTimeout(r, ms));
+        //  await sleep(5000);
+        this.peripheral!.removeAllListeners();
+      });
+
+      await this.peripheral.connectAsync();
+    }
   }
 
   async disconnect(): Promise<void> {
     if (this.peripheral) {
-      await this.peripheral.disconnectAsync();
+      if(this.broadcast && this.state == 'connected'){
+        this.state = BluetoothDeviceState.disconnected;
+      }else{
+        await this.peripheral.disconnectAsync();
+      }
     }
   }
 
@@ -319,7 +345,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
   async resetTraining() {
     if (this.parserType == "ftms") {
-      console.log("EEIEIII TENEMOS EL RESET ESTO PARA EL DATA ")
       const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
 
       console.log(data)
@@ -371,11 +396,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       );
       console.log("HEMOS AÑADIDO LA POTENCIA ",power)
       this.powerTarget = power;
-
-      //TODO no se porque hay que volver a notificar, comprobar esto
-     // this.startNotify();
-
-
     }
   }
 

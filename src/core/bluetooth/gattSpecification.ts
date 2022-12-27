@@ -3,7 +3,17 @@ export const  GattSpecification = {
     service: '180d',
     measurements: {
       heartRate :'2a37'
-    }
+    },
+    allowedNames: [
+      "polar h9",
+      "polar h10",
+      "polar oh1",
+      "forerunner 245",
+      "heartbeat",
+      "hrm30",
+      "h6m 54210"
+    ]
+
   },
   ftms:{
     service: '1826',

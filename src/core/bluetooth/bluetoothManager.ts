@@ -95,8 +95,7 @@ export class BluetoothManager {
       this.enableAutoScan();
     }
   }
-
-
+  //Write features
   async setPowerTarget(power: number): Promise<void> {
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
       await device.setPowerTarget(power);
@@ -169,6 +168,11 @@ export class BluetoothManager {
     if (!device) {
       return false;
     }
+    //Si el dispositivo es broadcast, continuamos
+
+    if(knownDevice?.broadcast){
+      return false;
+    }
     //Si el dispositivo está desconectado pero tiene conexión automática
     if (
       device.state == "disconnected" ||
@@ -189,7 +193,7 @@ export class BluetoothManager {
           peripheral.advertisement.localName != "") ||
         knownDevice != null
       ) {
-        // console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+         console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       } else {
         //console.log(" Peripheal DISCOVER NOT FOUND  ",peripheral.id);
 
@@ -203,21 +207,37 @@ export class BluetoothManager {
         return;
       }
 
+      if(foundDevice && foundDevice.broadcast){
+        //TODO comprobar con un dispositivo real
+        foundDevice.setAdvertisment(peripheral.advertisement);
+        console.log("ISIIIII EL broadcast ",foundDevice.serialize())
+        mainWindow.webContents.send("bluetoothDeviceFound", foundDevice.serialize());
+        return
+      }
       var bl;
-      bl = this.findBluetoothDevice(peripheral);
+
       if (knownDevice != undefined) {
-        bl = BluetoothDevice.fromPeripheral(
-          peripheral,
-          knownDevice.deviceType,
-          knownDevice.parserType
-        );
+        //Lo teniamos conectado pero ahora no está disponible para conectar
+        if(!peripheral.connectable && !knownDevice.broadcast){
+        //if (!knownDevice.broadcast){
+          bl = this.findBluetoothDevice(peripheral);
+        }else{
+          bl = BluetoothDevice.fromPeripheral(
+            peripheral,
+            knownDevice.deviceType,
+            knownDevice.parserType,
+            knownDevice.broadcast
+          );
+        }
       } else {
         bl = this.findBluetoothDevice(peripheral);
       }
       if (bl == null) {
         return;
       }
-    //   console.log("emitimos ", bl.serialize());
+
+
+       console.log("emitimos ", bl.serialize());
       mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
 
       this.allDevicesList.set(deviceId, bl);
@@ -243,6 +263,7 @@ export class BluetoothManager {
 
     return blDevice;
   };
+
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
     if (peripheral.advertisement.serviceUuids != null) {
       const service = peripheral.advertisement.serviceUuids.find(
@@ -260,22 +281,36 @@ export class BluetoothManager {
   };
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
-    if (peripheral.advertisement.serviceUuids != null) {
-      const service = peripheral.advertisement.serviceUuids.find(
-        (e) => GattSpecification.heartRate.service == e.toLowerCase()
-      );
-      var typeParser: BluetoothParserType = "heartrate";
-
-      if (service != null) {
-        return BluetoothDevice.fromPeripheral(
-          peripheral,
-          BluetoothDeviceTypes.HeartRate,
-          typeParser
-        );
-      } else {
-        //ver por nombre
+    let broadcast = false;
+    //TODO es !
+    if (this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.heartRate.service)  ){
+      console.log("NO tiene eserviceio");
+      //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
+      if(this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.ftms.service))
+      return;
+      console.log(peripheral.advertisement.localName)
+      if(!this.hasName(peripheral.advertisement.localName,GattSpecification.heartRate.allowedNames) || !peripheral.advertisement.manufacturerData){
+        return;
+      }else{
+        console.log("SIIII tiene name");
+        broadcast = true;
       }
     }
+    //TODO QUITAR ESTO
+    if (!broadcast && !this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.heartRate.service)  ){
+    return
+    }
+
+    var typeParser: BluetoothParserType = "heartrate";
+
+    return BluetoothDevice.fromPeripheral(
+      peripheral,
+      BluetoothDeviceTypes.HeartRate,
+      typeParser,
+      broadcast
+      );
+
+
   };
   // await peripheral.disconnectAsync();
   //proces
@@ -295,6 +330,10 @@ export class BluetoothManager {
       }
 
       await foundDevice.disconnect();
+      if(foundDevice.broadcast){
+        this.allDevicesList.set(foundDevice.id, foundDevice);
+      }
+
     }
   };
 
@@ -308,7 +347,13 @@ export class BluetoothManager {
     if (this.knownDevices)
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
-    await foundDevice.connect();
+      await foundDevice.connect();
+
+      if(foundDevice.broadcast){
+        this.allDevicesList.set(foundDevice.id, foundDevice);
+      }
+
+
   };
 
   bluetoothStateChange = async () => {
@@ -370,4 +415,30 @@ export class BluetoothManager {
     }
     return [deviceType, parserType];
   };
+
+  hasService(periphealServices: string[], service: string){
+
+    if (periphealServices != null) {
+      const serviceFound = periphealServices.find(
+        (e) => service == e.toLowerCase()
+      );
+      if(serviceFound && serviceFound.length > 0){
+        return true;
+      }
+    }
+    return false
+  }
+
+  hasName(peripheralName: string,allowedNames: string[] ){
+
+    if (allowedNames != null) {
+      const nameFound = allowedNames.find(
+        (e) => peripheralName.toLowerCase() == e.toLowerCase()
+      );
+      if(nameFound && nameFound.length > 0){
+        return true;
+      }
+    }
+    return false
+  }
 }
