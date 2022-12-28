@@ -10,17 +10,20 @@ import {
 } from "./bluetoothDeviceEnum";
 import { GattSpecification } from "./gattSpecification";
 import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
+import { HeartRateDevice } from "./heartRateDevice";
+import { FtmsDevice } from "./ftmsDevice";
+import { BikeDevice } from "./bikeDevice";
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
-  allDevicesList: Map<string, BluetoothDevice>;
+  allDevicesList: Map<string, BluetoothDevice|HeartRateDevice|BikeDevice>;
 
   statusBluetooth = BTStatus.unknown;
   autoScan: boolean;
 
   constructor() {
     this.autoScan = false; //Controlar condición de carrera, se carga antes la webapp que los dispositivos conocidos
-    this.allDevicesList = new Map<string, BluetoothDevice>();
+    this.allDevicesList = new Map<string,  BluetoothDevice|HeartRateDevice|BikeDevice>();
 
     this.bluetoothStateChange();
 
@@ -98,19 +101,28 @@ export class BluetoothManager {
   //Write features
   async setPowerTarget(power: number): Promise<void> {
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
-      await device.setPowerTarget(power);
+      if( device as BikeDevice){
+        const bikeDevice = device as BikeDevice;
+        await bikeDevice.setPowerTarget(power);
+      }
     })
   }
 
   async stopPowerTarget(): Promise<void> {
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
-      await device.stopPowerTarget();
+      if( device as BikeDevice){
+        const bikeDevice = device as BikeDevice;
+        await bikeDevice.stopPowerTarget();
+      }
     })
   }
 
   async setResistanceTarget(resistance: number): Promise<void> {
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
-      await device.setResistanceTarget(resistance);
+      if( device as BikeDevice){
+        const bikeDevice = device as BikeDevice;
+        await bikeDevice.setResistanceTarget(resistance);
+      }
     })
 
   }
@@ -119,7 +131,10 @@ export class BluetoothManager {
     //TODO Guardar en preferencia
 
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(async (device) => {
-      await device.autoMode(enable);
+      if( device as BikeDevice){
+        const bikeDevice = device as BikeDevice;
+        await bikeDevice.autoMode(enable);
+      }
     })
   }
 
@@ -142,9 +157,12 @@ export class BluetoothManager {
     let levelRange;
     const devices = this.getConnectedDevices(BluetoothDeviceTypes.Bike);
     for( const device of devices){
-      const currentLevelRange = await device.getLevelRange();
-      if(currentLevelRange != null){
-        levelRange = currentLevelRange;
+      if( device as BikeDevice){
+        const bikeDevice = device as BikeDevice;
+          const currentLevelRange = await bikeDevice.getLevelRange();
+        if(currentLevelRange != null){
+          levelRange = currentLevelRange;
+        }
       }
     }
     return levelRange
@@ -202,10 +220,12 @@ export class BluetoothManager {
 
       const foundDevice: BluetoothDevice | undefined =
         this.allDevicesList.get(deviceId);
+        console.log("JUSTO ANTES NO PASA AQUí")
 
       if (this.stopScanPeripheral(foundDevice, knownDevice)) {
         return;
       }
+      console.log("NO PASA AQUí")
 
       if(foundDevice && foundDevice.broadcast){
         //TODO comprobar con un dispositivo real
@@ -218,20 +238,24 @@ export class BluetoothManager {
 
       if (knownDevice != undefined) {
         //Lo teniamos conectado pero ahora no está disponible para conectar
+        console.log("STEP 0");
         if(!peripheral.connectable && !knownDevice.broadcast){
+          console.log("STEP 1");
+
         //if (!knownDevice.broadcast){
           bl = this.findBluetoothDevice(peripheral);
         }else{
-          bl = BluetoothDevice.fromPeripheral(
-            peripheral,
-            knownDevice.deviceType,
-            knownDevice.parserType,
-            knownDevice.broadcast
-          );
+          console.log("STEP 2");
+
+          bl = this.getDeviceByType(peripheral,knownDevice);
+          console.log("tenemos al final esto ",bl)
         }
       } else {
+        console.log("STEP 3");
+
         bl = this.findBluetoothDevice(peripheral);
       }
+      console.log("EEEIIIII EL BL ES ESTO ",bl)
       if (bl == null) {
         return;
       }
@@ -269,13 +293,8 @@ export class BluetoothManager {
       const service = peripheral.advertisement.serviceUuids.find(
         (e) => GattSpecification.ftms.service == e.toLowerCase()
       );
-      var typeParser: BluetoothParserType = "ftms";
       if (service != null) {
-        return BluetoothDevice.fromPeripheral(
-          peripheral,
-          BluetoothDeviceTypes.Bike,
-          typeParser
-        );
+        return FtmsDevice.fromPeripheral(peripheral,'false');
       }
     }
   };
@@ -301,14 +320,7 @@ export class BluetoothManager {
     return
     }
 
-    var typeParser: BluetoothParserType = "heartrate";
-
-    return BluetoothDevice.fromPeripheral(
-      peripheral,
-      BluetoothDeviceTypes.HeartRate,
-      typeParser,
-      broadcast
-      );
+    return HeartRateDevice.fromPeripheral(peripheral,broadcast);
 
 
   };
@@ -440,5 +452,14 @@ export class BluetoothManager {
       }
     }
     return false
+  }
+
+  getDeviceByType=(peripheral:Peripheral, knownDevice:KnownDevice):HeartRateDevice|BikeDevice|BluetoothDevice|undefined => {
+    if(knownDevice.parserType == 'heartrate' || knownDevice.deviceType == 'heartrate'){
+      console.log("SIIIII ESTAMOS AQUIIIIIII ");
+      return HeartRateDevice.fromPeripheral(peripheral,knownDevice.broadcast);
+    }else if(knownDevice.parserType == 'ftms'){
+      return FtmsDevice.fromPeripheral(peripheral,knownDevice.broadcast);
+    }
   }
 }
