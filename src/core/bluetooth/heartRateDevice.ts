@@ -45,6 +45,34 @@ export class HeartRateDevice extends BluetoothDevice{
     );
   }
 
+  static isDevice(peripheral:Peripheral):HeartRateDevice|undefined {
+    if(!peripheral){
+      return
+    }
+    //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
+    if(this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.ftms.service))
+    return;
+
+    let broadcast = false;
+    const currentServices = peripheral.advertisement.serviceUuids;
+    const allowedService = GattSpecification.heartRate.service;
+    const currentName = peripheral.advertisement.localName;
+    const allowedNames = GattSpecification.heartRate.allowedNames;
+
+    if (!this.hasService(currentServices, allowedService)){
+      console.log("NO tiene eserviceio");
+
+      console.log(peripheral.advertisement.localName)
+      if(!this.hasName(currentName,allowedNames) || !peripheral.advertisement.manufacturerData){
+        return;
+      }else{
+        console.log("SIIII tiene name");
+        broadcast = true;
+      }
+    }
+    return HeartRateDevice.fromPeripheral(peripheral, broadcast);
+  }
+
   static fromKnwonDevice(device: KnownDevice) {
     const statePeripheal = BluetoothDeviceState.unknown;
 
@@ -56,6 +84,8 @@ export class HeartRateDevice extends BluetoothDevice{
       device.broadcast
     );
   }
+
+
 
   setAdvertisment(advertisement: noble.Advertisement): void {
      const values = bufferToListInt(advertisement.manufacturerData);

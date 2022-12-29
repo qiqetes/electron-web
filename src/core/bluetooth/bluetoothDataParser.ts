@@ -63,41 +63,46 @@ export const listToInt = (bitsValues: number[], from: number, to:number, order: 
   }
 return 0;
 }
-  // Ordena los bytes extraidos para que coincida con lso o mso
-  export const orderList = (order:OrderBytes, bits:number[]):number[] => {
-    const numBytes = Math.floor(bits.length / 8);
+// Ordena los bytes extraidos para que coincida con lso o mso
+export const orderList = (order:OrderBytes, bits:number[]):number[] => {
+  const numBytes = Math.floor(bits.length / 8);
 
-    let orderedBits:number[] = [];
-    if (order != 'lso') {
-      for (let i = 0; i < numBytes; i++) {
-        let initialBit = i * 8;
-        let finalBit = (i + 1) * 8;
-        if (finalBit <= bits.length) {
-          let readValues = bits.slice(initialBit, finalBit);
-          orderedBits = orderedBits.concat(readValues);
-        }
-      }
-    } else {
-      for (let i = numBytes; i > 0; i--) {
-        let initialBit = (i - 1) * 8;
-        let finalBit = i * 8;
-        if (finalBit <= bits.length && initialBit >= 0) {
-         let readValues = bits.slice(initialBit, finalBit);
-          orderedBits = orderedBits.concat(readValues);
-        }
+  let orderedBits:number[] = [];
+  if (order != 'lso') {
+    for (let i = 0; i < numBytes; i++) {
+      let initialBit = i * 8;
+      let finalBit = (i + 1) * 8;
+      if (finalBit <= bits.length) {
+        let readValues = bits.slice(initialBit, finalBit);
+        orderedBits = orderedBits.concat(readValues);
       }
     }
-
-    return orderedBits;
-  }
-
-  export   const intToBuffer = (valueTarget:number): Buffer =>{
-    let rest = 0;
-    let value = valueTarget;
-
-    if (valueTarget > 255) {
-      rest = Math.floor(valueTarget / 255);
-      value = valueTarget % 255;
+  } else {
+    for (let i = numBytes; i > 0; i--) {
+      let initialBit = (i - 1) * 8;
+      let finalBit = i * 8;
+      if (finalBit <= bits.length && initialBit >= 0) {
+        let readValues = bits.slice(initialBit, finalBit);
+        orderedBits = orderedBits.concat(readValues);
+      }
     }
-    return Buffer.from([value,rest]);
   }
+
+  return orderedBits;
+}
+
+export const intToBuffer = (valueTarget:number): Buffer =>{
+  let rest = 0;
+  let value = valueTarget;
+
+  if (valueTarget > 255) {
+    rest = Math.floor(valueTarget / 255);
+    value = valueTarget % 255;
+  }
+  return Buffer.from([value,rest]);
+}
+
+
+export const concatenateTo16BytesInt= (num1:number, num2:number):number =>{
+  return ((num1 << 8) + num2);
+}

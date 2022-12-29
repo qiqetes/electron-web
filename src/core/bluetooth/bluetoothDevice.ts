@@ -68,6 +68,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.lock = new AsyncLock({timeout: 5000});
 
   }
+
   getValues(): number | Map<string, any> | undefined {
     return undefined;
   }
@@ -79,6 +80,32 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   }
   getFeatures(): Promise<string[] | undefined> {
     throw new Error("Method not implemented.");
+  }
+
+  static hasService(periphealServices: string[], service: string){
+
+    if (periphealServices != null) {
+      const serviceFound = periphealServices.find(
+        (e) => service == e.toLowerCase()
+      );
+      if(serviceFound && serviceFound.length > 0){
+        return true;
+      }
+    }
+    return false
+  }
+
+  static hasName(peripheralName: string,allowedNames: string[] ){
+
+    if (allowedNames != null) {
+      const nameFound = allowedNames.find(
+        (e) => peripheralName.toLowerCase() == e.toLowerCase()
+      );
+      if(nameFound && nameFound.length > 0){
+        return true;
+      }
+    }
+    return false
   }
 /*
   static fromPeripheral(

@@ -27,6 +27,18 @@ export class FtmsDevice extends BikeDevice   {
     this.resistanceTarget = 10;
   }
 
+  static isDevice(peripheral:Peripheral):FtmsDevice|undefined {
+    if(!peripheral){
+      return
+    }
+    const currentServices = peripheral.advertisement.serviceUuids;
+    const allowedService = GattSpecification.heartRate.service;
+
+    if (this.hasService(currentServices, allowedService)){
+      return FtmsDevice.fromPeripheral(peripheral, false);
+    }
+  }
+
   static fromPeripheral(
     peripheral: noble.Peripheral,
     broadcast?: boolean

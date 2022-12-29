@@ -13,6 +13,7 @@ import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
 import { HeartRateDevice } from "./heartRateDevice";
 import { FtmsDevice } from "./ftmsDevice";
 import { BikeDevice } from "./bikeDevice";
+import { KeiserDevice } from "./keiserDevice";
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
@@ -289,41 +290,18 @@ export class BluetoothManager {
   };
 
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
-    if (peripheral.advertisement.serviceUuids != null) {
-      const service = peripheral.advertisement.serviceUuids.find(
-        (e) => GattSpecification.ftms.service == e.toLowerCase()
-      );
-      if (service != null) {
-        return FtmsDevice.fromPeripheral(peripheral,false);
-      }
-    }
+    const ftmsDevice = FtmsDevice.isDevice(peripheral);
+    if(ftmsDevice) return ftmsDevice;
+    const keiserDevice = KeiserDevice.isDevice(peripheral);
+    if(keiserDevice) return keiserDevice;
   };
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
-    let broadcast = false;
-    //TODO es !
-    if (this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.heartRate.service)  ){
-      console.log("NO tiene eserviceio");
-      //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
-      if(this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.ftms.service))
-      return;
-      console.log(peripheral.advertisement.localName)
-      if(!this.hasName(peripheral.advertisement.localName,GattSpecification.heartRate.allowedNames) || !peripheral.advertisement.manufacturerData){
-        return;
-      }else{
-        console.log("SIIII tiene name");
-        broadcast = true;
-      }
-    }
-    //TODO QUITAR ESTO
-    if (!broadcast && !this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.heartRate.service)  ){
-    return
-    }
+    const heartRateDevice = HeartRateDevice.isDevice(peripheral);
 
-    return HeartRateDevice.fromPeripheral(peripheral,broadcast);
-
-
+    return heartRateDevice;
   };
+
   // await peripheral.disconnectAsync();
   //proces
   enableScan = () => {
