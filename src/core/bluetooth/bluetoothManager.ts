@@ -294,7 +294,7 @@ export class BluetoothManager {
         (e) => GattSpecification.ftms.service == e.toLowerCase()
       );
       if (service != null) {
-        return FtmsDevice.fromPeripheral(peripheral,'false');
+        return FtmsDevice.fromPeripheral(peripheral,false);
       }
     }
   };

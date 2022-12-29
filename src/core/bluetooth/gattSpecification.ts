@@ -13,7 +13,6 @@ export const  GattSpecification = {
       "hrm30",
       "h6m 54210"
     ]
-
   },
   ftms:{
     service: '1826',
