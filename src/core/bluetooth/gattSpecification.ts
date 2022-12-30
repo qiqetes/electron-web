@@ -34,6 +34,13 @@ export const  GattSpecification = {
       setPower: [0x05]
     }
   },
+  power:{
+    service: '1818',
+    measurements: {
+      features: '2a65',
+      bikeData: '2a63'
+    }
+  },
   zycleButton:{
     service:'beefee024910473cbe46960948c2f59c',
     measurements: {

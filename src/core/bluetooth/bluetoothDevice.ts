@@ -2,13 +2,7 @@ var AsyncLock = require('async-lock');
 
 import noble, { Advertisement, Characteristic, Peripheral, Service } from "@abandonware/noble";
 import { mainWindow } from "../../index";
-import { BikeDataFeatures } from "./bikeDataFeatures";
-import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
-import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
-import { GattSpecification } from "./gattSpecification";
-import { ButtonMode, ZycleButton } from "./zycleButton";
-
 interface BluetoothDeviceInterface {
   // Docs: https://electronjs.org/docs/api/structures/bluetooth-device
   id: string;

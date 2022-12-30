@@ -1,7 +1,7 @@
 
 import noble, {  Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
-import { BikeDataFeatures } from "./bikeDataFeatures";
+import { BikeDataFeaturesFtms } from "./bikeDataFeaturesFtms";
 import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
 import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
@@ -32,7 +32,7 @@ export class FtmsDevice extends BikeDevice   {
       return
     }
     const currentServices = peripheral.advertisement.serviceUuids;
-    const allowedService = GattSpecification.heartRate.service;
+    const allowedService = GattSpecification.ftms.service;
 
     if (this.hasService(currentServices, allowedService)){
       return FtmsDevice.fromPeripheral(peripheral, false);
@@ -86,7 +86,7 @@ export class FtmsDevice extends BikeDevice   {
     );
 
     if (characteristic != null) {
-      let bikeDataFeatures = new BikeDataFeatures();
+      let bikeDataFeatures = new BikeDataFeaturesFtms();
       // this.peripheral.removeAllListeners('notify');
 
       this.notify(characteristic, (state: Buffer) => {
@@ -265,7 +265,7 @@ export class FtmsDevice extends BikeDevice   {
       );
       if (featureRange) {
         await this.read(featureRange, (values: any) => {
-          this.resistanceRange = BikeDataFeatures.resistanceLevel(values);
+          this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
         });
         this.startNotify();
       }

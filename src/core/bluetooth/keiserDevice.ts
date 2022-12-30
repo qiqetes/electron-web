@@ -1,12 +1,10 @@
 
 import noble, {  Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
-import { BikeDataFeatures } from "./bikeDataFeatures";
+import { BikeDataFeaturesFtms } from "./bikeDataFeaturesFtms";
 import { bufferToListInt, concatenateTo16BytesInt, intToBuffer } from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
-import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
 import { GattSpecification } from "./gattSpecification";
-import { ButtonMode, ZycleButton } from "./zycleButton";
 import { BikeDevice } from "./bikeDevice";
 
 export class KeiserDevice extends BikeDevice   {
@@ -82,10 +80,10 @@ export class KeiserDevice extends BikeDevice   {
         concatenateTo16BytesInt(values[15], values[14]) /10.0;
     var power = concatenateTo16BytesInt(values[9], values[8]);
     var resistance = values[16];
-      this.bikeValues.set(BikeDataFeatures.CADENCE, cadence);
-      this.bikeValues.set(BikeDataFeatures.DISTANCE, distance);
-      this.bikeValues.set(BikeDataFeatures.POWER, power);
-      this.bikeValues.set(BikeDataFeatures.RESISTANCE, resistance);
+      this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
+      this.bikeValues.set(BikeDataFeaturesFtms.DISTANCE, distance);
+      this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);
+      this.bikeValues.set(BikeDataFeaturesFtms.RESISTANCE, resistance);
     }
     return this.bikeValues;
   }
@@ -101,10 +99,10 @@ export class KeiserDevice extends BikeDevice   {
   async getFeatures(): Promise<string[] | undefined> {
 
     this.features = [
-      BikeDataFeatures.CADENCE,
-      BikeDataFeatures.POWER,
-      BikeDataFeatures.DISTANCE,
-      BikeDataFeatures.RESISTANCE
+      BikeDataFeaturesFtms.CADENCE,
+      BikeDataFeaturesFtms.POWER,
+      BikeDataFeaturesFtms.DISTANCE,
+      BikeDataFeaturesFtms.RESISTANCE
     ];
     return this.features;
 

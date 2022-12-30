@@ -1,7 +1,7 @@
 import { existsSync } from "original-fs";
 import { getAvailableFeatures, intToBinary, listToBinary, listToInt } from "./bluetoothDataParser";
 
-export class BikeDataFeatures {
+export class BikeDataFeaturesFtms {
   static  SPEED = "Velocidad";
   static  AVG_SPEED = "Velocidad media";
   static  CADENCE = "Cadencia";
@@ -93,7 +93,7 @@ export class BikeDataFeatures {
 
     return getAvailableFeatures(
         featuresBits,
-        BikeDataFeatures.orderFeatures,
+        BikeDataFeaturesFtms.orderFeatures,
         this.activeValueFeatures);
   }
 
@@ -104,10 +104,10 @@ export class BikeDataFeatures {
     const bitsValues = listToBinary(intValues);
 
     features.forEach((feature) => {
-      let numBits = BikeDataFeatures.sizeFeature.get(feature)!;
+      let numBits = BikeDataFeaturesFtms.sizeFeature.get(feature)!;
       let toBits = currentBit + numBits;
       // Energy tiene 3 valores
-      if (feature != BikeDataFeatures.ENERGY) {
+      if (feature != BikeDataFeaturesFtms.ENERGY) {
         featureRead.set(feature,this.parseValue(
             listToInt(bitsValues,
                 currentBit,toBits)!,
@@ -125,31 +125,31 @@ export class BikeDataFeatures {
   parseValue = (value: number, feature: string): number => {
     let realValue:number;
     switch (feature) {
-      case BikeDataFeatures.SPEED:
-      case BikeDataFeatures.AVG_SPEED:
+      case BikeDataFeaturesFtms.SPEED:
+      case BikeDataFeaturesFtms.AVG_SPEED:
         realValue = this.parseSpeed(value);
         break;
-      case BikeDataFeatures.DISTANCE:
+      case BikeDataFeaturesFtms.DISTANCE:
         realValue = this.parseDistance(value);
         break;
 
-      case BikeDataFeatures.CADENCE:
-      case BikeDataFeatures.AVG_CADENCE:
+      case BikeDataFeaturesFtms.CADENCE:
+      case BikeDataFeaturesFtms.AVG_CADENCE:
         realValue = this.parseCadence(value);
         break;
-      case BikeDataFeatures.POWER:
+      case BikeDataFeaturesFtms.POWER:
         realValue = this.parsePower(value);
         break;
-      case BikeDataFeatures.ENERGY:
-      case BikeDataFeatures.ENERGY_PER_HOUR:
-      case BikeDataFeatures.ENERGY_PER_MINUTE:
+      case BikeDataFeaturesFtms.ENERGY:
+      case BikeDataFeaturesFtms.ENERGY_PER_HOUR:
+      case BikeDataFeaturesFtms.ENERGY_PER_MINUTE:
         realValue = this.parseEnergy(value);
         break;
-      case BikeDataFeatures.METABOLIC:
+      case BikeDataFeaturesFtms.METABOLIC:
         realValue = this.parseMetabolic(value);
         break;
-      case BikeDataFeatures.ELAPSED_TIME:
-      case BikeDataFeatures.REMAINING_TIME:
+      case BikeDataFeaturesFtms.ELAPSED_TIME:
+      case BikeDataFeaturesFtms.REMAINING_TIME:
         realValue = this.parseMetabolic(value);
         break;
       default:
