@@ -104,5 +104,5 @@ export const intToBuffer = (valueTarget:number): Buffer =>{
 
 
 export const concatenateTo16BytesInt= (num1:number, num2:number):number =>{
-  return ((num1 << 8) + num2);
+  return num1+ num2*256;
 }

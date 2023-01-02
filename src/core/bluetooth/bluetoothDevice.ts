@@ -93,7 +93,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
     if (allowedNames != null) {
       const nameFound = allowedNames.find(
-        (e) => peripheralName.toLowerCase() == e.toLowerCase()
+        (e) => peripheralName.toLowerCase().includes(e.toLowerCase())
       );
       if(nameFound && nameFound.length > 0){
         return true;

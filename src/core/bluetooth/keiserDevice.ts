@@ -26,21 +26,20 @@ export class KeiserDevice extends BikeDevice   {
       return
     }
     const currentName = peripheral.advertisement.localName;
-    const allowedNames = GattSpecification.heartRate.allowedNames;
+    const allowedNames = GattSpecification.keiser.allowedNames;
 
     if(this.hasName(currentName,allowedNames) && peripheral.advertisement.manufacturerData){
-      return  KeiserDevice.fromPeripheral(peripheral,true)
+      return  KeiserDevice.fromPeripheral(peripheral)
     }
   }
 
   static fromPeripheral(
     peripheral: noble.Peripheral,
-    broadcast?: boolean
   ) {
     const statePeripheal =
       BluetoothDeviceState[peripheral.state] ||
       BluetoothDeviceState.disconnected;
-    const isBroadcast = broadcast||false;
+    const isBroadcast = true;
     const id = peripheral.uuid.toLowerCase();
 
     return new KeiserDevice(
@@ -59,7 +58,7 @@ export class KeiserDevice extends BikeDevice   {
       device.name,
       BluetoothDeviceState.unknown,
       undefined,
-      device.broadcast
+      true
     );
   }
   setAdvertisment(advertisement: noble.Advertisement): void {
@@ -67,19 +66,18 @@ export class KeiserDevice extends BikeDevice   {
     this.readValues(values);
 
     if(this.state == BluetoothDeviceState.connected){
-      mainWindow.webContents.send("heartRateData-" + this.id, this.bikeValues);
+      mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
     }
   }
 
   readValues(values:number[]): Map<string, any> {
-
     if(values.length >= 16){
     var cadence =
-        (Math.round(concatenateTo16BytesInt(values[5], values[4])) / 10)
+        (Math.round(concatenateTo16BytesInt(values[6], values[7])/ 10))
     var distance =
-        concatenateTo16BytesInt(values[15], values[14]) /10.0;
-    var power = concatenateTo16BytesInt(values[9], values[8]);
-    var resistance = values[16];
+        concatenateTo16BytesInt(values[15], values[16]) /10.0;
+    var power = concatenateTo16BytesInt(values[10], values[11]);
+    var resistance = values[18];
       this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
       this.bikeValues.set(BikeDataFeaturesFtms.DISTANCE, distance);
       this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);

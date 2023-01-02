@@ -14,6 +14,7 @@ import { HeartRateDevice } from "./heartRateDevice";
 import { FtmsDevice } from "./ftmsDevice";
 import { BikeDevice } from "./bikeDevice";
 import { KeiserDevice } from "./keiserDevice";
+import { PowerDevice } from "./powerDevice";
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
@@ -212,7 +213,7 @@ export class BluetoothManager {
           peripheral.advertisement.localName != "") ||
         knownDevice != null
       ) {
-         console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+    //     console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       } else {
         //console.log(" Peripheal DISCOVER NOT FOUND  ",peripheral.id);
 
@@ -221,17 +222,12 @@ export class BluetoothManager {
 
       const foundDevice: BluetoothDevice | undefined =
         this.allDevicesList.get(deviceId);
-        console.log("JUSTO ANTES NO PASA AQUí")
-
       if (this.stopScanPeripheral(foundDevice, knownDevice)) {
         return;
       }
-      console.log("NO PASA AQUí")
 
       if(foundDevice && foundDevice.broadcast){
-        //TODO comprobar con un dispositivo real
         foundDevice.setAdvertisment(peripheral.advertisement);
-        console.log("ISIIIII EL broadcast ",foundDevice.serialize())
         mainWindow.webContents.send("bluetoothDeviceFound", foundDevice.serialize());
         return
       }
@@ -239,30 +235,21 @@ export class BluetoothManager {
 
       if (knownDevice != undefined) {
         //Lo teniamos conectado pero ahora no está disponible para conectar
-        console.log("STEP 0");
         if(!peripheral.connectable && !knownDevice.broadcast){
-          console.log("STEP 1");
-
         //if (!knownDevice.broadcast){
           bl = this.findBluetoothDevice(peripheral);
         }else{
-          console.log("STEP 2");
-
           bl = this.getDeviceByType(peripheral,knownDevice);
-          console.log("tenemos al final esto ",bl)
         }
       } else {
-        console.log("STEP 3");
-
         bl = this.findBluetoothDevice(peripheral);
       }
-      console.log("EEEIIIII EL BL ES ESTO ",bl)
       if (bl == null) {
         return;
       }
 
 
-       console.log("emitimos ", bl.serialize());
+     //  console.log("emitimos ", bl.serialize());
       mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
 
       this.allDevicesList.set(deviceId, bl);
@@ -434,10 +421,12 @@ export class BluetoothManager {
 
   getDeviceByType=(peripheral:Peripheral, knownDevice:KnownDevice):HeartRateDevice|BikeDevice|BluetoothDevice|undefined => {
     if(knownDevice.parserType == 'heartrate' || knownDevice.deviceType == 'heartrate'){
-      console.log("SIIIII ESTAMOS AQUIIIIIII ");
       return HeartRateDevice.fromPeripheral(peripheral,knownDevice.broadcast);
     }else if(knownDevice.parserType == 'ftms'){
       return FtmsDevice.fromPeripheral(peripheral,knownDevice.broadcast);
-    }
-  }
+    }else if(knownDevice.parserType == 'keiser'){
+      return KeiserDevice.fromPeripheral(peripheral);
+    }else if(knownDevice.parserType == 'power'){
+      return PowerDevice.fromPeripheral(peripheral,knownDevice.broadcast);
+  }}
 }

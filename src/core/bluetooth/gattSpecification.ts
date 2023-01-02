@@ -8,7 +8,6 @@ export const  GattSpecification = {
       "polar h9",
       "polar h10",
       "polar oh1",
-      "forerunner 245",
       "heartbeat",
       "hrm30",
       "h6m 54210"
@@ -33,6 +32,10 @@ export const  GattSpecification = {
       setResistance: [0x04],
       setPower: [0x05]
     }
+  },
+  keiser: {
+
+    allowedNames: ["M3"]
   },
   power:{
     service: '1818',

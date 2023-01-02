@@ -32,7 +32,7 @@ export class BikeDevice extends BluetoothDevice implements BikeDeviceInterface{
     parserType: BluetoothParserType,
     broadcast: boolean = false
   ) {
-    super(deviceId,deviceName,BluetoothDeviceTypes.Bike,state,peripheral,parserType,false);
+    super(deviceId,deviceName,BluetoothDeviceTypes.Bike,state,peripheral,parserType,broadcast);
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
     this.lock = new AsyncLock({timeout: 5000});

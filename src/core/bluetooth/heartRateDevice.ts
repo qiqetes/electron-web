@@ -60,13 +60,9 @@ export class HeartRateDevice extends BluetoothDevice{
     const allowedNames = GattSpecification.heartRate.allowedNames;
 
     if (!this.hasService(currentServices, allowedService)){
-      console.log("NO tiene eserviceio");
-
-      console.log(peripheral.advertisement.localName)
       if(!this.hasName(currentName,allowedNames) || !peripheral.advertisement.manufacturerData){
         return;
       }else{
-        console.log("SIIII tiene name");
         broadcast = true;
       }
     }
