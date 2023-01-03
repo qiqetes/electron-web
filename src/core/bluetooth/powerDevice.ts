@@ -10,6 +10,10 @@ import { ButtonMode, ZycleButton } from "./zycleButton";
 import { BikeDevice } from "./bikeDevice";
 
 export class PowerDevice extends BikeDevice   {
+
+  lastCrank: number|undefined;
+  lastTimestampCrank: number| undefined;
+
   constructor(
     deviceId: string,
     deviceName: string,
@@ -22,6 +26,9 @@ export class PowerDevice extends BikeDevice   {
     this.resistanceRange = undefined;
     this.powerTarget = 10;
     this.resistanceTarget = 10;
+
+    this.lastCrank = undefined;
+    this.lastTimestampCrank = undefined;
   }
 
   static isDevice(peripheral:Peripheral):PowerDevice|undefined {
@@ -76,8 +83,8 @@ export class PowerDevice extends BikeDevice   {
       return;
     }
     const characteristic = await this.getMeasurement(
-      GattSpecification.ftms.service,
-      GattSpecification.ftms.measurements.bikeData
+      GattSpecification.power.service,
+      GattSpecification.power.measurements.bikeData
     );
 
     if (characteristic != null) {
@@ -86,32 +93,96 @@ export class PowerDevice extends BikeDevice   {
 
       this.notify(characteristic, (state: Buffer) => {
         const values = bufferToListInt(state);
-        this.bikeValues = bikeDataFeatures.valuesFeatures(values);
+        const dataBike = bikeDataFeatures.valuesFeatures(values);
+        this.bikeValues = this.parseValues(dataBike);
+
         console.log("BIKE DATA =  ", this.bikeValues);
+
+
         mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
       });
     }
+  }
 
+  parseValues(dataBike: Map<string,number>): Map<string,number>{
+    var values = new Map<string,number>();
+    if (dataBike.get(BluetoothFeatures.PowerBalance) ) {
+      this.checkFeature(BluetoothFeatures.Power);
+      const power = dataBike.get(BluetoothFeatures.PowerBalance);
+      const crankValue = dataBike.get(BluetoothFeatures.CrankValue);
+      if(power == 0 && this.lastCrank != undefined && crankValue){
+        if (this.lastCrank == crankValue) {
+          //Es correcta la posición 0
+          values.set(BluetoothFeatures.Power, power);
+        }
+      }else if(power != undefined){
+        values.set(BluetoothFeatures.Power, power);
+
+      }
+    }
+    if (dataBike.get(BluetoothFeatures.CrankValue) ) {
+      this.checkFeature(BluetoothFeatures.Cadence);
+      const crankValue = dataBike.get(BluetoothFeatures.CrankValue);
+      const crankTimestamp = dataBike.get(BluetoothFeatures.CrankTimestamp);
+      const currentTimestamp = new Date().getTime() / 1000;
+      console.log("ISIIII ESTAMO EN EL CRANK VALUE CON ",crankValue, " y de tiempestamo ",crankTimestamp );
+      if(crankValue && crankTimestamp){
+        if(this.lastCrank != undefined && this.lastTimestampCrank != undefined){
+
+          let crankDifference = crankValue - this.lastCrank;
+          let crankDifferenceTime = (crankTimestamp - this.lastTimestampCrank)/1024;
+          if(this.lastTimestampCrank < crankTimestamp){
+
+            if(crankDifferenceTime > 0 ){
+
+              let cadence = Math.floor(crankDifference *60 / crankDifferenceTime);
+              this.lastTimestampCrank = currentTimestamp;
+              if(cadence > 150){
+                cadence = 150;
+              }
+              values.set(BluetoothFeatures.Cadence, cadence);
+            }else{
+              if(this.lastTimestampCrank != undefined || currentTimestamp - this.lastTimestampCrank > 3){
+                this.lastTimestampCrank = currentTimestamp;
+                values.set(BluetoothFeatures.Cadence, 0);
+
+              }
+            }
+          }
+        }
+        this.lastCrank = crankValue
+        this.lastTimestampCrank = crankTimestamp
+      }
+    }
+    return values;
+
+
+  }
+  checkFeature(feature:string) {
+    if (!this.features.find((feat) => feat == feature)) {
+      this.features.unshift(feature);
+    }
   }
   async getFeatures(): Promise<string[] | undefined> {
 
     if (!this.peripheral) {
       return [];
     }
-    if(this.features){
+
+    if(this.features  && this.features.length > 0){
       return this.features;
     }
+
     const characteristic = await this.getMeasurement(
       GattSpecification.power.service,
       GattSpecification.power.measurements.features
     );
+
     if (characteristic) {
       await this.read(characteristic, async (features: any) => {
         this.features = await getPowerFeatures(features);
       });
-
     }
-
     await this.requestControl();
     await this.startTraining();
     return this.features;
@@ -120,16 +191,24 @@ export class PowerDevice extends BikeDevice   {
 
 
   async startTraining() {
+    this.lastCrank = undefined;
+    this.lastTimestampCrank = undefined;
   }
 
   async resetTraining() {
+    this.lastCrank = undefined;
+    this.lastTimestampCrank = undefined;
   }
 
   async stopTraining() {
+    this.lastCrank = undefined;
+    this.lastTimestampCrank = undefined;
 
   }
 
   async requestControl(): Promise<void> {
+    this.lastCrank = undefined;
+    this.lastTimestampCrank = undefined;
 
   }
 

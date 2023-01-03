@@ -253,6 +253,13 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
   }
 
+  checkFeature(feature:string) {
+
+    if (!this.features.find((feat) => feat == feature)) {
+      this.features.unshift(feature);
+    }
+  }
+
   cacheMeasurement =  async (
   ): Promise<void> => {
     if (!this.peripheral) return;

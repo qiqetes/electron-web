@@ -196,18 +196,18 @@ export const getPowerFeatures = (values: Buffer):string[] => {
   const bitsFeaturesRead = intToBinary(values.readUIntBE(0,1)).reverse().concat(intToBinary(values.readUIntBE(1,1)).reverse());
   //const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
    var availabe = getFeatures(bitsFeaturesRead,PowerOrderFeaturesRead);
-
-   if(values.length > 5){
-    const bitsFeaturesWrite = intToBinary(values.readUIntBE(4,1)).reverse().concat(intToBinary(values.readUIntBE(5,1)).reverse());
+   if(values.length > 2){
+    const bitsFeaturesWrite = intToBinary(values.readUIntBE(2,1)).reverse().concat(intToBinary(values.readUIntBE(3,1)).reverse());
     //const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
     const availabeWrite = getFeatures(bitsFeaturesWrite,PowerOrderFeaturesWrite);
     availabe = availabe.concat(availabeWrite);
+
   }
+  availabe.push(BluetoothFeatures.Power);
 
   if(availabe.find((value ) => value == BluetoothFeatures.CrankRevolution)){
     availabe.push(BluetoothFeatures.Cadence);
   }
-  availabe.push(BluetoothFeatures.Power);
 
 
   return availabe;
