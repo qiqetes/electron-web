@@ -19,4 +19,6 @@ type BluetoothParserType =
   "keiser"|
   "bhPro"
 
-  type OrderBytes = 'lso'| 'mso'
+type OrderBytes = 'lso'| 'mso'
+
+type normalization = 'avg' | 'median'|'pow'|'none'

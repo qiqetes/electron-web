@@ -29,6 +29,7 @@ export class PowerDevice extends BikeDevice   {
 
     this.lastCrank = undefined;
     this.lastTimestampCrank = undefined;
+    this.normalization ='pow'
   }
 
   static isDevice(peripheral:Peripheral):PowerDevice|undefined {
@@ -95,10 +96,7 @@ export class PowerDevice extends BikeDevice   {
         const values = bufferToListInt(state);
         const dataBike = bikeDataFeatures.valuesFeatures(values);
         this.bikeValues = this.parseValues(dataBike);
-
-        console.log("BIKE DATA =  ", this.bikeValues);
-
-
+        this.bikeValues = this.getFeaturesValues(this.bikeValues);
         mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
       });
     }
@@ -193,23 +191,25 @@ export class PowerDevice extends BikeDevice   {
   async startTraining() {
     this.lastCrank = undefined;
     this.lastTimestampCrank = undefined;
+    this.resetWindowValues();
   }
 
   async resetTraining() {
     this.lastCrank = undefined;
     this.lastTimestampCrank = undefined;
+    this.resetWindowValues();
   }
 
   async stopTraining() {
     this.lastCrank = undefined;
     this.lastTimestampCrank = undefined;
-
+    this.resetWindowValues();
   }
 
   async requestControl(): Promise<void> {
     this.lastCrank = undefined;
     this.lastTimestampCrank = undefined;
-
+    this.resetWindowValues();
   }
 
   async setPowerTarget(power: number): Promise<void> {

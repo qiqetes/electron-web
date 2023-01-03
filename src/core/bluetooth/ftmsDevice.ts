@@ -10,8 +10,9 @@ import { ButtonMode, ZycleButton } from "./zycleButton";
 import { BikeDevice } from "./bikeDevice";
 
 export class FtmsDevice extends BikeDevice   {
-
   zycleButton: ZycleButton;
+  intervalWrite: NodeJS.Timer|undefined;
+
   constructor(
     deviceId: string,
     deviceName: string,
@@ -25,9 +26,11 @@ export class FtmsDevice extends BikeDevice   {
     this.zycleButton = new ZycleButton();
     this.powerTarget = 10;
     this.resistanceTarget = 10;
+    this.normalization = 'none';
   }
 
   static isDevice(peripheral:Peripheral):FtmsDevice|undefined {
+
     if(!peripheral){
       return
     }
@@ -72,7 +75,6 @@ export class FtmsDevice extends BikeDevice   {
   }
 
   getValues(){
-
     return this.bikeValues;
   }
 
@@ -92,8 +94,9 @@ export class FtmsDevice extends BikeDevice   {
       this.notify(characteristic, (state: Buffer) => {
         const values = bufferToListInt(state);
         this.bikeValues = bikeDataFeatures.valuesFeatures(values);
-        console.log("BIKE DATA =  ", this.bikeValues);
+        this.bikeValues = this.getFeaturesValues(this.bikeValues);
         mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
+
       });
     }
 
@@ -103,8 +106,11 @@ export class FtmsDevice extends BikeDevice   {
     }
   }
 
-  async startZycleButton() {
 
+  async startZycleButton() {
+    //SI es la zycle la normalización de datos es la mediana
+
+    this.normalization = 'median';
     const characteristic = await this.getMeasurement(
       GattSpecification.zycleButton.service,
       GattSpecification.zycleButton.measurements.buttonControl
@@ -155,7 +161,10 @@ export class FtmsDevice extends BikeDevice   {
     if (zycleButton) {
       this.features.push(BluetoothFeatures.ZycleButton);
     }
-
+    //TODO PARCHAZO PARA BH
+    if (this.getName() == "B01_0CF9F") {
+      this.checkFeature(BluetoothFeatures.PowerTarget);
+    }
     await this.requestControl();
     await this.startTraining();
     return this.features;
@@ -164,35 +173,44 @@ export class FtmsDevice extends BikeDevice   {
 
 
   async startTraining() {
-      const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
-      await this.writeData(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
-      this.powerTarget = 10;
-      this.zycleButton = new ZycleButton();
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
+    const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
+    this.powerTarget = 10;
+    this.zycleButton = new ZycleButton();
+    this.resetWindowValues();
   }
 
   async resetTraining() {
-      const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
-
-      console.log(data)
-      await this.writeData(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
-
+    const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
+    this.resetWindowValues();
   }
 
   async stopTraining() {
-      const data = Buffer.from(GattSpecification.ftms.controlPoint.stop);
-      await this.writeData(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
+    this.resetWindowValues();
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
+    const data = Buffer.from(GattSpecification.ftms.controlPoint.stop);
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
 
   }
 
@@ -200,52 +218,69 @@ export class FtmsDevice extends BikeDevice   {
     if (!this.peripheral) {
       return;
     }
-      const data = Buffer.from(
-        GattSpecification.ftms.controlPoint.requestControl
-      );
-      await this.writeData(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
+    const data = Buffer.from(
+      GattSpecification.ftms.controlPoint.requestControl
+    );
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
 
   }
 
   async setPowerTarget(power: number): Promise<void> {
-      const values = intToBuffer(power);
-      const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setPower),values]);
 
-      await this.writeData(
+    const values = intToBuffer(power);
+    const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setPower),values]);
+
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
+    this.powerTarget = power;
+    this.resetWindowValues();
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
+    this.intervalWrite = setInterval(() =>{
+      this.writeData(
         GattSpecification.ftms.service,
         GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
-      console.log("HEMOS AÑADIDO LA POTENCIA ",power)
-      this.powerTarget = power;
+        data);
+      }
+      ,1000);
 
   }
 
   async setResistanceTarget(resistance: number): Promise<void> {
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
     this.resistanceTarget = resistance;
-    console.log("ESTMAO EN SET RESISTANCE TARGET");
 
-      const values = intToBuffer(resistance);
-      const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
-      await this.writeData(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.controlPoint,
-        data
-      );
-      this.startNotify();
+    const values = intToBuffer(resistance);
+    const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
+    await this.writeData(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.controlPoint,
+      data
+    );
+    this.resetWindowValues();
+
 
   }
   async stopPowerTarget(): Promise<void> {
-    console.log("EN STOP POWER TARGET");
-    await this.startTraining()
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }    await this.startTraining()
   }
 
   async autoMode(enable: boolean): Promise<void> {
-    console.log("en el auto mode ",enable)
+    if(this.intervalWrite){
+      clearInterval(this.intervalWrite);
+    }
     if(!enable){
       await this.stopPowerTarget();
     }else{

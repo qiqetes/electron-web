@@ -213,7 +213,7 @@ export class BluetoothManager {
           peripheral.advertisement.localName != "") ||
         knownDevice != null
       ) {
-    //     console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
+     //    console.log(" Peripheal DISCOVER  ",peripheral.advertisement.localName);
       } else {
         //console.log(" Peripheal DISCOVER NOT FOUND  ",peripheral.id);
 
@@ -249,7 +249,7 @@ export class BluetoothManager {
       }
 
 
-     //  console.log("emitimos ", bl.serialize());
+      // console.log("emitimos ", bl.serialize());
       mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
 
       this.allDevicesList.set(deviceId, bl);
@@ -281,6 +281,8 @@ export class BluetoothManager {
     if(ftmsDevice) return ftmsDevice;
     const keiserDevice = KeiserDevice.isDevice(peripheral);
     if(keiserDevice) return keiserDevice;
+    const powerDevice = PowerDevice.isDevice(peripheral);
+    if(powerDevice) return powerDevice;
   };
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
