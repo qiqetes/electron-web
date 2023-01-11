@@ -1,5 +1,4 @@
-
-import noble, {  Peripheral } from "@abandonware/noble";
+import noble, { Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { BikeDataFeaturesFtms } from "./bikeDataFeaturesFtms";
 import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
@@ -9,9 +8,9 @@ import { GattSpecification } from "./gattSpecification";
 import { ButtonMode, ZycleButton } from "./zycleButton";
 import { BikeDevice } from "./bikeDevice";
 
-export class FtmsDevice extends BikeDevice   {
+export class FtmsDevice extends BikeDevice {
   zycleButton: ZycleButton;
-  intervalWrite: NodeJS.Timer|undefined;
+  intervalWrite: NodeJS.Timer | undefined;
 
   constructor(
     deviceId: string,
@@ -20,36 +19,32 @@ export class FtmsDevice extends BikeDevice   {
     peripheral: Peripheral | undefined,
     broadcast: boolean = false
   ) {
-    super(deviceId,deviceName,state,peripheral,'ftms',false);
+    super(deviceId, deviceName, state, peripheral, "ftms", false);
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
     this.zycleButton = new ZycleButton();
     this.powerTarget = 10;
     this.resistanceTarget = 10;
-    this.normalization = 'none';
+    this.normalization = "none";
   }
 
-  static isDevice(peripheral:Peripheral):FtmsDevice|undefined {
-
-    if(!peripheral){
-      return
+  static isDevice(peripheral: Peripheral): FtmsDevice | undefined {
+    if (!peripheral) {
+      return;
     }
     const currentServices = peripheral.advertisement.serviceUuids;
     const allowedService = GattSpecification.ftms.service;
 
-    if (this.hasService(currentServices, allowedService)){
+    if (this.hasService(currentServices, allowedService)) {
       return FtmsDevice.fromPeripheral(peripheral, false);
     }
   }
 
-  static fromPeripheral(
-    peripheral: noble.Peripheral,
-    broadcast?: boolean
-  ) {
+  static fromPeripheral(peripheral: noble.Peripheral, broadcast?: boolean) {
     const statePeripheal =
       BluetoothDeviceState[peripheral.state] ||
       BluetoothDeviceState.disconnected;
-    const isBroadcast = broadcast||false;
+    const isBroadcast = broadcast || false;
     const id = peripheral.uuid.toLowerCase();
 
     return new FtmsDevice(
@@ -57,7 +52,7 @@ export class FtmsDevice extends BikeDevice   {
       peripheral.advertisement.localName,
       statePeripheal,
       peripheral,
-      isBroadcast,
+      isBroadcast
     );
   }
   static fromKnwonDevice(device: KnownDevice) {
@@ -71,10 +66,9 @@ export class FtmsDevice extends BikeDevice   {
       device.broadcast
     );
   }
-  setAdvertisment(advertisement: noble.Advertisement): void {
-  }
+  setAdvertisment(advertisement: noble.Advertisement): void {}
 
-  getValues(){
+  getValues() {
     return this.bikeValues;
   }
 
@@ -96,50 +90,58 @@ export class FtmsDevice extends BikeDevice   {
         this.bikeValues = bikeDataFeatures.valuesFeatures(values);
         this.bikeValues = this.getFeaturesValues(this.bikeValues);
         mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
-
       });
     }
 
-    if(this.features.find((feature) => feature == BluetoothFeatures.ZycleButton) ){
+    if (
+      this.features.find((feature) => feature == BluetoothFeatures.ZycleButton)
+    ) {
       this.startZycleButton();
-
     }
   }
-
 
   async startZycleButton() {
     //SI es la zycle la normalización de datos es la mediana
 
-    this.normalization = 'median';
+    this.normalization = "median";
     const characteristic = await this.getMeasurement(
       GattSpecification.zycleButton.service,
       GattSpecification.zycleButton.measurements.buttonControl
     );
     if (characteristic != null) {
-
       this.notify(characteristic, (state: Buffer) => {
         const values = bufferToListInt(state);
         var dataController = ZycleButton.valuesFeatures(values);
 
-        if(this.zycleButton.changeValues(dataController)){
-          if(dataController.get(ZycleButton.MODE) == ButtonMode.AUTO){
-            if(dataController.get(ZycleButton.LEVEL) != Math.floor( this.powerTarget /5 ) && this.powerTarget != 10){
-              mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
+        if (this.zycleButton.changeValues(dataController)) {
+          if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
+            if (
+              dataController.get(ZycleButton.LEVEL) !=
+                Math.floor(this.powerTarget / 5) &&
+              this.powerTarget != 10
+            ) {
+              mainWindow.webContents.send(
+                "buttonChange-" + this.id,
+                this.zycleButton.toJson()
+              );
             }
           } else {
-            if (dataController.get(ZycleButton.LEVEL) !=
-                Math.floor(this.resistanceTarget)) {
-                  mainWindow.webContents.send("buttonChange-" + this.id,this.zycleButton.toJson());
-                }
+            if (
+              dataController.get(ZycleButton.LEVEL) !=
+              Math.floor(this.resistanceTarget)
+            ) {
+              mainWindow.webContents.send(
+                "buttonChange-" + this.id,
+                this.zycleButton.toJson()
+              );
+            }
           }
         }
-     });
+      });
     }
-
   }
 
   async getFeatures(): Promise<string[] | undefined> {
-
     if (!this.peripheral) {
       return [];
     }
@@ -168,12 +170,10 @@ export class FtmsDevice extends BikeDevice   {
     await this.requestControl();
     await this.startTraining();
     return this.features;
-
   }
 
-
   async startTraining() {
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
     const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
@@ -189,7 +189,7 @@ export class FtmsDevice extends BikeDevice   {
 
   async resetTraining() {
     const data = Buffer.from(GattSpecification.ftms.controlPoint.reset);
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
     await this.writeData(
@@ -202,7 +202,7 @@ export class FtmsDevice extends BikeDevice   {
 
   async stopTraining() {
     this.resetWindowValues();
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
     const data = Buffer.from(GattSpecification.ftms.controlPoint.stop);
@@ -211,7 +211,6 @@ export class FtmsDevice extends BikeDevice   {
       GattSpecification.ftms.measurements.controlPoint,
       data
     );
-
   }
 
   async requestControl(): Promise<void> {
@@ -226,13 +225,14 @@ export class FtmsDevice extends BikeDevice   {
       GattSpecification.ftms.measurements.controlPoint,
       data
     );
-
   }
 
   async setPowerTarget(power: number): Promise<void> {
-
     const values = intToBuffer(power);
-    const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setPower),values]);
+    const data = Buffer.concat([
+      Buffer.from(GattSpecification.ftms.controlPoint.setPower),
+      values,
+    ]);
 
     await this.writeData(
       GattSpecification.ftms.service,
@@ -241,72 +241,71 @@ export class FtmsDevice extends BikeDevice   {
     );
     this.powerTarget = power;
     this.resetWindowValues();
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
-    this.intervalWrite = setInterval(() =>{
+    this.intervalWrite = setInterval(() => {
       this.writeData(
         GattSpecification.ftms.service,
         GattSpecification.ftms.measurements.controlPoint,
-        data);
-      }
-      ,1000);
-
+        data
+      );
+    }, 1000);
   }
 
   async setResistanceTarget(resistance: number): Promise<void> {
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
     this.resistanceTarget = resistance;
 
     const values = intToBuffer(resistance);
-    const data = Buffer.concat([Buffer.from(GattSpecification.ftms.controlPoint.setResistance),values]);
+    const data = Buffer.concat([
+      Buffer.from(GattSpecification.ftms.controlPoint.setResistance),
+      values,
+    ]);
     await this.writeData(
       GattSpecification.ftms.service,
       GattSpecification.ftms.measurements.controlPoint,
       data
     );
     this.resetWindowValues();
-
-
   }
   async stopPowerTarget(): Promise<void> {
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
-    }    await this.startTraining()
+    }
+    await this.startTraining();
   }
 
   async autoMode(enable: boolean): Promise<void> {
-    if(this.intervalWrite){
+    if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
-    if(!enable){
+    if (!enable) {
       await this.stopPowerTarget();
-    }else{
+    } else {
       await this.resetTraining();
       await this.setPowerTarget(this.powerTarget);
     }
   }
 
   async getLevelRange(): Promise<Map<string, number> | undefined> {
-      if (this.resistanceRange) {
-        return this.resistanceRange;
-      }
-
-      const featureRange = await this.getMeasurement(
-        GattSpecification.ftms.service,
-        GattSpecification.ftms.measurements.powerRange
-      );
-      if (featureRange) {
-        await this.read(featureRange, (values: any) => {
-          this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
-        });
-        this.startNotify();
-      }
-
+    if (this.resistanceRange) {
       return this.resistanceRange;
+    }
 
+    const featureRange = await this.getMeasurement(
+      GattSpecification.ftms.service,
+      GattSpecification.ftms.measurements.powerRange
+    );
+    if (featureRange) {
+      await this.read(featureRange, (values: any) => {
+        this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
+      });
+      this.startNotify();
+    }
+
+    return this.resistanceRange;
   }
-
 }

@@ -325,7 +325,6 @@ export class BluetoothManager {
       }
 
       await foundDevice.disconnect();
-      // delete this.knownDevices?.knownDevices[id];
       if (foundDevice.broadcast) {
         this.allDevicesList.set(foundDevice.id, foundDevice);
       }
