@@ -13,6 +13,7 @@ import { FtmsDevice } from "./ftmsDevice";
 import { BikeDevice } from "./bikeDevice";
 import { KeiserDevice } from "./keiserDevice";
 import { PowerDevice } from "./powerDevice";
+import { BhProDevice } from "./bhProDevice";
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
@@ -297,6 +298,10 @@ export class BluetoothManager {
     if (keiserDevice) return keiserDevice;
     const powerDevice = PowerDevice.isDevice(peripheral);
     if (powerDevice) return powerDevice;
+    // const bhCustomDevice = BhCustomDevice.isDevice(peripheral);
+    // if (bhCustomDevice) return bhCustomDevice;
+    const bhProDevice = BhProDevice.isDevice(peripheral);
+    if (bhProDevice) return bhProDevice;
   };
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
@@ -445,6 +450,8 @@ export class BluetoothManager {
     } else if (knownDevice.parserType == "ftms") {
       return FtmsDevice.fromPeripheral(peripheral, knownDevice.broadcast);
     } else if (knownDevice.parserType == "keiser") {
+      return KeiserDevice.fromPeripheral(peripheral);
+    } else if (knownDevice.parserType == "bhPro") {
       return KeiserDevice.fromPeripheral(peripheral);
     } else if (knownDevice.parserType == "power") {
       return PowerDevice.fromPeripheral(peripheral, knownDevice.broadcast);

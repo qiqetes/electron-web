@@ -37,6 +37,9 @@ export const GattSpecification = {
   keiser: {
     allowedNames: ["M3"],
   },
+  bhPro: {
+    allowedNames: ["P9C"],
+  },
   power: {
     service: "1818",
     measurements: {
