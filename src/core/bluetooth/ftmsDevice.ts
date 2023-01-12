@@ -297,7 +297,7 @@ export class FtmsDevice extends BikeDevice {
 
     const featureRange = await this.getMeasurement(
       GattSpecification.ftms.service,
-      GattSpecification.ftms.measurements.powerRange
+      GattSpecification.ftms.measurements.resitanceRange
     );
     if (featureRange) {
       await this.read(featureRange, (values: any) => {

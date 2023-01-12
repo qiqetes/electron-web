@@ -1,6 +1,11 @@
-var AsyncLock = require('async-lock');
+var AsyncLock = require("async-lock");
 
-import noble, { Advertisement, Characteristic, Peripheral, Service } from "@abandonware/noble";
+import noble, {
+  Advertisement,
+  Characteristic,
+  Peripheral,
+  Service,
+} from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
 interface BluetoothDeviceInterface {
@@ -17,8 +22,8 @@ interface BluetoothDeviceInterface {
   setAdvertisment(advertisement: Advertisement): void;
   getFeatures(): Promise<string[] | undefined>;
   connect(): void;
-  getValues(): number| Map<string,any>|undefined;
-  startNotify():void;
+  getValues(): number | Map<string, any> | undefined;
+  startNotify(): void;
   disconnect(): void;
   serialize(): {};
 }
@@ -37,7 +42,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   lock: any;
   lockKey: any;
   parserType: BluetoothParserType;
-
 
   constructor(
     deviceId: string,
@@ -59,8 +63,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.cachedServices = [];
     this.notifing = false;
     this.features = [];
-    this.lock = new AsyncLock({timeout: 5000});
-
+    this.lock = new AsyncLock({ timeout: 5000 });
   }
 
   getValues(): number | Map<string, any> | undefined {
@@ -76,32 +79,42 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     throw new Error("Method not implemented.");
   }
 
-  static hasService(periphealServices: string[], service: string){
-
+  static hasService(periphealServices: string[], service: string) {
     if (periphealServices != null) {
       const serviceFound = periphealServices.find(
         (e) => service == e.toLowerCase()
       );
-      if(serviceFound && serviceFound.length > 0){
+      if (serviceFound && serviceFound.length > 0) {
         return true;
       }
     }
-    return false
+    return false;
   }
 
-  static hasName(peripheralName: string,allowedNames: string[] ){
+  static hasName(peripheralName: string, allowedNames: string[]) {
+    if (allowedNames != null) {
+      const nameFound = allowedNames.find((e) =>
+        peripheralName.toLowerCase().includes(e.toLowerCase())
+      );
+      if (nameFound && nameFound.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
 
+  static isName(peripheralName: string, allowedNames: string[]) {
     if (allowedNames != null) {
       const nameFound = allowedNames.find(
-        (e) => peripheralName.toLowerCase().includes(e.toLowerCase())
+        (e) => peripheralName.toLowerCase() == e.toLowerCase()
       );
-      if(nameFound && nameFound.length > 0){
+      if (nameFound && nameFound.length > 0) {
         return true;
       }
     }
-    return false
+    return false;
   }
-/*
+  /*
   static fromPeripheral(
     peripheral: noble.Peripheral,
     type: BluetoothDeviceTypes,
@@ -139,7 +152,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     );
   }
 
-
   serialize(): {} {
     const values = this.getValues();
     return {
@@ -158,13 +170,11 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
     this.peripheral.removeAllListeners("connect");
     this.peripheral.removeAllListeners("disconnect");
-    if(this.broadcast && !this.peripheral.connectable){
+    if (this.broadcast && !this.peripheral.connectable) {
       this.state = BluetoothDeviceState.connected;
 
       mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
-
-    }
-    else{
+    } else {
       this.peripheral.on("connect", async (stream) => {
         this.cachedMeasurement = [];
         await this.getFeatures();
@@ -179,10 +189,10 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
         const measuremnts = this.cachedMeasurement;
-          for(const char of measuremnts){
-            char.notify(false);
-            char.removeAllListeners();
-          };
+        for (const char of measuremnts) {
+          char.notify(false);
+          char.removeAllListeners();
+        }
         //Desde que emite el disconnect hasta que deja de verse en el discover pasa un tiempo, esperamos para que no haga reconexiones inválidas
         // const sleep = (ms:number) => new Promise(r => setTimeout(r, ms));
         //  await sleep(5000);
@@ -195,9 +205,9 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
   async disconnect(): Promise<void> {
     if (this.peripheral) {
-      if(this.broadcast && this.state == 'connected'){
+      if (this.broadcast && this.state == "connected") {
         this.state = BluetoothDeviceState.disconnected;
-      }else{
+      } else {
         await this.peripheral.disconnectAsync();
       }
     }
@@ -218,11 +228,9 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     return this.state;
   }
 
-
   async notify(measurement: Characteristic, callback: Function): Promise<void> {
     measurement.on("notify", (state) => {});
-    measurement.notify(true, (state) => {
-    });
+    measurement.notify(true, (state) => {});
 
     measurement.on("data", (state: Buffer, isNotify) => {
       callback(state);
@@ -240,7 +248,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
     const characteristic = await this.getMeasurement(service, char);
     if (characteristic) {
-    await this.lock.acquire(this.lockKey, async (done:any) => {
+      await this.lock.acquire(this.lockKey, async (done: any) => {
         const valueWrite = await characteristic.write(data, false, (error) => {
           if (error) {
             console.error("ERROR ON WRITE ", error);
@@ -249,37 +257,31 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
         done();
         return valueWrite;
       });
-
     }
   }
 
-  checkFeature(feature:string) {
-
+  checkFeature(feature: string) {
     if (!this.features.find((feat) => feat == feature)) {
       this.features.unshift(feature);
     }
   }
 
-  cacheMeasurement =  async (
-  ): Promise<void> => {
+  cacheMeasurement = async (): Promise<void> => {
     if (!this.peripheral) return;
-    const values  = await this.peripheral.discoverSomeServicesAndCharacteristicsAsync([],[]);
+    const values =
+      await this.peripheral.discoverSomeServicesAndCharacteristicsAsync([], []);
     this.cachedMeasurement = values.characteristics;
     this.cachedServices = values.services;
   };
-
 
   getMeasurement = async (
     serviceId: string,
     charId: string
   ): Promise<Characteristic | undefined> => {
-
     if (!this.peripheral) return;
-    if(this.cachedMeasurement.length == 0 ){
+    if (this.cachedMeasurement.length == 0) {
       await this.cacheMeasurement();
     }
     return this.cachedMeasurement.find((char) => char.uuid == charId);
   };
-
-
 }

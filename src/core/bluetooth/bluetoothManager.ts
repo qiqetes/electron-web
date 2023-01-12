@@ -281,12 +281,12 @@ export class BluetoothManager {
   findBluetoothDevice = (
     peripheal: noble.Peripheral
   ): BluetoothDevice | undefined => {
-    blDevice = this.isHeartRate(peripheal);
+    let blDevice = this.isBike(peripheal);
 
     if (blDevice != null) {
       return blDevice;
     } else {
-      var blDevice = this.isBike(peripheal);
+      blDevice = this.isHeartRate(peripheal);
     }
 
     return blDevice;

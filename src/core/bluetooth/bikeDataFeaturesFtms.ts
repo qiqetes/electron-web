@@ -82,6 +82,7 @@ export class BikeDataFeaturesFtms {
       resistanceData.set("max", listToInt(bitsValues, 16, 32)!);
       resistanceData.set("increment", listToInt(bitsValues, 32, 48)!);
     }
+
     return resistanceData;
   };
 

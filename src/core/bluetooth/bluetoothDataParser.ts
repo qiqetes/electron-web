@@ -1,11 +1,11 @@
-export const bufferToListInt = (values:Buffer):number[] => {
+export const bufferToListInt = (values: Buffer): number[] => {
   return Array.from(new Uint8Array(values));
-}
-export const getFeatures = (bits: number[], features: string[]):string[] => {
+};
+export const getFeatures = (bits: number[], features: string[]): string[] => {
   const sizeFeatures = features.length;
-  var availableFeatures:string[] = [];
+  var availableFeatures: string[] = [];
 
-  bits.forEach((value,index) => {
+  bits.forEach((value, index) => {
     if (index < sizeFeatures) {
       if (value == 1) {
         availableFeatures.push(features[index]);
@@ -13,11 +13,15 @@ export const getFeatures = (bits: number[], features: string[]):string[] => {
     }
   });
   return availableFeatures;
-}
+};
 //**Extraemos las features dadas por los valores de la bicicleta */
-export const getAvailableFeatures = (bits: number[], features: string[], activeValueFeatures: number[]|undefined):string[] =>  {
-  var availableFeatures:string[] = [];
-  bits.forEach((value,index) => {
+export const getAvailableFeatures = (
+  bits: number[],
+  features: string[],
+  activeValueFeatures: number[] | undefined
+): string[] => {
+  var availableFeatures: string[] = [];
+  bits.forEach((value, index) => {
     if (index < features.length) {
       let valueTrue = 1;
       if (activeValueFeatures != null) {
@@ -29,46 +33,49 @@ export const getAvailableFeatures = (bits: number[], features: string[], activeV
     }
   });
   return availableFeatures;
-}
+};
 
-export const intToBinary = (value:number): number[]  =>{
+export const intToBinary = (value: number): number[] => {
   const result = value
-      .toString(2).padStart(8,'0')
-      .split('')
-      .map((e) => parseInt(e,2))
-;
+    .toString(2)
+    .padStart(8, "0")
+    .split("")
+    .map((e) => parseInt(e, 2));
   return result;
-}
+};
 
-
-export const listToBinary = (listValues: number[]):number[] =>  {
+export const listToBinary = (listValues: number[]): number[] => {
   let bitsValues: number[] = [];
-  listValues.forEach((element) =>  {
-    bitsValues =
-        bitsValues.concat(intToBinary(element));
+  listValues.forEach((element) => {
+    bitsValues = bitsValues.concat(intToBinary(element));
   });
   return bitsValues;
-}
+};
 
-export const listToInt = (bitsValues: number[], from: number, to:number, order: OrderBytes = 'lso'):number|undefined =>  {
+export const listToInt = (
+  bitsValues: number[],
+  from: number,
+  to: number,
+  order: OrderBytes = "lso"
+): number | undefined => {
   let fromValue = from;
   let toValue = to;
-  const orderType = order || 'lso';
+  const orderType = order || "lso";
 
   if (bitsValues.length >= toValue) {
-    const  bitsFeature = bitsValues.slice(fromValue, to);
+    const bitsFeature = bitsValues.slice(fromValue, to);
     let value = orderList(orderType, bitsFeature);
     const binaryString = value.join("");
-    return parseInt(binaryString, 2)
+    return parseInt(binaryString, 2);
   }
-return 0;
-}
+  return 0;
+};
 // Ordena los bytes extraidos para que coincida con lso o mso
-export const orderList = (order:OrderBytes, bits:number[]):number[] => {
+export const orderList = (order: OrderBytes, bits: number[]): number[] => {
   const numBytes = Math.floor(bits.length / 8);
 
-  let orderedBits:number[] = [];
-  if (order != 'lso') {
+  let orderedBits: number[] = [];
+  if (order != "lso") {
     for (let i = 0; i < numBytes; i++) {
       let initialBit = i * 8;
       let finalBit = (i + 1) * 8;
@@ -89,9 +96,9 @@ export const orderList = (order:OrderBytes, bits:number[]):number[] => {
   }
 
   return orderedBits;
-}
+};
 
-export const intToBuffer = (valueTarget:number): Buffer =>{
+export const intToBuffer = (valueTarget: number): Buffer => {
   let rest = 0;
   let value = valueTarget;
 
@@ -99,10 +106,9 @@ export const intToBuffer = (valueTarget:number): Buffer =>{
     rest = Math.floor(valueTarget / 255);
     value = valueTarget % 255;
   }
-  return Buffer.from([value,rest]);
-}
+  return Buffer.from([value, rest]);
+};
 
-
-export const concatenateTo16BytesInt= (num1:number, num2:number):number =>{
-  return num1+ num2*256;
-}
+export const concatenateTo16BytesInt = (num1: number, num2: number): number => {
+  return num1 + num2 * 256;
+};
