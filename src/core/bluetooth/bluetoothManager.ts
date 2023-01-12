@@ -8,8 +8,6 @@ import {
   BluetoothDeviceTypes,
   BTStatus,
 } from "./bluetoothDeviceEnum";
-import { GattSpecification } from "./gattSpecification";
-import { BluetoothFeatures, getFtmsFeatures } from "./bluetoothFeatures";
 import { HeartRateDevice } from "./heartRateDevice";
 import { FtmsDevice } from "./ftmsDevice";
 import { BikeDevice } from "./bikeDevice";

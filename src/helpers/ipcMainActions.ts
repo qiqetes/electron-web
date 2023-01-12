@@ -3,7 +3,13 @@ import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { app, dialog, ipcMain } from "electron";
-import { api, BinData, DownloadsData, SettingsData } from "./init";
+import {
+  api,
+  BinData,
+  DownloadsData,
+  KnownDevicesData,
+  SettingsData,
+} from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -130,6 +136,7 @@ ipcMain.on("restoreDefaults", () => {
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
+  KnownDevicesData.init();
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
 
