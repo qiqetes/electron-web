@@ -5,6 +5,7 @@ const { version } = packageJson;
 
 module.exports = {
   packagerConfig: {
+    name: "BestcyclingTV",
     icon: "./assets/app-icon.ico",
     appBundleId: "com.nw-builder.bestcyclingtv",
     osxSign: {
@@ -53,7 +54,9 @@ module.exports = {
         folder: `desktop/versions/v${version}`,
         public: true,
         keyResolver: (fileName, platform, arch) => {
-          return `desktop/versions/v${version}/${arch}/${fileName}`;
+          console.info(fileName, platform, arch);
+          const path = `desktop/versions/v${version}/${fileName}`;
+          return path;
         },
       },
     },
