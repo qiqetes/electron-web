@@ -30,7 +30,6 @@ export class KeiserDevice extends BikeDevice {
     const allowedNames = GattSpecification.keiser.allowedNames;
 
     if (
-      this.hasName(currentName, allowedNames) &&
       this.isName(currentName, allowedNames) &&
       peripheral.advertisement.manufacturerData
     ) {
@@ -75,12 +74,12 @@ export class KeiserDevice extends BikeDevice {
 
   readValues(values: number[]): Map<string, any> {
     if (values.length >= 16) {
-      var cadence = Math.round(
+      const cadence = Math.round(
         concatenateTo16BytesInt(values[6], values[7]) / 10
       );
-      var distance = concatenateTo16BytesInt(values[15], values[16]) / 10.0;
-      var power = concatenateTo16BytesInt(values[10], values[11]);
-      var resistance = values[18];
+      const distance = concatenateTo16BytesInt(values[15], values[16]) / 10.0;
+      const power = concatenateTo16BytesInt(values[10], values[11]);
+      const resistance = values[18];
       this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
       this.bikeValues.set(BikeDataFeaturesFtms.DISTANCE, distance);
       this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);

@@ -60,10 +60,12 @@ export class BhProDevice extends BikeDevice {
   }
 
   setAdvertisment(advertisement: noble.Advertisement): void {
+    console.log("advertisment", advertisement);
     const values = bufferToListInt(advertisement.manufacturerData);
     this.readValues(values);
 
     if (this.state == BluetoothDeviceState.connected) {
+      console.log("bikeData-", this.id);
       mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
     }
   }

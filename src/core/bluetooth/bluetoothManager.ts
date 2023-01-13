@@ -247,7 +247,7 @@ export class BluetoothManager {
         );
         return;
       }
-      var bl;
+      let bl;
 
       if (knownDevice != undefined) {
         //Lo teniamos conectado pero ahora no está disponible para conectar
@@ -452,7 +452,7 @@ export class BluetoothManager {
     } else if (knownDevice.parserType == "keiser") {
       return KeiserDevice.fromPeripheral(peripheral);
     } else if (knownDevice.parserType == "bhPro") {
-      return KeiserDevice.fromPeripheral(peripheral);
+      return BhProDevice.fromPeripheral(peripheral);
     } else if (knownDevice.parserType == "power") {
       return PowerDevice.fromPeripheral(peripheral, knownDevice.broadcast);
     }
