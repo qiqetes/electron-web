@@ -23,10 +23,14 @@ export class BhProDevice extends BikeDevice {
     if (!peripheral) {
       return;
     }
+
     const currentName = peripheral.advertisement.localName;
     const allowedNames = GattSpecification.bhPro.allowedNames;
 
-    if (this.isName(currentName, allowedNames)) {
+    if (
+      this.isName(currentName, allowedNames) &&
+      peripheral.advertisement.manufacturerData
+    ) {
       return BhProDevice.fromPeripheral(peripheral, false);
     }
   }
@@ -60,21 +64,19 @@ export class BhProDevice extends BikeDevice {
   }
 
   setAdvertisment(advertisement: noble.Advertisement): void {
-    console.log("advertisment", advertisement);
     const values = bufferToListInt(advertisement.manufacturerData);
     this.readValues(values);
 
     if (this.state == BluetoothDeviceState.connected) {
-      console.log("bikeData-", this.id);
       mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
     }
   }
 
   readValues(values: number[]): Map<string, any> {
-    const cadence = values[13];
-    const power = values[14] * 256 + values[15];
-    const resistance = values[21];
-    const speed = values[18] + values[19] / 100;
+    const cadence = values[15];
+    const power = values[16] * 256 + values[17];
+    const resistance = values[23];
+    const speed = values[20] + values[21] / 100;
 
     this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
     this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);
@@ -96,8 +98,8 @@ export class BhProDevice extends BikeDevice {
     this.features = [
       BikeDataFeaturesFtms.CADENCE,
       BikeDataFeaturesFtms.POWER,
-      BikeDataFeaturesFtms.DISTANCE,
       BikeDataFeaturesFtms.RESISTANCE,
+      BikeDataFeaturesFtms.DISTANCE,
     ];
     return this.features;
   }
