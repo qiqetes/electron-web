@@ -86,11 +86,8 @@ export class FtmsDevice extends BikeDevice {
       // this.peripheral.removeAllListeners('notify');
 
       this.notify(characteristic, (state: Buffer) => {
-        console.log("state", state);
         const values = bufferToListInt(state);
-        // console.log("values", values);
         this.bikeValues = bikeDataFeatures.valuesFeatures(values);
-        // console.log("this.bikeValues ftms", this.bikeValues);
         this.bikeValues = this.getFeaturesValues(this.bikeValues);
         mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
       });
@@ -180,7 +177,6 @@ export class FtmsDevice extends BikeDevice {
       clearInterval(this.intervalWrite);
     }
     const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
-    console.log("data start training ftms", data);
     await this.writeData(
       GattSpecification.ftms.service,
       GattSpecification.ftms.measurements.controlPoint,
