@@ -82,7 +82,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   static hasService(periphealServices: string[], service: string) {
     if (periphealServices != null) {
       const serviceFound = periphealServices.find(
-        (e) => service == e.toLowerCase()
+        (e) => service.toLowerCase() == e.toLowerCase()
       );
       if (serviceFound && serviceFound.length > 0) {
         return true;
