@@ -106,7 +106,7 @@ export class FtmsDevice extends BikeDevice {
   }
   readDataFromBuffer(uuid:string, data: Buffer): void {
     const minUuid = uuid.split('-')[0].replace(/^0+/,'');
-
+    const replaceUuid = uuid.replace(/-/g,'');
     if(minUuid == GattSpecification.ftms.measurements.bikeData){
       this.readBikeData(data);
     }else if( minUuid == GattSpecification.ftms.measurements.feature){
@@ -116,7 +116,7 @@ export class FtmsDevice extends BikeDevice {
       const values = bufferToListInt(Buffer.from(data));
       this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
     }
-    else if(uuid == GattSpecification.zycleButton.measurements.buttonControl){
+    else if(replaceUuid == GattSpecification.zycleButton.measurements.buttonControl){
       this.readButtonControl(data);
     }
   }
@@ -129,14 +129,13 @@ export class FtmsDevice extends BikeDevice {
     this.bikeValues = bikeDataFeatures.valuesFeatures(values);
     this.bikeValues = this.getFeaturesValues(this.bikeValues);
     mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
-
   }
 
   readButtonControl(data:Buffer):void {
     const state = Buffer.from(data);
     const values = bufferToListInt(state);
     var dataController = ZycleButton.valuesFeatures(values);
-
+    console.log("ESIIIIIIIIIII Que tengo el read button control ",values);
     if (this.zycleButton.changeValues(dataController)) {
       if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
         if (
@@ -167,6 +166,8 @@ export class FtmsDevice extends BikeDevice {
     const featuresBuffer = Buffer.from(data);
     this.features = getFtmsFeatures(featuresBuffer);
     if(this.currentServices.length > 0 ){
+
+      //normalizamos los servicios quitando - para
       if (FtmsDevice.hasService(this.currentServices,  GattSpecification.zycleButton.service)) {
         this.features.push(BluetoothFeatures.ZycleButton);
       }
@@ -176,7 +177,7 @@ export class FtmsDevice extends BikeDevice {
       }
     }
     console.log("Las features son estas",this.features);
-
+    this.startTraining();
   }
 
   async startNotify(): Promise<void> {
@@ -218,8 +219,11 @@ export class FtmsDevice extends BikeDevice {
   }
 
   async getFeatures(): Promise<string[] | undefined> {
+    if(this.features.length > 0){
+      return this.features;
+    }
     if (!this.peripheral) {
-      return [];
+      return this.features;
     }
 
     const characteristic = await this.getMeasurement(

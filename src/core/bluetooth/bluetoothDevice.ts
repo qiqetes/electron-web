@@ -95,6 +95,9 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   static minifyService = (peripheralService: string, service:string):string => {
     if(peripheralService.includes('-') && service.includes('-')){
       return peripheralService;
+    }else if(peripheralService.includes('-') && service.length > 6){
+      const val =  peripheralService.replace(/-/g,'');
+      return val;
     }else if(peripheralService.includes('-')){
       const val =  peripheralService.split('-')[0].replace(/^0+/,'');
       return val;
@@ -103,8 +106,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
   }
   static hasService(periphealServices: string[], service: string) {
-
-
     if (periphealServices != null) {
       const serviceFound = periphealServices.find(
         (e) => this.minifyService(e, service).toLocaleLowerCase() == service.toLowerCase()
@@ -265,7 +266,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
   async writeData(service: string, char: string, data: Buffer) {
     if (!this.peripheral) {
-      mainWindow.webContents.send("writeData-" + this.id, data);
+      mainWindow.webContents.send("writeData-" + this.getName(), data);
       return null;
     }
 
