@@ -86,8 +86,6 @@ export class FtmsDevice extends BikeDevice {
     if(!device){
       return
     }
-
-    console.log("****AS DFA SDvamos a comparar ",uuids)
     const broadcast = false;
     const currentServices = uuids;
     const allowedService = GattSpecification.ftms.service;
@@ -104,6 +102,7 @@ export class FtmsDevice extends BikeDevice {
   getValues() {
     return this.bikeValues;
   }
+
   readDataFromBuffer(uuid:string, data: Buffer): void {
     const minUuid = uuid.split('-')[0].replace(/^0+/,'');
     const replaceUuid = uuid.replace(/-/g,'');
@@ -135,7 +134,7 @@ export class FtmsDevice extends BikeDevice {
     const state = Buffer.from(data);
     const values = bufferToListInt(state);
     var dataController = ZycleButton.valuesFeatures(values);
-    console.log("ESIIIIIIIIIII Que tengo el read button control ",values);
+
     if (this.zycleButton.changeValues(dataController)) {
       if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
         if (
@@ -162,7 +161,7 @@ export class FtmsDevice extends BikeDevice {
     }
 
   }
-  readFeaturesFromBuffer(data: Buffer): void {
+  async readFeaturesFromBuffer(data: Buffer): Promise<void> {
     const featuresBuffer = Buffer.from(data);
     this.features = getFtmsFeatures(featuresBuffer);
     if(this.currentServices.length > 0 ){
@@ -177,7 +176,8 @@ export class FtmsDevice extends BikeDevice {
       }
     }
     console.log("Las features son estas",this.features);
-    this.startTraining();
+    await this.requestControl();
+    await this.startTraining();
   }
 
   async startNotify(): Promise<void> {

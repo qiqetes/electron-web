@@ -122,13 +122,11 @@ export class BluetoothManager {
   }
 
   discoverDeviceType(name: string, uuids: string[], advertisements?:Buffer) {
-    console.log("los uuids son ",uuids)
     const deviceId = this.findDeviceIdByName(name)||'';
     const device = this.allDevicesList.get(deviceId);
-    console.log("SIIIIII vamos a descubrir el tipo",device,"uuids ",uuids);
     if(device){
       let discoverDevice = this.checkifIsBike(device, uuids,advertisements);
-      console.log("****el discover es ",discoverDevice);
+
       if(!discoverDevice){
         discoverDevice = this.checkifIsHeartRate(device, uuids,advertisements);
       }
@@ -146,13 +144,15 @@ export class BluetoothManager {
   checkifIsHeartRate = (device: BluetoothDevice, uuids: string[], advertisements?: Buffer): BluetoothDevice | undefined => {
     return  HeartRateDevice.isDeviceChromium(device,uuids,advertisements);
   };
+
   checkifIsBike = (device: BluetoothDevice, uuids: string[], advertisements?: Buffer): BluetoothDevice | undefined => {
     const ftmsDevice = FtmsDevice.isDeviceChromium(device,uuids,advertisements);
     if (ftmsDevice) return ftmsDevice;
+    const powerDevice = PowerDevice.isDeviceChromium(device,uuids,advertisements);
+    if (powerDevice) return powerDevice;
    /* const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
-    const powerDevice = PowerDevice.isDevice(peripheral);
-    if (powerDevice) return powerDevice;*/
+   */
     return
   };
 
@@ -437,7 +437,8 @@ export class BluetoothManager {
   //proces
   enableScan = () => {
     if (this.statusBluetooth == BTStatus.poweredOn) {
-      noble.startScanningAsync([], true);
+      //TODO quitar
+      //noble.startScanningAsync([], true);
     }
   };
 

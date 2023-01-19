@@ -8,6 +8,7 @@ import { BluetoothFeatures, getFtmsFeatures, getPowerFeatures } from "./bluetoot
 import { GattSpecification } from "./gattSpecification";
 import { ButtonMode, ZycleButton } from "./zycleButton";
 import { BikeDevice } from "./bikeDevice";
+import { BluetoothDevice } from "./bluetoothDevice";
 
 export class PowerDevice extends BikeDevice   {
 
@@ -71,6 +72,46 @@ export class PowerDevice extends BikeDevice   {
       device.broadcast
     );
   }
+
+  static isDeviceChromium(device:BluetoothDevice, uuids:string[],advertisement?:Buffer ):PowerDevice|undefined {
+    if(!device){
+      return
+    }
+    const broadcast = false;
+    const currentServices = uuids;
+    const allowedService = GattSpecification.power.service;
+
+    if (this.hasService(currentServices, allowedService)) {
+      const dev =  PowerDevice.fromBluetoothDevice(device, broadcast);
+      dev.currentServices = uuids;
+      return dev;
+    }
+  }
+  static fromBluetoothDevice(
+    device: BluetoothDevice,
+    broadcast?: boolean
+  ) {
+    const isBroadcast = broadcast||false;
+
+    return new PowerDevice(
+      device.id,
+      device.name,
+      device.state,
+      undefined,
+      isBroadcast,
+    );
+  }
+
+  readDataFromBuffer(uuid:string, data: Buffer): void {
+    const minUuid = uuid.split('-')[0].replace(/^0+/,'');
+    const replaceUuid = uuid.replace(/-/g,'');
+    if(minUuid == GattSpecification.power.measurements.bikeData){
+      this.readBikeData(data);
+    }else if( minUuid == GattSpecification.power.measurements.features){
+      this.readFeaturesFromBuffer(data);
+    }
+  }
+
   setAdvertisment(advertisement: noble.Advertisement): void {
   }
 
@@ -89,17 +130,31 @@ export class PowerDevice extends BikeDevice   {
     );
 
     if (characteristic != null) {
-      let bikeDataFeatures = new BikeDataFeaturesPower();
       // this.peripheral.removeAllListeners('notify');
 
       this.notify(characteristic, (state: Buffer) => {
-        const values = bufferToListInt(state);
-        const dataBike = bikeDataFeatures.valuesFeatures(values);
-        this.bikeValues = this.parseValues(dataBike);
-        this.bikeValues = this.getFeaturesValues(this.bikeValues);
-        mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
+        this.readBikeData(state);
       });
     }
+  }
+
+  readBikeData(data:Buffer):void {
+    let bikeDataFeatures = new BikeDataFeaturesPower();
+    const state = Buffer.from(data);
+
+    const values = bufferToListInt(state);
+    const dataBike = bikeDataFeatures.valuesFeatures(values);
+    this.bikeValues = this.parseValues(dataBike);
+    this.bikeValues = this.getFeaturesValues(this.bikeValues);
+    mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
+  }
+
+  async readFeaturesFromBuffer(data: Buffer): Promise<void> {
+    const featuresBuffer = Buffer.from(data);
+    this.features = await getPowerFeatures(featuresBuffer);
+
+    await this.requestControl();
+    await this.startTraining();
   }
 
   parseValues(dataBike: Map<string,number>): Map<string,number>{
@@ -123,7 +178,7 @@ export class PowerDevice extends BikeDevice   {
       const crankValue = dataBike.get(BluetoothFeatures.CrankValue);
       const crankTimestamp = dataBike.get(BluetoothFeatures.CrankTimestamp);
       const currentTimestamp = new Date().getTime() / 1000;
-      console.log("ISIIII ESTAMO EN EL CRANK VALUE CON ",crankValue, " y de tiempestamo ",crankTimestamp );
+
       if(crankValue && crankTimestamp){
         if(this.lastCrank != undefined && this.lastTimestampCrank != undefined){
 
@@ -161,8 +216,11 @@ export class PowerDevice extends BikeDevice   {
       this.features.unshift(feature);
     }
   }
-  async getFeatures(): Promise<string[] | undefined> {
 
+  async getFeatures(): Promise<string[] | undefined> {
+    if(this.features.length > 0){
+      return this.features;
+    }
     if (!this.peripheral) {
       return [];
     }
