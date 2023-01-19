@@ -61,7 +61,6 @@ export class BluetoothManager {
 
     ipcMain.on("getFeatures", async (event): Promise<void> => {
       const features = await this.getFeatures();
-      console.log("features", features);
       event.returnValue = features;
     });
 

@@ -257,7 +257,6 @@ export class FtmsDevice extends BikeDevice {
       clearInterval(this.intervalWrite);
     }
     const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
-    console.log("data start training ftms", data);
     await this.writeData(
       GattSpecification.ftms.service,
       GattSpecification.ftms.measurements.controlPoint,

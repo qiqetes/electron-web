@@ -39,8 +39,16 @@ export const GattSpecification = {
   },
   bhCustom: {
     service: "72d70001501f46f795f923846ee1aba3",
-    rx: "72d70003501f46f795f923846ee1aba3",
-    tx: "72d70002501f46f795f923846ee1aba3",
+    measurement: {
+      rx: "72d70003501f46f795f923846ee1aba3",
+      tx: "72d70002501f46f795f923846ee1aba3",
+    },
+    controlPoint: {
+      start: [0x55, 0x0a, 0x01, 0x01],
+      reset: [0x55, 0x0a, 0x01, 0x02],
+      stop: [0x55, 0x0a, 0x01, 0x02],
+      pause: [0x55, 0x0a, 0x01, 0x00],
+    },
   },
   bhPro: {
     allowedNames: ["P9C"],
