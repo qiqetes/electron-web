@@ -1,15 +1,12 @@
-type BluetoothDeviceTypes =
-  'unknown'|
-  'heartrate'|
-  'bike'
+type BluetoothDeviceTypes = "unknown" | "heartrate" | "bike";
 
 type BluetoothDeviceState =
-  "unknown"|
-  "connecting"|
-  "connected"|
-  "disconnecting"|
-  "disconnected"|
-  "error"
+  | "unknown"
+  | "connecting"
+  | "connected"
+  | "disconnecting"
+  | "disconnected"
+  | "error";
 
 type BluetoothParserType =
   "heartrate"|
@@ -20,6 +17,6 @@ type BluetoothParserType =
   "bhPro"|
   "unknown"
 
-type OrderBytes = 'lso'| 'mso'
+type OrderBytes = "lso" | "mso";
 
-type normalization = 'avg' | 'median'|'pow'|'none'
+type normalization = "avg" | "median" | "pow" | "none";

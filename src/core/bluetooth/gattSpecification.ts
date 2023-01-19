@@ -37,6 +37,14 @@ export const GattSpecification = {
   keiser: {
     allowedNames: ["M3"],
   },
+  bhCustom: {
+    service: "72d70001501f46f795f923846ee1aba3",
+    rx: "72d70003501f46f795f923846ee1aba3",
+    tx: "72d70002501f46f795f923846ee1aba3",
+  },
+  bhPro: {
+    allowedNames: ["P9C"],
+  },
   power: {
     service: "1818",
     measurements: {

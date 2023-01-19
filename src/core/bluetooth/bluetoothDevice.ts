@@ -228,6 +228,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (this.peripheral) {
       if (this.broadcast && this.state == "connected") {
         this.state = BluetoothDeviceState.disconnected;
+        mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
       } else {
         await this.peripheral.disconnectAsync();
       }

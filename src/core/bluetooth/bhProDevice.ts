@@ -1,16 +1,12 @@
 import noble, { Peripheral } from "@abandonware/noble";
-import { mainWindow } from "../../index";
-import { BikeDataFeaturesFtms } from "./bikeDataFeaturesFtms";
-import {
-  bufferToListInt,
-  concatenateTo16BytesInt,
-  intToBuffer,
-} from "./bluetoothDataParser";
 import { BluetoothDeviceState } from "./bluetoothDeviceEnum";
 import { GattSpecification } from "./gattSpecification";
 import { BikeDevice } from "./bikeDevice";
+import { BikeDataFeaturesFtms } from "./bikeDataFeaturesFtms";
+import { bufferToListInt } from "./bluetoothDataParser";
+import { mainWindow } from "../../index";
 
-export class KeiserDevice extends BikeDevice {
+export class BhProDevice extends BikeDevice {
   constructor(
     deviceId: string,
     deviceName: string,
@@ -18,33 +14,35 @@ export class KeiserDevice extends BikeDevice {
     peripheral: Peripheral | undefined,
     broadcast: boolean = true
   ) {
-    super(deviceId, deviceName, state, peripheral, "keiser", broadcast);
+    super(deviceId, deviceName, state, peripheral, "bhPro", broadcast);
     this.bikeValues = new Map<string, any>();
     this.resistanceRange = undefined;
   }
-  static isDevice(peripheral: Peripheral): KeiserDevice | undefined {
+
+  static isDevice(peripheral: Peripheral): BhProDevice | undefined {
     if (!peripheral) {
       return;
     }
+
     const currentName = peripheral.advertisement.localName;
-    const allowedNames = GattSpecification.keiser.allowedNames;
+    const allowedNames = GattSpecification.bhPro.allowedNames;
 
     if (
       this.isName(currentName, allowedNames) &&
       peripheral.advertisement.manufacturerData
     ) {
-      return KeiserDevice.fromPeripheral(peripheral);
+      return BhProDevice.fromPeripheral(peripheral, false);
     }
   }
 
-  static fromPeripheral(peripheral: noble.Peripheral) {
+  static fromPeripheral(peripheral: noble.Peripheral, broadcast?: boolean) {
     const statePeripheal =
       BluetoothDeviceState[peripheral.state] ||
       BluetoothDeviceState.disconnected;
-    const isBroadcast = true;
+    const isBroadcast = broadcast || true;
     const id = peripheral.uuid.toLowerCase();
 
-    return new KeiserDevice(
+    return new BhProDevice(
       id,
       peripheral.advertisement.localName,
       statePeripheal,
@@ -52,10 +50,11 @@ export class KeiserDevice extends BikeDevice {
       isBroadcast
     );
   }
+
   static fromKnwonDevice(device: KnownDevice) {
     const statePeripheal = BluetoothDeviceState.unknown;
 
-    return new KeiserDevice(
+    return new BhProDevice(
       device.id,
       device.name,
       BluetoothDeviceState.unknown,
@@ -63,6 +62,7 @@ export class KeiserDevice extends BikeDevice {
       true
     );
   }
+
   setAdvertisment(advertisement: noble.Advertisement): void {
     const values = bufferToListInt(advertisement.manufacturerData);
     this.readValues(values);
@@ -73,18 +73,16 @@ export class KeiserDevice extends BikeDevice {
   }
 
   readValues(values: number[]): Map<string, any> {
-    if (values.length >= 16) {
-      const cadence = Math.round(
-        concatenateTo16BytesInt(values[6], values[7]) / 10
-      );
-      const distance = concatenateTo16BytesInt(values[15], values[16]) / 10.0;
-      const power = concatenateTo16BytesInt(values[10], values[11]);
-      const resistance = values[18];
-      this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
-      this.bikeValues.set(BikeDataFeaturesFtms.DISTANCE, distance);
-      this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);
-      this.bikeValues.set(BikeDataFeaturesFtms.RESISTANCE, resistance);
-    }
+    const cadence = values[15];
+    const power = values[16] * 256 + values[17];
+    const resistance = values[23];
+    const speed = values[20] + values[21] / 100;
+
+    this.bikeValues.set(BikeDataFeaturesFtms.CADENCE, cadence);
+    this.bikeValues.set(BikeDataFeaturesFtms.POWER, power);
+    this.bikeValues.set(BikeDataFeaturesFtms.RESISTANCE, resistance);
+    this.bikeValues.set(BikeDataFeaturesFtms.SPEED, speed);
+
     return this.bikeValues;
   }
 
@@ -92,14 +90,16 @@ export class KeiserDevice extends BikeDevice {
     return this.bikeValues;
   }
 
-  async startNotify(): Promise<void> {}
+  async startNotify(): Promise<void> {
+    console.log("unimplemented");
+  }
 
   async getFeatures(): Promise<string[] | undefined> {
     this.features = [
       BikeDataFeaturesFtms.CADENCE,
       BikeDataFeaturesFtms.POWER,
-      BikeDataFeaturesFtms.DISTANCE,
       BikeDataFeaturesFtms.RESISTANCE,
+      BikeDataFeaturesFtms.DISTANCE,
     ];
     return this.features;
   }

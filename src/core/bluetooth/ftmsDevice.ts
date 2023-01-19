@@ -190,7 +190,6 @@ export class FtmsDevice extends BikeDevice {
 
     if (characteristic != null) {
       // this.peripheral.removeAllListeners('notify');
-
       this.notify(characteristic, (state: Buffer) => {
         this.readBikeData(state);
       });
@@ -254,6 +253,7 @@ export class FtmsDevice extends BikeDevice {
       clearInterval(this.intervalWrite);
     }
     const data = Buffer.from(GattSpecification.ftms.controlPoint.start);
+    console.log("data start training ftms", data);
     await this.writeData(
       GattSpecification.ftms.service,
       GattSpecification.ftms.measurements.controlPoint,
@@ -380,7 +380,6 @@ export class FtmsDevice extends BikeDevice {
       await this.read(featureRange, (values: any) => {
         this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
       });
-      this.startNotify();
     }
 
     return this.resistanceRange;

@@ -13,9 +13,9 @@ import { FtmsDevice } from "./ftmsDevice";
 import { BikeDevice } from "./bikeDevice";
 import { KeiserDevice } from "./keiserDevice";
 import { PowerDevice } from "./powerDevice";
+import { BhProDevice } from "./bhProDevice";
+import { BhCustomDevice } from "./bhCustomDevice";
 import { log } from "../../helpers/loggers";
-import { GattSpecification } from "./gattSpecification";
-
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
   allDevicesList: Map<string, BluetoothDevice | HeartRateDevice | BikeDevice>;
@@ -61,6 +61,7 @@ export class BluetoothManager {
 
     ipcMain.on("getFeatures", async (event): Promise<void> => {
       const features = await this.getFeatures();
+      console.log("features", features);
       event.returnValue = features;
     });
 
@@ -365,7 +366,7 @@ export class BluetoothManager {
         );
         return;
       }
-      var bl;
+      let bl;
 
       if (knownDevice != undefined) {
         //Lo teniamos conectado pero ahora no está disponible para conectar
@@ -411,11 +412,18 @@ export class BluetoothManager {
 
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
     const ftmsDevice = FtmsDevice.isDevice(peripheral);
-    if (ftmsDevice) return ftmsDevice;
+    if (ftmsDevice) {
+      console.log("ftmsDevice", peripheral);
+      return ftmsDevice;
+    }
     const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
     const powerDevice = PowerDevice.isDevice(peripheral);
     if (powerDevice) return powerDevice;
+    const bhCustomDevice = BhCustomDevice.isDevice(peripheral);
+    if (bhCustomDevice) return bhCustomDevice;
+    const bhProDevice = BhProDevice.isDevice(peripheral);
+    if (bhProDevice) return bhProDevice;
   };
 
   isHeartRate = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
@@ -569,6 +577,10 @@ export class BluetoothManager {
       return FtmsDevice.fromPeripheral(peripheral, knownDevice.broadcast);
     } else if (knownDevice.parserType == "keiser") {
       return KeiserDevice.fromPeripheral(peripheral);
+    } else if (knownDevice.parserType == "bhCustom") {
+      return BhCustomDevice.fromPeripheral(peripheral);
+    } else if (knownDevice.parserType == "bhPro") {
+      return BhProDevice.fromPeripheral(peripheral);
     } else if (knownDevice.parserType == "power") {
       return PowerDevice.fromPeripheral(peripheral, knownDevice.broadcast);
     }
