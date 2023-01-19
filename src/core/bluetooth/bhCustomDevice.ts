@@ -76,7 +76,7 @@ export class BhCustomDevice extends BikeDevice {
     }
     const characteristic = await this.getMeasurement(
       GattSpecification.bhCustom.service,
-      GattSpecification.bhCustom.rx
+      GattSpecification.bhCustom.measurement.rx
     );
 
     if (characteristic != null) {
@@ -115,20 +115,20 @@ export class BhCustomDevice extends BikeDevice {
     return this.resistanceRange;
   }
 
-  async safeWrite(values: number[]) {
+  async safeWrite(values: Buffer) {
     try {
       if (this.intervalWrite) {
         clearInterval(this.intervalWrite);
       }
       const characteristicToWrite = await this.getMeasurement(
         GattSpecification.bhCustom.service,
-        GattSpecification.bhCustom.tx
+        GattSpecification.bhCustom.measurement.tx
       );
       if (characteristicToWrite != null) {
         this.writeData(
           GattSpecification.bhCustom.service,
-          GattSpecification.bhCustom.tx,
-          Buffer.from(values)
+          GattSpecification.bhCustom.measurement.tx,
+          values
         );
       }
     } catch (e) {
@@ -137,22 +137,30 @@ export class BhCustomDevice extends BikeDevice {
   }
 
   async startTraining() {
-    await this.safeWrite([85, 10, 0o1, 0o1]);
+    await this.safeWrite(
+      Buffer.from(GattSpecification.bhCustom.controlPoint.start)
+    );
   }
 
   async resetTraining() {
     //Reseteamos los controles de botón
-    await this.safeWrite([85, 10, 0o1, 0o2]);
+    await this.safeWrite(
+      Buffer.from(GattSpecification.bhCustom.controlPoint.reset)
+    );
   }
 
   async stopTraining() {
     //Reseteamos los controles de botón
     // writeTarget = null;
-    await this.safeWrite([85, 10, 0o1, 0o2]);
+    await this.safeWrite(
+      Buffer.from(GattSpecification.bhCustom.controlPoint.stop)
+    );
   }
 
   async pauseTraining() {
-    await this.safeWrite([85, 10, 0o1, 0o0]);
+    await this.safeWrite(
+      Buffer.from(GattSpecification.bhCustom.controlPoint.pause)
+    );
   }
 
   async setResistanceTarget(level: number) {
@@ -165,7 +173,7 @@ export class BhCustomDevice extends BikeDevice {
       if (level >= 25) {
         level = level % 25;
       }
-      this.safeWrite([85, 17, 0o1, level]);
+      this.safeWrite(Buffer.from([85, 17, 0o1, level]));
     }
   }
 }

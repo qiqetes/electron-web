@@ -111,7 +111,7 @@ export class FtmsDevice extends BikeDevice {
     if (characteristic != null) {
       this.notify(characteristic, (state: Buffer) => {
         const values = bufferToListInt(state);
-        var dataController = ZycleButton.valuesFeatures(values);
+        const dataController = ZycleButton.valuesFeatures(values);
 
         if (this.zycleButton.changeValues(dataController)) {
           if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
