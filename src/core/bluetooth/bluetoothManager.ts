@@ -437,8 +437,7 @@ export class BluetoothManager {
   //proces
   enableScan = () => {
     if (this.statusBluetooth == BTStatus.poweredOn) {
-      //TODO QUITAR
-      //noble.startScanningAsync([], true);
+      noble.startScanningAsync([], true);
     }
   };
 
