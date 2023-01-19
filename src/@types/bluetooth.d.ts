@@ -17,7 +17,8 @@ type BluetoothParserType =
   "power"|
   "bhCustom"|
   "keiser"|
-  "bhPro"
+  "bhPro"|
+  "unknown"
 
 type OrderBytes = 'lso'| 'mso'
 

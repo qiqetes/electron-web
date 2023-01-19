@@ -23,7 +23,7 @@ export class HeartRateDeviceService {
       "select-bluetooth-device",
       (event, deviceList, cb) => {
         event.preventDefault();
-        log("List of bluetooth devices found:", JSON.stringify(deviceList));
+        //log("List of bluetooth devices found:", JSON.stringify(deviceList));
         mainWindow.webContents.send("hrDevicesList", deviceList);
         this.callback = cb;
       }

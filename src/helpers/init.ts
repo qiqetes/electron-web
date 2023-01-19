@@ -13,8 +13,6 @@ import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logWarn } from "./loggers";
 import KnownDevicesDataModel from "../data/knownDevicesData";
-import { BluetoothManager } from "../core/bluetooth/bluetoothManager";
-
 // Use JSON file for storage
 const file = getDBPath();
 
@@ -28,7 +26,6 @@ export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();
 console.log("**^la database file está en ",file);
 export const KnownDevicesData = new KnownDevicesDataModel();
-export const BTManager = new BluetoothManager();
 
 log("DB file in: ", getDBPath());
 
@@ -62,7 +59,7 @@ export const init = async () => {
       beta: AppData.USER?.isBetaTester,
     });
   }
-  BTManager.loadKnownDevices();
+
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
