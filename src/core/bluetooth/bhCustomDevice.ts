@@ -5,6 +5,7 @@ import { BikeDevice } from "./bikeDevice";
 import { bufferToListInt, intToBuffer } from "./bluetoothDataParser";
 import { mainWindow } from "../../index";
 import { BikeDataFeaturesBh } from "./bikeDataFeaturesBh";
+import { BluetoothDevice } from "./bluetoothDevice";
 
 export class BhCustomDevice extends BikeDevice {
   intervalWrite: NodeJS.Timer | undefined;
@@ -35,6 +36,20 @@ export class BhCustomDevice extends BikeDevice {
       return BhCustomDevice.fromPeripheral(peripheral, false);
     }
   }
+  static fromBluetoothDevice(
+    device: BluetoothDevice,
+    broadcast?: boolean
+  ) {
+    const isBroadcast = broadcast||false;
+
+    return new BhCustomDevice(
+      device.id,
+      device.name,
+      device.state,
+      undefined,
+      isBroadcast,
+    );
+  }
 
   static fromPeripheral(peripheral: noble.Peripheral, broadcast?: boolean) {
     const statePeripheal =
@@ -64,11 +79,33 @@ export class BhCustomDevice extends BikeDevice {
     );
   }
 
+  static isDeviceChromium(device:BluetoothDevice, uuids:string[],advertisement?:Buffer ):BhCustomDevice|undefined {
+    if(!device){
+      return
+    }
+    const broadcast = false;
+    const currentServices = uuids;
+    const allowedService = GattSpecification.bhCustom.service;
+
+    if (this.hasService(currentServices, allowedService)) {
+      const dev =  BhCustomDevice.fromBluetoothDevice(device, broadcast);
+      dev.currentServices = uuids;
+      return dev;
+    }
+  }
   setAdvertisment(advertisement: noble.Advertisement): void {}
 
   getValues() {
     return this.bikeValues;
   }
+
+  readDataFromBuffer(uuid:string, data: Buffer): void {
+    const replaceUuid = uuid.replace(/-/g,'');
+    if(replaceUuid == GattSpecification.bhCustom.measurement.rx){
+      this.readBikeData(data);
+    }
+  }
+
 
   async startNotify(): Promise<void> {
     if (!this.peripheral) {
@@ -80,16 +117,23 @@ export class BhCustomDevice extends BikeDevice {
     );
 
     if (characteristic != null) {
-      const bikeDataFeatures = new BikeDataFeaturesBh();
       if (characteristic.properties.includes("notify")) {
         this.notify(characteristic, (state: Buffer) => {
-          const values = bufferToListInt(state);
-          this.bikeValues = bikeDataFeatures.updateValueSuscription(values);
-          this.bikeValues = this.getFeaturesValues(this.bikeValues);
-          mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
+          this.readBikeData(state);
         });
       }
     }
+  }
+
+  readBikeData = (data:Buffer): void => {
+    const state = Buffer.from(data);
+    const bikeDataFeatures = new BikeDataFeaturesBh();
+
+    const values = bufferToListInt(state);
+    this.bikeValues = bikeDataFeatures.updateValueSuscription(values);
+    this.bikeValues = this.getFeaturesValues(this.bikeValues);
+    mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
+
   }
   async getFeatures(): Promise<string[] | undefined> {
     this.features = BikeDataFeaturesBh.orderFeatures;
@@ -115,51 +159,46 @@ export class BhCustomDevice extends BikeDevice {
     return this.resistanceRange;
   }
 
-  async safeWrite(values: Buffer) {
-    try {
-      if (this.intervalWrite) {
-        clearInterval(this.intervalWrite);
-      }
-      const characteristicToWrite = await this.getMeasurement(
-        GattSpecification.bhCustom.service,
-        GattSpecification.bhCustom.measurement.tx
-      );
-      if (characteristicToWrite != null) {
-        this.writeData(
-          GattSpecification.bhCustom.service,
-          GattSpecification.bhCustom.measurement.tx,
-          values
-        );
-      }
-    } catch (e) {
-      console.log("error", e);
-    }
-  }
-
   async startTraining() {
-    await this.safeWrite(
-      Buffer.from(GattSpecification.bhCustom.controlPoint.start)
+    const data = Buffer.from(GattSpecification.bhCustom.controlPoint.start);
+
+    await this.writeData(
+      GattSpecification.bhCustom.service,
+      GattSpecification.bhCustom.measurement.tx,
+      data,
     );
   }
 
   async resetTraining() {
     //Reseteamos los controles de botón
-    await this.safeWrite(
-      Buffer.from(GattSpecification.bhCustom.controlPoint.reset)
+    const data = Buffer.from(GattSpecification.bhCustom.controlPoint.reset);
+
+    await this.writeData(
+      GattSpecification.bhCustom.service,
+      GattSpecification.bhCustom.measurement.tx,
+      data,
     );
   }
 
   async stopTraining() {
     //Reseteamos los controles de botón
     // writeTarget = null;
-    await this.safeWrite(
-      Buffer.from(GattSpecification.bhCustom.controlPoint.stop)
+    const data = Buffer.from(GattSpecification.bhCustom.controlPoint.stop);
+
+    await this.writeData(
+      GattSpecification.bhCustom.service,
+      GattSpecification.bhCustom.measurement.tx,
+      data,
     );
   }
 
   async pauseTraining() {
-    await this.safeWrite(
-      Buffer.from(GattSpecification.bhCustom.controlPoint.pause)
+    const data = Buffer.from(GattSpecification.bhCustom.controlPoint.pause);
+
+    await this.writeData(
+      GattSpecification.bhCustom.service,
+      GattSpecification.bhCustom.measurement.tx,
+      data,
     );
   }
 
@@ -173,7 +212,11 @@ export class BhCustomDevice extends BikeDevice {
       if (level >= 25) {
         level = level % 25;
       }
-      this.safeWrite(Buffer.from([85, 17, 0o1, level]));
-    }
+
+      await this.writeData(
+        GattSpecification.bhCustom.service,
+        GattSpecification.bhCustom.measurement.tx,
+        Buffer.from([85, 17, 0o1, level]));
+     }
   }
 }

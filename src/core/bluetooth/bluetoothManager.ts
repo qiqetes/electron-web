@@ -23,6 +23,8 @@ export class BluetoothManager {
   statusBluetooth = BTStatus.unknown;
   autoScan: boolean;
   nativeScan: boolean;
+  gattCallback: Function|undefined;
+
   constructor() {
     this.nativeScan = true;
     this.autoScan = false; //Controlar condición de carrera, se carga antes la webapp que los dispositivos conocidos
@@ -139,6 +141,9 @@ export class BluetoothManager {
 
   }
 
+  setGattCallback(callback:Function){
+    this.gattCallback = callback;
+  }
 
   checkifIsHeartRate = (device: BluetoothDevice, uuids: string[], advertisements?: Buffer): BluetoothDevice | undefined => {
     return  HeartRateDevice.isDeviceChromium(device,uuids,advertisements);
@@ -149,6 +154,9 @@ export class BluetoothManager {
     if (ftmsDevice) return ftmsDevice;
     const powerDevice = PowerDevice.isDeviceChromium(device,uuids,advertisements);
     if (powerDevice) return powerDevice;
+    const bhCustomDevice = BhCustomDevice.isDeviceChromium(device,uuids,advertisements);
+    if (bhCustomDevice) return bhCustomDevice;
+
    /* const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
    */
@@ -197,8 +205,9 @@ export class BluetoothManager {
 
           event.preventDefault();
 
-          const bl = BluetoothDevice.fromChromium(deviceId, deviceName,);
-          bl.setGattCallback(cb);
+          const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
+       //   bl.setGattCallback(cb);
+         this.setGattCallback(cb);
          log("List of bluetooth devices found:",  JSON.stringify(deviceList));
 
          this.allDevicesList.set(deviceId, bl);
@@ -259,8 +268,6 @@ export class BluetoothManager {
   }
 
   async autoMode(enable: boolean): Promise<void> {
-    //TODO Guardar en preferencia
-
     await this.getConnectedDevices(BluetoothDeviceTypes.Bike).forEach(
       async (device) => {
         if (device as BikeDevice) {
@@ -335,7 +342,6 @@ export class BluetoothManager {
 
   enableDiscoverDevices = () => {
     noble.on("discover", async (peripheral) => {
-      //TODO QUITAR
       const deviceId = peripheral.uuid.toLowerCase();
       const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
 
@@ -461,12 +467,17 @@ export class BluetoothManager {
     const foundDevice: BluetoothDevice | undefined =
       this.allDevicesList.get(id);
 
-    if (!foundDevice || (!foundDevice?.peripheral && !foundDevice?.gattCallback)) {
+    console.log("eeiii estamos auqiii y vamos a ver el found device ",foundDevice);
+    if (!foundDevice || (!foundDevice?.peripheral && this.gattCallback == null)) {
       return;
     }
     if (this.knownDevices)
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
+    console.log(this.gattCallback)
+      if(this.gattCallback != null){
+        return this.gattCallback(foundDevice.id);
+      }
     await foundDevice.connect();
 
     if (foundDevice.broadcast) {

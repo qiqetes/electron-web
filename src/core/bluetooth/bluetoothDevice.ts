@@ -184,7 +184,11 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   async connect(): Promise<void> {
     if (!this.peripheral) {
       if(this.gattCallback != undefined){
-        this.gattCallback(this.id);
+        try{
+          this.gattCallback(this.id);
+        }catch(error){
+          console.error("conenct callback ",error)
+        }
         return
       }else{
         return;
