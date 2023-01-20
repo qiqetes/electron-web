@@ -168,11 +168,12 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     if (!this.peripheral) {
       return;
     }
+    this.state = BluetoothDeviceState.connecting;
+    mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
     this.peripheral.removeAllListeners("connect");
     this.peripheral.removeAllListeners("disconnect");
     if (this.broadcast && !this.peripheral.connectable) {
       this.state = BluetoothDeviceState.connected;
-
       mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
     } else {
       this.peripheral.on("connect", async (stream) => {
@@ -185,6 +186,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       });
 
       this.peripheral.on("disconnect", async (stream) => {
+        this.cachedMeasurement = [];
         this.state = BluetoothDeviceState[this.peripheral!.state];
         mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
 
@@ -200,6 +202,14 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       });
 
       await this.peripheral.connectAsync();
+
+      // Si no se ha conectado correctamente avisamos a la web.
+      if (
+        this.state !== (BluetoothDeviceState.connected as BluetoothDeviceState)
+      ) {
+        this.state = BluetoothDeviceState.disconnected;
+        mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
+      }
     }
   }
 

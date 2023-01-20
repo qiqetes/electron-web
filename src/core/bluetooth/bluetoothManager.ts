@@ -294,10 +294,7 @@ export class BluetoothManager {
 
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
     const ftmsDevice = FtmsDevice.isDevice(peripheral);
-    if (ftmsDevice) {
-      console.log("ftmsDevice", peripheral);
-      return ftmsDevice;
-    }
+    if (ftmsDevice) return ftmsDevice;
     const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
     const powerDevice = PowerDevice.isDevice(peripheral);
