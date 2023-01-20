@@ -417,7 +417,10 @@ export class BluetoothManager {
 
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
     const ftmsDevice = FtmsDevice.isDevice(peripheral);
-    if (ftmsDevice) return ftmsDevice;
+    if (ftmsDevice) {
+      console.log("ftmsDevice", peripheral);
+      return ftmsDevice;
+    }
     const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
     const powerDevice = PowerDevice.isDevice(peripheral);
@@ -439,8 +442,7 @@ export class BluetoothManager {
   //proces
   enableScan = () => {
     if (this.statusBluetooth == BTStatus.poweredOn) {
-      //TODO quitar
-      //noble.startScanningAsync([], true);
+      noble.startScanningAsync([], true);
     }
   };
 
