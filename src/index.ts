@@ -32,6 +32,8 @@ app.on("second-instance", () => mainWindow?.focus());
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
+app.commandLine.appendSwitch("enable-web-bluetooth", "true");
+app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 
 export let mainWindow: BrowserWindow;
 export const BTManager = new BluetoothManager();
