@@ -47,6 +47,7 @@ export class BikeDevice extends BluetoothDevice implements BikeDeviceInterface{
     this.normalizationData = new Map<string,number[]>();
     this.windowValue = 5;
   }
+
   getLevelRange(): Promise<Map<string, number> | undefined> {
     throw new Error("Method not implemented.");
   }
@@ -60,6 +61,9 @@ export class BikeDevice extends BluetoothDevice implements BikeDeviceInterface{
     throw new Error("Method not implemented.");
   }
   autoMode(enable: boolean): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  readFeaturesFromBuffer(data: Buffer): void {
     throw new Error("Method not implemented.");
   }
 

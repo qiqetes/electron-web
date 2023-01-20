@@ -155,8 +155,6 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   },
 
   disconnectDevice: (id: string) => {
-    console.log("ESTAMOS EN EL disconnectDevice  ");
-
     ipcRenderer.send("disconnectDevice", id);
   },
 
@@ -205,8 +203,16 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   getDeviceList: () => {},
   getFeatures: () => ipcRenderer.sendSync("getFeatures"),
   getLevelRange: () => ipcRenderer.sendSync("getLevelRange"),
+  isAvailableBluetooth: () => ipcRenderer.sendSync("isAvailableBluetooth"),
   setPowerTarget: (power:number) => ipcRenderer.sendSync("setPowerTarget", power),
   stopPowerTarget: () =>  ipcRenderer.sendSync("stopPowerTarget"),
   setResistanceTarget: (resistance: number) => ipcRenderer.sendSync("setResistanceTarget", resistance),
   autoMode: (enable: boolean) =>  ipcRenderer.sendSync("autoMode", enable),
+  //Chromium api
+  chromiumDeviceStatus: (deviceName:string, deviceStatus:string) => ipcRenderer.send("changeDeviceStatus", deviceName,deviceStatus ),
+  discoverDeviceType: (deviceName:string, uuids:string[]) => ipcRenderer.sendSync("discoverDeviceType", deviceName,uuids ),
+  readDataFromBuffer: (uuid:string, deviceName:string, data:Buffer) => ipcRenderer.send("readDataFromBuffer",uuid, deviceName,data ),
+  handleWriteData: (id: string, callback: (event: Event, data: any) => void) => {
+    ipcRenderer.on("writeData-" + id, callback);
+  },
 });

@@ -9,12 +9,13 @@ type BluetoothDeviceState =
   | "error";
 
 type BluetoothParserType =
-  | "heartrate"
-  | "ftms"
-  | "power"
-  | "bhCustom"
-  | "bhPro"
-  | "keiser";
+  "heartrate"|
+  "ftms"|
+  "power"|
+  "bhCustom"|
+  "keiser"|
+  "bhPro"|
+  "unknown"
 
 type OrderBytes = "lso" | "mso";
 

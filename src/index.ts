@@ -14,6 +14,7 @@ import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService"
 import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
+import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -31,8 +32,12 @@ app.on("second-instance", () => mainWindow?.focus());
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
+app.commandLine.appendSwitch("enable-web-bluetooth", "true");
+app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 
 export let mainWindow: BrowserWindow;
+export const BTManager = new BluetoothManager();
+
 const createWindow = async () => {
   await init();
 
@@ -91,7 +96,11 @@ const createWindow = async () => {
 
   avoidExternalPageRequests(mainWindow);
   const hrService = new HeartRateDeviceService(ipcMain);
+
   hrService.registerBluetoothEvents(mainWindow);
+  BTManager.registerBluetoothEvents(mainWindow)
+  BTManager.loadKnownDevices();
+
 };
 
 const reactDevToolsPath = path.join(

@@ -15,6 +15,7 @@ interface BluetoothDeviceInterface {
   peripheral: Peripheral | undefined;
   cachedMeasurement: Characteristic[];
   parserType: BluetoothParserType;
+  currentServices: string[];
   getId(): string;
   getName(): string;
   getDeviceType(): BluetoothDeviceTypes;
@@ -26,6 +27,7 @@ interface BluetoothDeviceInterface {
   startNotify(): void;
   disconnect(): void;
   serialize(): {};
+  readDataFromBuffer(uuid:string, data:Buffer): void;
 }
 
 export class BluetoothDevice implements BluetoothDeviceInterface {
@@ -42,6 +44,8 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   lock: any;
   lockKey: any;
   parserType: BluetoothParserType;
+  gattCallback: Function|undefined;
+  currentServices: string[];
 
   constructor(
     deviceId: string,
@@ -64,6 +68,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     this.notifing = false;
     this.features = [];
     this.lock = new AsyncLock({ timeout: 5000 });
+    this.currentServices =[];
   }
 
   getValues(): number | Map<string, any> | undefined {
@@ -78,11 +83,32 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
   getFeatures(): Promise<string[] | undefined> {
     throw new Error("Method not implemented.");
   }
+  readDataFromBuffer(uuid:string, data:Buffer){
+    throw new Error("Method not implemented.");
+  }
+  readFeaturesFromBuffer(data:Buffer){
+  }
 
+  setGattCallback(callback:Function){
+    this.gattCallback = callback;
+  }
+  static minifyService = (peripheralService: string, service:string):string => {
+    if(peripheralService.includes('-') && service.includes('-')){
+      return peripheralService;
+    }else if(peripheralService.includes('-') && service.length > 6){
+      const val =  peripheralService.replace(/-/g,'');
+      return val;
+    }else if(peripheralService.includes('-')){
+      const val =  peripheralService.split('-')[0].replace(/^0+/,'');
+      return val;
+    }else{
+      return peripheralService;
+    }
+  }
   static hasService(periphealServices: string[], service: string) {
     if (periphealServices != null) {
       const serviceFound = periphealServices.find(
-        (e) => service.toLowerCase() == e.toLowerCase()
+        (e) => this.minifyService(e, service).toLocaleLowerCase() == service.toLowerCase()
       );
       if (serviceFound && serviceFound.length > 0) {
         return true;
@@ -114,29 +140,6 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     }
     return false;
   }
-  /*
-  static fromPeripheral(
-    peripheral: noble.Peripheral,
-    type: BluetoothDeviceTypes,
-    parserType: BluetoothParserType,
-    broadcast?: boolean
-  ) {
-    const statePeripheal =
-      BluetoothDeviceState[peripheral.state] ||
-      BluetoothDeviceState.disconnected;
-    const isBroadcast = broadcast||false;
-    const id = peripheral.uuid.toLowerCase();
-
-    return new BluetoothDevice(
-      id,
-      peripheral.advertisement.localName,
-      type,
-      statePeripheal,
-      peripheral,
-      parserType,
-      isBroadcast,
-    );
-  }*/
 
   static fromKnwonDevice(device: KnownDevice) {
     const statePeripheal = BluetoothDeviceState.unknown;
@@ -145,10 +148,24 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       device.id,
       device.name,
       device.deviceType,
-      BluetoothDeviceState.unknown,
+      BluetoothDeviceState.disconnected,
       undefined,
       device.parserType,
       device.broadcast
+    );
+  }
+  static fromChromium(deviceId: string, deviceName:string) {
+
+    const statePeripheal = BluetoothDeviceState.unknown;
+
+    return new BluetoothDevice(
+      deviceId,
+      deviceName,
+      'unknown',
+      BluetoothDeviceState.disconnected,
+      undefined,
+      'heartrate',
+      false
     );
   }
 
@@ -158,15 +175,24 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
       id: this.getId(),
       name: this.getName(),
       deviceType: this.getDeviceType(),
+      parserType: this.parserType,
       state: this.getState(),
       broadcast: this.broadcast,
       data: values,
     };
   }
-
   async connect(): Promise<void> {
     if (!this.peripheral) {
-      return;
+      if(this.gattCallback != undefined){
+        try{
+          this.gattCallback(this.id);
+        }catch(error){
+          console.error("conenct callback ",error)
+        }
+        return
+      }else{
+        return;
+      }
     }
     this.state = BluetoothDeviceState.connecting;
     mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
@@ -254,12 +280,15 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
 
   async writeData(service: string, char: string, data: Buffer) {
     if (!this.peripheral) {
+      mainWindow.webContents.send("writeData-" + this.getName(), data);
       return null;
     }
 
     const characteristic = await this.getMeasurement(service, char);
     if (characteristic) {
       await this.lock.acquire(this.lockKey, async (done: any) => {
+
+
         const valueWrite = await characteristic.write(data, false, (error) => {
           if (error) {
             console.error("ERROR ON WRITE ", error);

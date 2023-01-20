@@ -22,7 +22,7 @@ export const GattSpecification = {
       controlPoint: "2ad9",
       trainingStatus: "2ad3",
       status: "2ada",
-      resitanceRange: "2ad6",
+      resistanceRange: "2ad6",
     },
     controlPoint: {
       requestControl: [0x00],
