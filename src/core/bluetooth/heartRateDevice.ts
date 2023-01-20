@@ -1,17 +1,20 @@
-var AsyncLock = require('async-lock');
+var AsyncLock = require("async-lock");
 
-import noble, { Advertisement,  Peripheral } from "@abandonware/noble";
+import noble, { Advertisement, Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
 import { bufferToListInt } from "./bluetoothDataParser";
-import { BluetoothDeviceState, BluetoothDeviceTypes } from "./bluetoothDeviceEnum";
+import {
+  BluetoothDeviceState,
+  BluetoothDeviceTypes,
+} from "./bluetoothDeviceEnum";
 import { BluetoothFeatures } from "./bluetoothFeatures";
 import { GattSpecification } from "./gattSpecification";
-import {BluetoothDevice} from "./bluetoothDevice";
+import { BluetoothDevice } from "./bluetoothDevice";
 
-const parserType: BluetoothParserType = 'heartrate'
+const parserType: BluetoothParserType = "heartrate";
 
-export class HeartRateDevice extends BluetoothDevice{
-  heartRateValue: number|undefined;
+export class HeartRateDevice extends BluetoothDevice {
+  heartRateValue: number | undefined;
 
   constructor(
     deviceId: string,
@@ -20,20 +23,24 @@ export class HeartRateDevice extends BluetoothDevice{
     peripheral: Peripheral | undefined,
     broadcast: boolean = false
   ) {
-    super(deviceId,deviceName,BluetoothDeviceTypes.HeartRate,state,peripheral,'heartrate',broadcast);
+    super(
+      deviceId,
+      deviceName,
+      BluetoothDeviceTypes.HeartRate,
+      state,
+      peripheral,
+      "heartrate",
+      broadcast
+    );
 
     this.heartRateValue = undefined;
   }
 
-
-  static fromPeripheral(
-    peripheral: noble.Peripheral,
-    broadcast?: boolean
-  ) {
+  static fromPeripheral(peripheral: noble.Peripheral, broadcast?: boolean) {
     const statePeripheal =
       BluetoothDeviceState[peripheral.state] ||
       BluetoothDeviceState.disconnected;
-    const isBroadcast = broadcast||false;
+    const isBroadcast = broadcast || false;
     const id = peripheral.uuid.toLowerCase();
 
     return new HeartRateDevice(
@@ -41,7 +48,7 @@ export class HeartRateDevice extends BluetoothDevice{
       peripheral.advertisement.localName,
       statePeripheal,
       peripheral,
-      isBroadcast,
+      isBroadcast
     );
   }
   static fromBluetoothDevice(
@@ -63,8 +70,13 @@ export class HeartRateDevice extends BluetoothDevice{
       return
     }
     //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
-    if(this.hasService(peripheral.advertisement.serviceUuids, GattSpecification.ftms.service))
-    return;
+    if (
+      this.hasService(
+        peripheral.advertisement.serviceUuids,
+        GattSpecification.ftms.service
+      )
+    )
+      return;
 
     let broadcast = false;
     const currentServices = peripheral.advertisement.serviceUuids;
@@ -72,10 +84,13 @@ export class HeartRateDevice extends BluetoothDevice{
     const currentName = peripheral.advertisement.localName;
     const allowedNames = GattSpecification.heartRate.allowedNames;
 
-    if (!this.hasService(currentServices, allowedService)){
-      if(!this.hasName(currentName,allowedNames) || !peripheral.advertisement.manufacturerData){
+    if (!this.hasService(currentServices, allowedService)) {
+      if (
+        !this.hasName(currentName, allowedNames) ||
+        !peripheral.advertisement.manufacturerData
+      ) {
         return;
-      }else{
+      } else {
         broadcast = true;
       }
     }
@@ -121,26 +136,26 @@ export class HeartRateDevice extends BluetoothDevice{
     );
   }
 
-
-
   setAdvertisment(advertisement: noble.Advertisement): void {
-     const values = bufferToListInt(advertisement.manufacturerData);
-      this.heartRateValue = values.at(-1);
-      if(this.state == BluetoothDeviceState.connected){
-        mainWindow.webContents.send("heartRateData-" + this.id, this.heartRateValue);
-      }
+    const values = bufferToListInt(advertisement.manufacturerData);
+    this.heartRateValue = values.at(-1);
+    if (this.state == BluetoothDeviceState.connected) {
+      mainWindow.webContents.send(
+        "heartRateData-" + this.id,
+        this.heartRateValue
+      );
+    }
   }
 
-
-  getValues(){
-      return this.heartRateValue;
+  getValues() {
+    return this.heartRateValue;
   }
 
   async startNotify(): Promise<void> {
     if (!this.peripheral) {
       return;
     }
-   // this.peripheral.removeAllListeners("notify");
+    // this.peripheral.removeAllListeners("notify");
     if (this.deviceType == "heartrate") {
       const characteristic = await this.getMeasurement(
         GattSpecification.heartRate.service,
@@ -148,7 +163,6 @@ export class HeartRateDevice extends BluetoothDevice{
       );
 
       if (characteristic != null) {
-
         this.notify(characteristic, (state: Buffer) => {
           this.readDataFromBuffer('',state);
         });
@@ -164,7 +178,9 @@ export class HeartRateDevice extends BluetoothDevice{
   readDataFromBuffer(uuid:string, values:Buffer){
     const buffer = Buffer.from(values);
     var data = buffer.readInt8(1); //heart rate measurement
-    this.heartRateValue = data;
-    mainWindow.webContents.send("heartRateData-" + this.id, data);
+    if (data >= 0) {
+      this.heartRateValue = data;
+      mainWindow.webContents.send("heartRateData-" + this.id, data);
+    }
   }
 }
