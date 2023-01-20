@@ -23,7 +23,7 @@ export class BluetoothManager {
   statusBluetooth = BTStatus.unknown;
   autoScan: boolean;
   nativeScan: boolean;
-  gattCallback: Function|undefined;
+  gattCallback: Function | undefined;
 
   constructor() {
     this.nativeScan = true;
@@ -41,7 +41,6 @@ export class BluetoothManager {
     });
 
     ipcMain.on("connectDevice", async (_, id: string) => {
-      console.log("VAMOS A CONECTAR ESTO a ver ",id)
       this.connect(id);
     });
 
@@ -70,14 +69,17 @@ export class BluetoothManager {
       const levelRange = await this.getLevelRange();
       event.returnValue = levelRange;
     });
-    ipcMain.on("isAvailableBluetooth", (event):void => {
-      const available =  this.isAvailableBluetooth();
+    ipcMain.on("isAvailableBluetooth", (event): void => {
+      const available = this.isAvailableBluetooth();
       event.returnValue = available;
     });
-    ipcMain.on("setPowerTarget", async (event,power:number): Promise<void> => {
-      const features = await this.setPowerTarget(power);
-      event.returnValue = null;
-    });
+    ipcMain.on(
+      "setPowerTarget",
+      async (event, power: number): Promise<void> => {
+        const features = await this.setPowerTarget(power);
+        event.returnValue = null;
+      }
+    );
 
     ipcMain.on("stopPowerTarget", async (event): Promise<void> => {
       const features = await this.stopPowerTarget();
@@ -97,125 +99,159 @@ export class BluetoothManager {
       event.returnValue = null;
     });
 
-    ipcMain.on("changeDeviceStatus", async (event, name: string,status:string): Promise<void> => {
-      this.changeDeviceStatus(name,status);
-    });
+    ipcMain.on(
+      "changeDeviceStatus",
+      async (event, name: string, status: string): Promise<void> => {
+        this.changeDeviceStatus(name, status);
+      }
+    );
 
-    ipcMain.on("discoverDeviceType", (event, name: string,uuids:string[],advertisements?: Buffer): void => {
-      const parseType = this.discoverDeviceType(name,uuids);
-      event.returnValue = parseType;
-    });
+    ipcMain.on(
+      "discoverDeviceType",
+      (event, name: string, uuids: string[], advertisements?: Buffer): void => {
+        const parseType = this.discoverDeviceType(name, uuids);
+        event.returnValue = parseType;
+      }
+    );
 
-    ipcMain.on("readDataFromBuffer",(event,uuid:string, deviceName: string, data:Buffer): void => {
-      this.readDataFromBuffer(uuid,deviceName,data);
-    });
+    ipcMain.on(
+      "readDataFromBuffer",
+      (event, uuid: string, deviceName: string, data: Buffer): void => {
+        this.readDataFromBuffer(uuid, deviceName, data);
+      }
+    );
     this.enableDiscoverDevices();
   }
 
-
-  readDataFromBuffer(uuid:string, deviceName:string, data:Buffer) {
-    const deviceId = this.findDeviceIdByName(deviceName)||'';
+  readDataFromBuffer(uuid: string, deviceName: string, data: Buffer) {
+    const deviceId = this.findDeviceIdByName(deviceName) || "";
     const device = this.allDevicesList.get(deviceId);
 
-    if(device){
-      device.readDataFromBuffer(uuid,data);
+    if (device) {
+      device.readDataFromBuffer(uuid, data);
     }
   }
 
-  discoverDeviceType(name: string, uuids: string[], advertisements?:Buffer) {
-    const deviceId = this.findDeviceIdByName(name)||'';
+  discoverDeviceType(name: string, uuids: string[], advertisements?: Buffer) {
+    const deviceId = this.findDeviceIdByName(name) || "";
     const device = this.allDevicesList.get(deviceId);
-    if(device){
-      let discoverDevice = this.checkifIsBike(device, uuids,advertisements);
+    if (device) {
+      let discoverDevice = this.checkifIsBike(device, uuids, advertisements);
 
-      if(!discoverDevice){
-        discoverDevice = this.checkifIsHeartRate(device, uuids,advertisements);
+      if (!discoverDevice) {
+        discoverDevice = this.checkifIsHeartRate(device, uuids, advertisements);
       }
-      if(discoverDevice){
-        this.allDevicesList.set(deviceId,discoverDevice);
-        mainWindow.webContents.send("bluetoothDeviceState", discoverDevice!.serialize());
+      if (discoverDevice) {
+        this.allDevicesList.set(deviceId, discoverDevice);
+        mainWindow.webContents.send(
+          "bluetoothDeviceState",
+          discoverDevice!.serialize()
+        );
 
         return discoverDevice.parserType;
       }
     }
-
   }
 
-  setGattCallback(callback:Function){
+  setGattCallback(callback: Function) {
     this.gattCallback = callback;
   }
 
-  checkifIsHeartRate = (device: BluetoothDevice, uuids: string[], advertisements?: Buffer): BluetoothDevice | undefined => {
-    return  HeartRateDevice.isDeviceChromium(device,uuids,advertisements);
+  checkifIsHeartRate = (
+    device: BluetoothDevice,
+    uuids: string[],
+    advertisements?: Buffer
+  ): BluetoothDevice | undefined => {
+    return HeartRateDevice.isDeviceChromium(device, uuids, advertisements);
   };
 
-  checkifIsBike = (device: BluetoothDevice, uuids: string[], advertisements?: Buffer): BluetoothDevice | undefined => {
-    const ftmsDevice = FtmsDevice.isDeviceChromium(device,uuids,advertisements);
+  checkifIsBike = (
+    device: BluetoothDevice,
+    uuids: string[],
+    advertisements?: Buffer
+  ): BluetoothDevice | undefined => {
+    const ftmsDevice = FtmsDevice.isDeviceChromium(
+      device,
+      uuids,
+      advertisements
+    );
     if (ftmsDevice) return ftmsDevice;
-    const powerDevice = PowerDevice.isDeviceChromium(device,uuids,advertisements);
+    const powerDevice = PowerDevice.isDeviceChromium(
+      device,
+      uuids,
+      advertisements
+    );
     if (powerDevice) return powerDevice;
-    const bhCustomDevice = BhCustomDevice.isDeviceChromium(device,uuids,advertisements);
+    const bhCustomDevice = BhCustomDevice.isDeviceChromium(
+      device,
+      uuids,
+      advertisements
+    );
     if (bhCustomDevice) return bhCustomDevice;
 
-   /* const keiserDevice = KeiserDevice.isDevice(peripheral);
+    /* const keiserDevice = KeiserDevice.isDevice(peripheral);
     if (keiserDevice) return keiserDevice;
    */
-    return
+    return;
   };
 
+  findDeviceIdByName = (name: string): string | undefined => {
+    return Array.from(this.allDevicesList.keys()).find(
+      (k) => this.allDevicesList.get(k)?.getName() === name
+    );
+  };
 
-  findDeviceIdByName = (name:string):string|undefined  => {
-    return Array.from(this.allDevicesList.keys()).find(k => this.allDevicesList.get(k)?.getName() === name);
-  }
-
-  changeDeviceStatus = (name:string, status:string):void => {
-    const deviceId = this.findDeviceIdByName(name)||'';
+  changeDeviceStatus = (name: string, status: string): void => {
+    const deviceId = this.findDeviceIdByName(name) || "";
     const device = this.allDevicesList.get(deviceId);
-    if(device){
-      device!.state = status == 'connected'?BluetoothDeviceState.connected:BluetoothDeviceState.disconnected;
-      console.log("Send device status ", device!.serialize())
+    if (device) {
+      device!.state =
+        status == "connected"
+          ? BluetoothDeviceState.connected
+          : BluetoothDeviceState.disconnected;
+      console.log("Send device status ", device!.serialize());
       mainWindow.webContents.send("bluetoothDeviceState", device!.serialize());
-      this.allDevicesList.set(deviceId!,device!);
+      this.allDevicesList.set(deviceId!, device!);
     }
-  }
-  isAvailableBluetooth = ():boolean => {
-    if(this.statusBluetooth == BTStatus.unknown || this.statusBluetooth == BTStatus.unsupported){
+  };
+  isAvailableBluetooth = (): boolean => {
+    if (
+      this.statusBluetooth == BTStatus.unknown ||
+      this.statusBluetooth == BTStatus.unsupported
+    ) {
       this.nativeScan = false;
       return false;
-    }else{
+    } else {
       this.nativeScan = true;
       return true;
     }
-  }
+  };
   //Para dispositivos que no esté soportado el driver nativo, utilizamos el de chrome
   registerBluetoothEvents = (mainWindow: BrowserWindow) => {
     mainWindow.webContents.on(
       "select-bluetooth-device",
       (event, deviceList, cb) => {
-        for(const device of deviceList){
+        for (const device of deviceList) {
           const deviceId = device.deviceId;
           const deviceName = device.deviceName;
 
           const foundDevice: BluetoothDevice | undefined =
-          this.allDevicesList.get(deviceId);
+            this.allDevicesList.get(deviceId);
 
-          if(foundDevice){
-            return
+          if (foundDevice) {
+            return;
           }
 
           event.preventDefault();
 
           const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
-       //   bl.setGattCallback(cb);
-         this.setGattCallback(cb);
-         log("List of bluetooth devices found:",  JSON.stringify(deviceList));
+          //   bl.setGattCallback(cb);
+          this.setGattCallback(cb);
+          log("List of bluetooth devices found:", JSON.stringify(deviceList));
 
-         this.allDevicesList.set(deviceId, bl);
+          this.allDevicesList.set(deviceId, bl);
 
-         mainWindow.webContents.send(
-          "bluetoothDeviceFound",
-          bl.serialize()
-        );
+          mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
         }
       }
     );
@@ -437,7 +473,6 @@ export class BluetoothManager {
     return heartRateDevice;
   };
 
-
   // await peripheral.disconnectAsync();
   //proces
   enableScan = () => {
@@ -465,18 +500,25 @@ export class BluetoothManager {
   connect = async (id: string) => {
     const foundDevice: BluetoothDevice | undefined =
       this.allDevicesList.get(id);
+    console.log("allDevicesList", this.allDevicesList);
 
-    console.log("eeiii estamos auqiii y vamos a ver el found device ",foundDevice);
-    if (!foundDevice || (!foundDevice?.peripheral && this.gattCallback == null)) {
+    console.log(
+      "eeiii estamos auqiii y vamos a ver el found device ",
+      foundDevice
+    );
+    if (
+      !foundDevice ||
+      (!foundDevice?.peripheral && this.gattCallback == null)
+    ) {
       return;
     }
     if (this.knownDevices)
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
-    console.log(this.gattCallback)
-      if(this.gattCallback != null){
-        return this.gattCallback(foundDevice.id);
-      }
+    console.log(this.gattCallback);
+    if (this.gattCallback != null) {
+      return this.gattCallback(foundDevice.id);
+    }
     await foundDevice.connect();
 
     if (foundDevice.broadcast) {
@@ -494,7 +536,7 @@ export class BluetoothManager {
 
   //Devolvemos todos los dispositivos que hemos encontrado, junto con los que ya conocemos
   syncDevices = async () => {
-    let foundDevices: string[] = [];
+    const foundDevices: string[] = [];
     const devices = Array.from(this.allDevicesList.values());
 
     devices.forEach((device) => {
@@ -502,21 +544,22 @@ export class BluetoothManager {
       mainWindow.webContents.send("bluetoothDeviceFound", device.serialize());
     });
 
-    if(this.nativeScan){
-    //Devolvemos los dispositivos no encontrados
-    const knownDevices = this.knownDevices?.getKnownDevices();
+    if (this.nativeScan) {
+      //Devolvemos los dispositivos encontrados
+      const knownDevices = this.knownDevices?.getKnownDevices();
+      console.log("knowDevices", knownDevices);
 
-    if (knownDevices != null && Object.entries(knownDevices).length > 0)
-      Object.keys(knownDevices).forEach((key) => {
-        const lowerKey = key.toLowerCase();
-        if (
-          !foundDevices.includes(lowerKey) &&
-          knownDevices[lowerKey] != null
-        ) {
-          const bl = BluetoothDevice.fromKnwonDevice(knownDevices[lowerKey]);
-          mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
-        }
-      });
+      if (knownDevices != null && Object.entries(knownDevices).length > 0)
+        Object.keys(knownDevices).forEach((key) => {
+          const lowerKey = key.toLowerCase();
+          if (
+            !foundDevices.includes(lowerKey) &&
+            knownDevices[lowerKey] != null
+          ) {
+            const bl = BluetoothDevice.fromKnwonDevice(knownDevices[lowerKey]);
+            mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
+          }
+        });
     }
   };
 
