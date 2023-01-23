@@ -501,10 +501,6 @@ export class BluetoothManager {
     const foundDevice: BluetoothDevice | undefined =
       this.allDevicesList.get(id);
 
-    console.log(
-      "eeiii estamos auqiii y vamos a ver el found device ",
-      foundDevice
-    );
     if (
       !foundDevice ||
       (!foundDevice?.peripheral && this.gattCallback == null)

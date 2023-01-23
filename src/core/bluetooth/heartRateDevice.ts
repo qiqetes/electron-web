@@ -51,23 +51,20 @@ export class HeartRateDevice extends BluetoothDevice {
       isBroadcast
     );
   }
-  static fromBluetoothDevice(
-    device: BluetoothDevice,
-    broadcast?: boolean
-  ) {
-    const isBroadcast = broadcast||false;
+  static fromBluetoothDevice(device: BluetoothDevice, broadcast?: boolean) {
+    const isBroadcast = broadcast || false;
 
     return new HeartRateDevice(
       device.id,
       device.name,
       device.state,
       undefined,
-      isBroadcast,
+      isBroadcast
     );
   }
-  static isDevice(peripheral:Peripheral):HeartRateDevice|undefined {
-    if(!peripheral){
-      return
+  static isDevice(peripheral: Peripheral): HeartRateDevice | undefined {
+    if (!peripheral) {
+      return;
     }
     //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
     if (
@@ -97,13 +94,16 @@ export class HeartRateDevice extends BluetoothDevice {
     return HeartRateDevice.fromPeripheral(peripheral, broadcast);
   }
 
-  static isDeviceChromium(device:BluetoothDevice, uuids:string[],advertisement?:Buffer ):HeartRateDevice|undefined {
-    if(!device){
-      return
+  static isDeviceChromium(
+    device: BluetoothDevice,
+    uuids: string[],
+    advertisement?: Buffer
+  ): HeartRateDevice | undefined {
+    if (!device) {
+      return;
     }
     //Si tiene servicio de bicicleta, es una bicicleta, no un pulsómetro
-    if(this.hasService(uuids, GattSpecification.ftms.service))
-    return;
+    if (this.hasService(uuids, GattSpecification.ftms.service)) return;
 
     let broadcast = false;
     const currentServices = uuids;
@@ -111,10 +111,10 @@ export class HeartRateDevice extends BluetoothDevice {
     const currentName = device.name;
     const allowedNames = GattSpecification.heartRate.allowedNames;
 
-    if (!this.hasService(currentServices, allowedService)){
-      if(!this.hasName(currentName,allowedNames) || !advertisement){
+    if (!this.hasService(currentServices, allowedService)) {
+      if (!this.hasName(currentName, allowedNames) || !advertisement) {
         return;
-      }else{
+      } else {
         broadcast = true;
       }
     }
@@ -164,7 +164,7 @@ export class HeartRateDevice extends BluetoothDevice {
 
       if (characteristic != null) {
         this.notify(characteristic, (state: Buffer) => {
-          this.readDataFromBuffer('',state);
+          this.readDataFromBuffer("", state);
         });
       }
     }
@@ -175,9 +175,9 @@ export class HeartRateDevice extends BluetoothDevice {
     return this.features;
   }
 
-  readDataFromBuffer(uuid:string, values:Buffer){
+  readDataFromBuffer(uuid: string, values: Buffer) {
     const buffer = Buffer.from(values);
-    var data = buffer.readInt8(1); //heart rate measurement
+    const data = buffer.readInt8(1); //heart rate measurement
     if (data >= 0) {
       this.heartRateValue = data;
       mainWindow.webContents.send("heartRateData-" + this.id, data);
