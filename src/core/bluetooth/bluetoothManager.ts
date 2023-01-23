@@ -500,7 +500,6 @@ export class BluetoothManager {
   connect = async (id: string) => {
     const foundDevice: BluetoothDevice | undefined =
       this.allDevicesList.get(id);
-    console.log("allDevicesList", this.allDevicesList);
 
     console.log(
       "eeiii estamos auqiii y vamos a ver el found device ",
@@ -547,7 +546,6 @@ export class BluetoothManager {
     if (this.nativeScan) {
       //Devolvemos los dispositivos encontrados
       const knownDevices = this.knownDevices?.getKnownDevices();
-      console.log("knowDevices", knownDevices);
 
       if (knownDevices != null && Object.entries(knownDevices).length > 0)
         Object.keys(knownDevices).forEach((key) => {
