@@ -425,12 +425,12 @@ export class BluetoothManager {
       }
 
       // console.log("emitimos ", bl.serialize());
-      //mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
+      mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
 
       this.allDevicesList.set(deviceId, bl);
       //Autoconnect
       if (knownDevice != null && knownDevice.autoConnect) {
-        //this.connect(deviceId);
+        this.connect(deviceId);
       }
       //this.ipcMain.emit("bluetoothDeviceFound",bl)
       //console.log("emitido",);
