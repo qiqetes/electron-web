@@ -95,9 +95,9 @@ const createWindow = async () => {
   });
 
   avoidExternalPageRequests(mainWindow);
-  const hrService = new HeartRateDeviceService(ipcMain);
+  //const hrService = new HeartRateDeviceService(ipcMain);
 
-  hrService.registerBluetoothEvents(mainWindow);
+  //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow)
   BTManager.loadKnownDevices();
 

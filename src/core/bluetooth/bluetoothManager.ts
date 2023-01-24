@@ -16,6 +16,8 @@ import { PowerDevice } from "./powerDevice";
 import { BhProDevice } from "./bhProDevice";
 import { BhCustomDevice } from "./bhCustomDevice";
 import { log } from "../../helpers/loggers";
+var AsyncLock = require("async-lock");
+
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
   allDevicesList: Map<string, BluetoothDevice | HeartRateDevice | BikeDevice>;
@@ -24,6 +26,8 @@ export class BluetoothManager {
   autoScan: boolean;
   nativeScan: boolean;
   gattCallback: Function | undefined;
+  lock: any;
+  lockKey:any;
 
   constructor() {
     this.nativeScan = true;
@@ -120,6 +124,7 @@ export class BluetoothManager {
         this.readDataFromBuffer(uuid, deviceName, data);
       }
     );
+    this.lock = new AsyncLock({ timeout: 2000 });
     this.enableDiscoverDevices();
   }
 
@@ -214,6 +219,7 @@ export class BluetoothManager {
       this.allDevicesList.set(deviceId!, device!);
     }
   };
+
   isAvailableBluetooth = (): boolean => {
     if (
       this.statusBluetooth == BTStatus.unknown ||
@@ -226,11 +232,13 @@ export class BluetoothManager {
       return true;
     }
   };
+
   //Para dispositivos que no esté soportado el driver nativo, utilizamos el de chrome
   registerBluetoothEvents = (mainWindow: BrowserWindow) => {
     mainWindow.webContents.on(
       "select-bluetooth-device",
       (event, deviceList, cb) => {
+        event.preventDefault();
         for (const device of deviceList) {
           const deviceId = device.deviceId;
           const deviceName = device.deviceName;
@@ -241,17 +249,24 @@ export class BluetoothManager {
           if (foundDevice) {
             return;
           }
-
-          event.preventDefault();
-
           const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
-          //   bl.setGattCallback(cb);
           this.setGattCallback(cb);
-          log("List of bluetooth devices found:", JSON.stringify(deviceList));
-
           this.allDevicesList.set(deviceId, bl);
-
           mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
+          const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
+
+          if(knownDevice?.autoConnect && cb!= undefined){
+            try{
+              this.lock.acquire(this.lockKey, async (done: any) => {
+                if(done){
+                  await cb(deviceId)
+                  done();
+                }
+            });
+            }catch(error){
+              console.error("Autoconect error ",cb)
+            }
+          }
         }
       }
     );
@@ -510,14 +525,30 @@ export class BluetoothManager {
     if (this.knownDevices)
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
-    console.log(this.gattCallback);
     if (this.gattCallback != null) {
-      return this.gattCallback(foundDevice.id);
-    }
-    await foundDevice.connect();
+      try{
+        this.lock.acquire(this.lockKey, async ( done: any) => {
+          if(done){
+            const valueWrite = await  this.gattCallback!(foundDevice.id);
+            done();
+          return ;
+          }
+        }, async(err:any, ret:any) =>  {
+          if(err){
+            const valueWrite = await  this.gattCallback!(foundDevice.id);
+          }
+          // lock released
+        });
 
-    if (foundDevice.broadcast) {
-      this.allDevicesList.set(foundDevice.id, foundDevice);
+      }catch(error){
+        console.error("GATT CALLBACK FAIL ",error)
+      }
+    }else{
+      await foundDevice.connect();
+
+      if (foundDevice.broadcast) {
+        this.allDevicesList.set(foundDevice.id, foundDevice);
+      }
     }
   };
 
