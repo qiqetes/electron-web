@@ -599,7 +599,7 @@ export class BluetoothManager {
   };
 
   startScan = async () => {
-    await noble.stopScanningAsync();
+    noble.stopScanningAsync();
     this.syncDevices();
     this.enableScan();
   };
