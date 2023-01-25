@@ -33,7 +33,7 @@ if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
 app.commandLine.appendSwitch("enable-web-bluetooth", "true");
-app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+app.commandLine.appendSwitch("enable-experimental-web-platform-features");
 
 export let mainWindow: BrowserWindow;
 export const BTManager = new BluetoothManager();
@@ -98,9 +98,8 @@ const createWindow = async () => {
   //const hrService = new HeartRateDeviceService(ipcMain);
 
   //hrService.registerBluetoothEvents(mainWindow);
-  BTManager.registerBluetoothEvents(mainWindow)
+  BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();
-
 };
 
 const reactDevToolsPath = path.join(
@@ -109,16 +108,11 @@ const reactDevToolsPath = path.join(
 );
 
 app.on("ready", async () => {
-
-
   if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
     await session.defaultSession.loadExtension(reactDevToolsPath);
   }
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();
-
-
-
 });
 
 app.on("window-all-closed", async () => {

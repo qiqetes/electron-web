@@ -40,18 +40,15 @@ export class FtmsDevice extends BikeDevice {
       return FtmsDevice.fromPeripheral(peripheral, false);
     }
   }
-  static fromBluetoothDevice(
-    device: BluetoothDevice,
-    broadcast?: boolean
-  ) {
-    const isBroadcast = broadcast||false;
+  static fromBluetoothDevice(device: BluetoothDevice, broadcast?: boolean) {
+    const isBroadcast = broadcast || false;
 
     return new FtmsDevice(
       device.id,
       device.name,
       device.state,
       undefined,
-      isBroadcast,
+      isBroadcast
     );
   }
 
@@ -82,16 +79,20 @@ export class FtmsDevice extends BikeDevice {
     );
   }
 
-  static isDeviceChromium(device:BluetoothDevice, uuids:string[],advertisement?:Buffer ):FtmsDevice|undefined {
-    if(!device){
-      return
+  static isDeviceChromium(
+    device: BluetoothDevice,
+    uuids: string[],
+    advertisement?: Buffer
+  ): FtmsDevice | undefined {
+    if (!device) {
+      return;
     }
     const broadcast = false;
     const currentServices = uuids;
     const allowedService = GattSpecification.ftms.service;
 
     if (this.hasService(currentServices, allowedService)) {
-      const dev =  FtmsDevice.fromBluetoothDevice(device, broadcast);
+      const dev = FtmsDevice.fromBluetoothDevice(device, broadcast);
       dev.currentServices = uuids;
       return dev;
     }
@@ -103,24 +104,24 @@ export class FtmsDevice extends BikeDevice {
     return this.bikeValues;
   }
 
-  readDataFromBuffer(uuid:string, data: Buffer): void {
-    const minUuid = uuid.split('-')[0].replace(/^0+/,'');
-    const replaceUuid = uuid.replace(/-/g,'');
-    if(minUuid == GattSpecification.ftms.measurements.bikeData){
+  readDataFromBuffer(uuid: string, data: Buffer): void {
+    const minUuid = uuid.split("-")[0].replace(/^0+/, "");
+    const replaceUuid = uuid.replace(/-/g, "");
+    if (minUuid == GattSpecification.ftms.measurements.bikeData) {
       this.readBikeData(data);
-    }else if( minUuid == GattSpecification.ftms.measurements.feature){
+    } else if (minUuid == GattSpecification.ftms.measurements.feature) {
       this.readFeaturesFromBuffer(data);
-    }
-    else if( minUuid == GattSpecification.ftms.measurements.resistanceRange){
+    } else if (minUuid == GattSpecification.ftms.measurements.resistanceRange) {
       const values = bufferToListInt(Buffer.from(data));
       this.resistanceRange = BikeDataFeaturesFtms.resistanceLevel(values);
-    }
-    else if(replaceUuid == GattSpecification.zycleButton.measurements.buttonControl){
+    } else if (
+      replaceUuid == GattSpecification.zycleButton.measurements.buttonControl
+    ) {
       this.readButtonControl(data);
     }
   }
 
-  readBikeData(data:Buffer):void {
+  readBikeData(data: Buffer): void {
     let bikeDataFeatures = new BikeDataFeaturesFtms();
     const state = Buffer.from(data);
 
@@ -130,44 +131,51 @@ export class FtmsDevice extends BikeDevice {
     mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
   }
 
-  readButtonControl(data:Buffer):void {
+  readButtonControl(data: Buffer): void {
     const state = Buffer.from(data);
     const values = bufferToListInt(state);
     var dataController = ZycleButton.valuesFeatures(values);
 
     if (this.zycleButton.changeValues(dataController)) {
-      if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
-        if (
-          dataController.get(ZycleButton.LEVEL) !=
-            Math.floor(this.powerTarget / 5) &&
-          this.powerTarget != 10
-        ) {
-          mainWindow.webContents.send(
-            "buttonChange-" + this.id,
-            this.zycleButton.toJson()
-          );
-        }
-      } else {
-        if (
-          dataController.get(ZycleButton.LEVEL) !=
-          Math.floor(this.resistanceTarget)
-        ) {
-          mainWindow.webContents.send(
-            "buttonChange-" + this.id,
-            this.zycleButton.toJson()
-          );
+      if (dataController.get(ZycleButton.LEVEL) != null) {
+        if (dataController.get(ZycleButton.MODE) == ButtonMode.AUTO) {
+          if (
+            dataController.get(ZycleButton.LEVEL) !=
+              Math.floor(this.powerTarget / 5) &&
+            this.powerTarget != 10
+          ) {
+            this.resetWindowValues();
+            mainWindow.webContents.send(
+              "buttonChange-" + this.id,
+              this.zycleButton.toJson()
+            );
+          }
+        } else {
+          if (
+            dataController.get(ZycleButton.LEVEL) !=
+            Math.floor(this.resistanceTarget)
+          ) {
+            this.resetWindowValues();
+            mainWindow.webContents.send(
+              "buttonChange-" + this.id,
+              this.zycleButton.toJson()
+            );
+          }
         }
       }
     }
-
   }
   async readFeaturesFromBuffer(data: Buffer): Promise<void> {
     const featuresBuffer = Buffer.from(data);
     this.features = getFtmsFeatures(featuresBuffer);
-    if(this.currentServices.length > 0 ){
-
+    if (this.currentServices.length > 0) {
       //normalizamos los servicios quitando - para
-      if (FtmsDevice.hasService(this.currentServices,  GattSpecification.zycleButton.service)) {
+      if (
+        FtmsDevice.hasService(
+          this.currentServices,
+          GattSpecification.zycleButton.service
+        )
+      ) {
         this.features.push(BluetoothFeatures.ZycleButton);
       }
       //TODO PARCHAZO PARA BH
@@ -175,7 +183,7 @@ export class FtmsDevice extends BikeDevice {
         this.checkFeature(BluetoothFeatures.PowerTarget);
       }
     }
-    console.log("Las features son estas",this.features);
+    console.log("Las features son estas", this.features);
     await this.requestControl();
     await this.startTraining();
   }
@@ -219,7 +227,7 @@ export class FtmsDevice extends BikeDevice {
   }
 
   async getFeatures(): Promise<string[] | undefined> {
-    if(this.features.length > 0){
+    if (this.features.length > 0) {
       return this.features;
     }
     if (!this.peripheral) {
@@ -387,6 +395,4 @@ export class FtmsDevice extends BikeDevice {
 
     return this.resistanceRange;
   }
-
-
 }
