@@ -122,7 +122,7 @@ export class FtmsDevice extends BikeDevice {
   }
 
   readBikeData(data: Buffer): void {
-    let bikeDataFeatures = new BikeDataFeaturesFtms();
+    const bikeDataFeatures = new BikeDataFeaturesFtms();
     const state = Buffer.from(data);
 
     const values = bufferToListInt(state);
@@ -134,7 +134,7 @@ export class FtmsDevice extends BikeDevice {
   readButtonControl(data: Buffer): void {
     const state = Buffer.from(data);
     const values = bufferToListInt(state);
-    var dataController = ZycleButton.valuesFeatures(values);
+    const dataController = ZycleButton.valuesFeatures(values);
 
     if (this.zycleButton.changeValues(dataController)) {
       if (dataController.get(ZycleButton.LEVEL) != null) {

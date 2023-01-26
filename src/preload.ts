@@ -161,6 +161,7 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   handleReciveDevices: (
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceFound");
     ipcRenderer.on("bluetoothDeviceFound", callback);
   },
   handleReciveStatus: (
@@ -178,6 +179,7 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     id: string,
     callback: (event: Event, data: any) => void
   ) => {
+    ipcRenderer.removeAllListeners("heartRateData-" + id);
     ipcRenderer.on("heartRateData-" + id, callback);
   },
   removeReciveDevices: () => {
@@ -193,9 +195,14 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.send("enableAutoScan");
   },
   handleBikeData: (id: string, callback: (event: Event, data: any) => void) => {
+    ipcRenderer.removeAllListeners("bikeData-" + id);
     ipcRenderer.on("bikeData-" + id, callback);
   },
-  handleButtonChange: (id: string, callback: (event: Event, data: any) => void) => {
+  handleButtonChange: (
+    id: string,
+    callback: (event: Event, data: any) => void
+  ) => {
+    ipcRenderer.removeAllListeners("buttonChange-" + id);
     ipcRenderer.on("buttonChange-" + id, callback);
   },
   readData: (id: string) => {},
@@ -204,15 +211,23 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   getFeatures: () => ipcRenderer.sendSync("getFeatures"),
   getLevelRange: () => ipcRenderer.sendSync("getLevelRange"),
   isAvailableBluetooth: () => ipcRenderer.sendSync("isAvailableBluetooth"),
-  setPowerTarget: (power:number) => ipcRenderer.sendSync("setPowerTarget", power),
-  stopPowerTarget: () =>  ipcRenderer.sendSync("stopPowerTarget"),
-  setResistanceTarget: (resistance: number) => ipcRenderer.sendSync("setResistanceTarget", resistance),
-  autoMode: (enable: boolean) =>  ipcRenderer.sendSync("autoMode", enable),
+  setPowerTarget: (power: number) =>
+    ipcRenderer.sendSync("setPowerTarget", power),
+  stopPowerTarget: () => ipcRenderer.sendSync("stopPowerTarget"),
+  setResistanceTarget: (resistance: number) =>
+    ipcRenderer.sendSync("setResistanceTarget", resistance),
+  autoMode: (enable: boolean) => ipcRenderer.sendSync("autoMode", enable),
   //Chromium api
-  chromiumDeviceStatus: (deviceName:string, deviceStatus:string) => ipcRenderer.send("changeDeviceStatus", deviceName,deviceStatus ),
-  discoverDeviceType: (deviceName:string, uuids:string[]) => ipcRenderer.sendSync("discoverDeviceType", deviceName,uuids ),
-  readDataFromBuffer: (uuid:string, deviceName:string, data:Buffer) => ipcRenderer.send("readDataFromBuffer",uuid, deviceName,data ),
-  handleWriteData: (id: string, callback: (event: Event, data: any) => void) => {
+  chromiumDeviceStatus: (deviceName: string, deviceStatus: string) =>
+    ipcRenderer.send("changeDeviceStatus", deviceName, deviceStatus),
+  discoverDeviceType: (deviceName: string, uuids: string[]) =>
+    ipcRenderer.sendSync("discoverDeviceType", deviceName, uuids),
+  readDataFromBuffer: (uuid: string, deviceName: string, data: Buffer) =>
+    ipcRenderer.send("readDataFromBuffer", uuid, deviceName, data),
+  handleWriteData: (
+    id: string,
+    callback: (event: Event, data: any) => void
+  ) => {
     ipcRenderer.on("writeData-" + id, callback);
   },
 });
