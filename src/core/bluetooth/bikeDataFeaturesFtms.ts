@@ -12,7 +12,7 @@ export class BikeDataFeaturesFtms {
   static CADENCE = "Cadencia";
   static AVG_CADENCE = "Cadencía media";
   static DISTANCE = "Distancia";
-  static RESISTANCE = "Resistencia";
+  static RESISTANCE = "Nivel de resistencia";
   static POWER = "Potencia";
   static ENERGY = "Calorías";
   static TOTAL_ENERGY = "Calorías totales";

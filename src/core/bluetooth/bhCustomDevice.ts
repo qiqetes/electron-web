@@ -36,18 +36,15 @@ export class BhCustomDevice extends BikeDevice {
       return BhCustomDevice.fromPeripheral(peripheral, false);
     }
   }
-  static fromBluetoothDevice(
-    device: BluetoothDevice,
-    broadcast?: boolean
-  ) {
-    const isBroadcast = broadcast||false;
+  static fromBluetoothDevice(device: BluetoothDevice, broadcast?: boolean) {
+    const isBroadcast = broadcast || false;
 
     return new BhCustomDevice(
       device.id,
       device.name,
       device.state,
       undefined,
-      isBroadcast,
+      isBroadcast
     );
   }
 
@@ -79,16 +76,20 @@ export class BhCustomDevice extends BikeDevice {
     );
   }
 
-  static isDeviceChromium(device:BluetoothDevice, uuids:string[],advertisement?:Buffer ):BhCustomDevice|undefined {
-    if(!device){
-      return
+  static isDeviceChromium(
+    device: BluetoothDevice,
+    uuids: string[],
+    advertisement?: Buffer
+  ): BhCustomDevice | undefined {
+    if (!device) {
+      return;
     }
     const broadcast = false;
     const currentServices = uuids;
     const allowedService = GattSpecification.bhCustom.service;
 
     if (this.hasService(currentServices, allowedService)) {
-      const dev =  BhCustomDevice.fromBluetoothDevice(device, broadcast);
+      const dev = BhCustomDevice.fromBluetoothDevice(device, broadcast);
       dev.currentServices = uuids;
       return dev;
     }
@@ -99,13 +100,12 @@ export class BhCustomDevice extends BikeDevice {
     return this.bikeValues;
   }
 
-  readDataFromBuffer(uuid:string, data: Buffer): void {
-    const replaceUuid = uuid.replace(/-/g,'');
-    if(replaceUuid == GattSpecification.bhCustom.measurement.rx){
+  readDataFromBuffer(uuid: string, data: Buffer): void {
+    const replaceUuid = uuid.replace(/-/g, "");
+    if (replaceUuid == GattSpecification.bhCustom.measurement.rx) {
       this.readBikeData(data);
     }
   }
-
 
   async startNotify(): Promise<void> {
     if (!this.peripheral) {
@@ -125,7 +125,7 @@ export class BhCustomDevice extends BikeDevice {
     }
   }
 
-  readBikeData = (data:Buffer): void => {
+  readBikeData = (data: Buffer): void => {
     const state = Buffer.from(data);
     const bikeDataFeatures = new BikeDataFeaturesBh();
 
@@ -133,8 +133,7 @@ export class BhCustomDevice extends BikeDevice {
     this.bikeValues = bikeDataFeatures.updateValueSuscription(values);
     this.bikeValues = this.getFeaturesValues(this.bikeValues);
     mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
-
-  }
+  };
   async getFeatures(): Promise<string[] | undefined> {
     this.features = BikeDataFeaturesBh.orderFeatures;
     await this.getLevelRange();
@@ -165,7 +164,7 @@ export class BhCustomDevice extends BikeDevice {
     await this.writeData(
       GattSpecification.bhCustom.service,
       GattSpecification.bhCustom.measurement.tx,
-      data,
+      data
     );
   }
 
@@ -176,7 +175,7 @@ export class BhCustomDevice extends BikeDevice {
     await this.writeData(
       GattSpecification.bhCustom.service,
       GattSpecification.bhCustom.measurement.tx,
-      data,
+      data
     );
   }
 
@@ -188,7 +187,7 @@ export class BhCustomDevice extends BikeDevice {
     await this.writeData(
       GattSpecification.bhCustom.service,
       GattSpecification.bhCustom.measurement.tx,
-      data,
+      data
     );
   }
 
@@ -198,7 +197,7 @@ export class BhCustomDevice extends BikeDevice {
     await this.writeData(
       GattSpecification.bhCustom.service,
       GattSpecification.bhCustom.measurement.tx,
-      data,
+      data
     );
   }
 
@@ -213,10 +212,12 @@ export class BhCustomDevice extends BikeDevice {
         level = level % 25;
       }
 
+      const data = Buffer.from([85, 17, 0o1, level]);
       await this.writeData(
         GattSpecification.bhCustom.service,
         GattSpecification.bhCustom.measurement.tx,
-        Buffer.from([85, 17, 0o1, level]));
-     }
+        data
+      );
+    }
   }
 }
