@@ -81,7 +81,7 @@ const uploadManifest = async (channel) => {
     manifest.packages[platform] = {
       url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${
         pack.version
-      }/${pack.productName.replace(" ", "+")}-${os.platform()}-universal-${
+      }/universal/${pack.productName.replace(" ", "+")}-${os.platform()}-universal-${
         pack.version
       }.zip`,
     };
@@ -136,7 +136,7 @@ const parseOptions = () => {
   return args;
 };
 
-const allowedChannels = ["qiqe-temp", "revision", "beta"];
+const allowedChannels = ["production", "revision", "beta"];
 const { channel } = parseOptions();
 
 if (!allowedChannels.includes(channel)) {

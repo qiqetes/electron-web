@@ -26,7 +26,7 @@
     "push:win:devprod": "npm run push:win:devprod:x64 && npm run push:win:devprod:ia32",
     "push:win:devprod:ia32": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=ia32",
     "push:win:devprod:x64": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=x64",
-    "publish": "node process/gen_manifest --channel=qiqe-temp",
+    "publish": "node process/gen_manifest  --channel=production",
     "publish:beta": "node process/gen_manifest --channel=beta",
     "publish:revision": "node process/gen_manifest --channel=revision",
     "lint": "eslint --ext .ts,.tsx .",
