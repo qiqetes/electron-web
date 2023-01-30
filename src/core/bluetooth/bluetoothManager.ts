@@ -27,7 +27,7 @@ export class BluetoothManager {
   nativeScan: boolean;
   gattCallback: Function | undefined;
   lock: any;
-  lockKey:any;
+  lockKey: any;
 
   constructor() {
     this.nativeScan = true;
@@ -45,6 +45,7 @@ export class BluetoothManager {
     });
 
     ipcMain.on("connectDevice", async (_, id: string) => {
+      console.log("Pulso conectar");
       this.connect(id);
     });
 
@@ -214,7 +215,6 @@ export class BluetoothManager {
         status == "connected"
           ? BluetoothDeviceState.connected
           : BluetoothDeviceState.disconnected;
-      console.log("Send device status ", device!.serialize());
       mainWindow.webContents.send("bluetoothDeviceState", device!.serialize());
       this.allDevicesList.set(deviceId!, device!);
     }
@@ -235,6 +235,7 @@ export class BluetoothManager {
 
   //Para dispositivos que no esté soportado el driver nativo, utilizamos el de chrome
   registerBluetoothEvents = (mainWindow: BrowserWindow) => {
+    mainWindow.webContents.removeAllListeners("select-bluetooth-device");
     mainWindow.webContents.on(
       "select-bluetooth-device",
       (event, deviceList, cb) => {
@@ -255,16 +256,17 @@ export class BluetoothManager {
           mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
           const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
 
-          if(knownDevice?.autoConnect && cb!= undefined){
-            try{
+          if (knownDevice?.autoConnect && cb != undefined) {
+            try {
               this.lock.acquire(this.lockKey, async (done: any) => {
-                if(done){
-                  await cb(deviceId)
+                if (done) {
+                  console.log("deviceId", deviceId);
+                  cb(deviceId);
                   done();
                 }
-            });
-            }catch(error){
-              console.error("Autoconect error ",cb)
+              });
+            } catch (error) {
+              console.error("Autoconect error ", cb);
             }
           }
         }
@@ -445,6 +447,7 @@ export class BluetoothManager {
       this.allDevicesList.set(deviceId, bl);
       //Autoconnect
       if (knownDevice != null && knownDevice.autoConnect) {
+        console.log("entro autoconnect");
         this.connect(deviceId);
       }
       //this.ipcMain.emit("bluetoothDeviceFound",bl)
@@ -526,24 +529,28 @@ export class BluetoothManager {
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
     if (this.gattCallback != null) {
-      try{
-        this.lock.acquire(this.lockKey, async ( done: any) => {
-          if(done){
-            const valueWrite = await  this.gattCallback!(foundDevice.id);
-            done();
-          return ;
+      try {
+        this.lock.acquire(
+          this.lockKey,
+          async (done: any) => {
+            if (done) {
+              const valueWrite = await this.gattCallback!(foundDevice.id);
+              done();
+              return;
+            }
+          },
+          async (err: any, ret: any) => {
+            console.log("entro en error");
+            if (err) {
+              const valueWrite = await this.gattCallback!(foundDevice.id);
+            }
+            // lock released
           }
-        }, async(err:any, ret:any) =>  {
-          if(err){
-            const valueWrite = await  this.gattCallback!(foundDevice.id);
-          }
-          // lock released
-        });
-
-      }catch(error){
-        console.error("GATT CALLBACK FAIL ",error)
+        );
+      } catch (error) {
+        console.error("GATT CALLBACK FAIL ", error);
       }
-    }else{
+    } else {
       await foundDevice.connect();
 
       if (foundDevice.broadcast) {
@@ -599,6 +606,7 @@ export class BluetoothManager {
   };
 
   startScan = async () => {
+    // TODO: quitar comentarios
     noble.stopScanningAsync();
     this.syncDevices();
     this.enableScan();
