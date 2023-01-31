@@ -45,7 +45,6 @@ export class BluetoothManager {
     });
 
     ipcMain.on("connectDevice", async (_, id: string) => {
-      console.log("Pulso conectar");
       this.connect(id);
     });
 
@@ -254,21 +253,21 @@ export class BluetoothManager {
           this.setGattCallback(cb);
           this.allDevicesList.set(deviceId, bl);
           mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
-          const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
+          //const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
 
-          if (knownDevice?.autoConnect && cb != undefined) {
-            try {
-              this.lock.acquire(this.lockKey, async (done: any) => {
-                if (done) {
-                  console.log("deviceId", deviceId);
-                  cb(deviceId);
-                  done();
-                }
-              });
-            } catch (error) {
-              console.error("Autoconect error ", cb);
-            }
-          }
+          // if (knownDevice?.autoConnect && cb != undefined) {
+          //   try {
+          //     this.lock.acquire(this.lockKey, async (done: any) => {
+          //       if (done) {
+          //         console.log("deviceId", deviceId);
+          //         cb(deviceId);
+          //         done();
+          //       }
+          //     });
+          //   } catch (error) {
+          //     console.error("Autoconect error ", cb);
+          //   }
+          // }
         }
       }
     );
