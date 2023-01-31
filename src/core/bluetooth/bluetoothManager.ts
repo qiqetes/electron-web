@@ -544,9 +544,6 @@ export class BluetoothManager {
           },
           async (err: any, ret: any) => {
             console.log("entro en error");
-            if (err) {
-              const valueWrite = await this.gattCallback!(foundDevice.id);
-            }
             // lock released
           }
         );
