@@ -213,6 +213,8 @@ export class BluetoothManager {
       device!.state =
         status == "connected"
           ? BluetoothDeviceState.connected
+          : status == "connecting"
+          ? BluetoothDeviceState.connecting
           : BluetoothDeviceState.disconnected;
       mainWindow.webContents.send("bluetoothDeviceState", device!.serialize());
       this.allDevicesList.set(deviceId!, device!);
