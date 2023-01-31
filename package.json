@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.4",
+  "version": "4.0.3",
   "description": "Aplicación de escritorio Bestcycling desarrollada con electron",
   "main": ".webpack/main",
   "scripts": {
@@ -10,18 +10,18 @@
     "package": "electron-forge package",
     "make": "npm run premake:macos && cross-env-shell ENV=prod electron-forge make --arch=universal",
     "make:macos": "npm run premake:macos && cross-env-shell ENV=prod electron-forge make --arch=universal",
-    "make:macos:dev": "npm run premake:macos && cross-env-shell ENV=dev electron-forge make ",
-    "make:macos:devprod": "npm run premake:macos && cross-env-shell ENV=prod FLAVOUR=2 electron-forge make",
+    "make:macos:dev": "npm run premake:macos && cross-env-shell ENV=dev electron-forge make --arch=universal",
+    "make:macos:devprod": "npm run premake:macos && cross-env-shell ENV=prod FLAVOUR=2 electron-forge make --arch=universal",
     "make:win": "npm run make:win:x64 && make:win:ia32",
     "make:win:x64": "cross-env-shell ENV=prod electron-forge make --arch=x64",
     "make:win:ia32": "cross-env-shell ENV=prod electron-forge make --arch=ia32",
     "make:win:devprod": "npm run make:win:devprod:x64 && make:win:devprod:ia32 ",
     "make:win:devprod:x64": "npm run premake:win && cross-env-shell ENV=prod FLAVOUR=2 electron-forge make --arch=x64",
-    "make:win:devprod:ia32": "npm run premake:win cross-env-shell ENV=prod FLAVOUR=2 electron-forge make --arch=ia32",
+    "make:win:devprod:ia32": "npm run premake:win && cross-env-shell ENV=prod FLAVOUR=2 electron-forge make --arch=ia32",
     "push:macos": "cross-env-shell ENV=prod electron-forge publish --arch=universal",
     "push:win": "npm run push:win:x64 && npm run push:win:ia32",
-    "push:win:x64": "npm run premake:win  cross-env-shell ENV=prod electron-forge publish --arch=x64",
-    "push:win:ia32": "npm run premake:win  cross-env-shell ENV=prod electron-forge publish --arch=ia32",
+    "push:win:x64": "npm run premake:win && cross-env-shell ENV=prod electron-forge publish --arch=x64",
+    "push:win:ia32": "npm run premake:win && cross-env-shell ENV=prod electron-forge publish --arch=ia32",
     "push:macos:devprod": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=universal",
     "push:win:devprod": "npm run push:win:devprod:x64 && npm run push:win:devprod:ia32",
     "push:win:devprod:ia32": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge publish --arch=ia32",
@@ -32,8 +32,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "test": "jest",
     "premake:macos": "cp premake/mac/resolve-bindings.js node_modules/@abandonware/noble/lib/resolve-bindings.js",
-    "premake:win": "cp premake/win/resolve-bindings.js node_modules/@abandonware/noble/lib/resolve-bindings.js"
-
+    "premake:win": "cpx premake/win/resolve-bindings.js node_modules/@abandonware/noble/lib/"
   },
   "keywords": [],
   "author": {
@@ -81,6 +80,7 @@
     "@types/fs-extra": "^9.0.13",
     "async-lock": "^1.4.0",
     "axios": "^1.1.3",
+    "cpx": "^1.5.0",
     "dayjs": "^1.11.6",
     "dotenv": "^16.0.3",
     "electron-squirrel-startup": "^1.0.0",

@@ -103,7 +103,7 @@ const getMostUpdatedManifest = async (allowedChannels: {
     : null;
   const manifestProduction = (
     await axios.get<UpdateManifest>(
-      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json" // TODO: change to production
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/production/manifest.json" // TODO: change to production
     )
   ).data;
 
@@ -145,9 +145,16 @@ export const setAutoUpdater = async (allowedChannels: {
   );
 
   let platform: string = os.platform();
-
-  if (platform == "darwin") platform = "mac64";
-
+  let arch: string;
+  if (platform == "darwin"){
+    platform = "mac64";
+    arch = "universal";
+  }else if(platform == "win32"){
+    arch = "ia32";
+  }else{
+    arch = "x64";
+  }
+  
   const updateUrl = manifest.packages[platform]?.url;
   console.log("updateUrl", updateUrl);
   if (!updateUrl) {
@@ -211,7 +218,7 @@ export const setAutoUpdater = async (allowedChannels: {
       download(
         tempPath,
         nupkgName,
-        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/${nupkgName}`,
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/${arch}/${nupkgName}`,
         () => {
           log("NUPKG downloaded in temp folder", tempPath);
           autoUpdater.setFeedURL({

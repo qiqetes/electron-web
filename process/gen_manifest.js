@@ -76,7 +76,7 @@ const uploadManifest = async (channel) => {
   let platform = process.platform;
   if (process.platform == "darwin") platform = "mac64";
   // if (process.platform == "win32") platform = "win" + os.arch().substring(1);
-
+  
   if (platform == "mac64") {
     manifest.packages[platform] = {
       url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${
@@ -85,12 +85,13 @@ const uploadManifest = async (channel) => {
         pack.version
       }.zip`,
     };
-  } else if (platform == "win32") {
+  } else if (platform == "win32" ||platform == "win64") {
     const platforms = ["win32", "win64"];
+    const arch = {"win32":"ia32", "win64":"x64"}
     platforms.forEach(
       (p) =>
-        (manifest.packages[platform] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/RELEASES`,
+        (manifest.packages[p] = {
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/${arch[p]}/RELEASES`,
         })
     );
   }
