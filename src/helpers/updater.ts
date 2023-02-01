@@ -214,11 +214,16 @@ export const setAutoUpdater = async (allowedChannels: {
         return;
       }
       const nupkgName = data.split(" ")[1];
-      log("NUPKG NAME:", nupkgName);
+
+      var updateDirTem = updateUrl.split('/');
+      updateDirTem.pop();
+      const updateDir = updateDirTem.join('/');
+      log("NUPKG NAME:", nupkgName, "update Dir ",updateDir);
+
       download(
         tempPath,
         nupkgName,
-        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/${arch}/${nupkgName}`,
+        `${updateDir}/${nupkgName}`,
         () => {
           log("NUPKG downloaded in temp folder", tempPath);
           autoUpdater.setFeedURL({
