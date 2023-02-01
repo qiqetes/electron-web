@@ -183,7 +183,6 @@ export class FtmsDevice extends BikeDevice {
         this.checkFeature(BluetoothFeatures.PowerTarget);
       }
     }
-    console.log("Las features son estas", this.features);
     await this.requestControl();
     await this.startTraining();
   }

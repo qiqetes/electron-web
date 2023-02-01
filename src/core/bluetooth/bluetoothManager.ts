@@ -124,8 +124,15 @@ export class BluetoothManager {
         this.readDataFromBuffer(uuid, deviceName, data);
       }
     );
+    ipcMain.on("removeNotConnectedDevice", (event, name:string): void =>{
+      this.removeNotConnectedDevice(name);
+    })
     this.lock = new AsyncLock({ timeout: 2000 });
     this.enableDiscoverDevices();
+  }
+  removeNotConnectedDevice(name: string) {
+    const deviceId = this.findDeviceIdByName(name) || "";
+    this.allDevicesList.delete(deviceId);
   }
 
   readDataFromBuffer(uuid: string, deviceName: string, data: Buffer) {
@@ -236,45 +243,31 @@ export class BluetoothManager {
     }
   };
 
+
+  listenerSelectBluetoothDevice = (event: Electron.Event, deviceList: Electron.BluetoothDevice[], cb: (deviceId: string) => void) => {
+      event.preventDefault();
+      for (const device of deviceList) {
+        const deviceId = device.deviceId;
+        const deviceName = device.deviceName;
+
+        const foundDevice: BluetoothDevice | undefined =
+          this.allDevicesList.get(deviceId);
+
+        if (foundDevice) {
+          return;
+        }
+        const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
+        bl.setGattCallback(cb)
+        //this.setGattCallback(cb);
+        this.allDevicesList.set(deviceId, bl);
+        mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
+      }
+    }
+  
   //Para dispositivos que no esté soportado el driver nativo, utilizamos el de chrome
   registerBluetoothEvents = (mainWindow: BrowserWindow) => {
-    mainWindow.webContents.removeAllListeners("select-bluetooth-device");
-    mainWindow.webContents.on(
-      "select-bluetooth-device",
-      (event, deviceList, cb) => {
-        event.preventDefault();
-        for (const device of deviceList) {
-          const deviceId = device.deviceId;
-          const deviceName = device.deviceName;
-
-          const foundDevice: BluetoothDevice | undefined =
-            this.allDevicesList.get(deviceId);
-
-          if (foundDevice) {
-            return;
-          }
-          const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
-          this.setGattCallback(cb);
-          this.allDevicesList.set(deviceId, bl);
-          mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
-          //const knownDevice = this.knownDevices?.getKnownDevice(deviceId);
-
-          // if (knownDevice?.autoConnect && cb != undefined) {
-          //   try {
-          //     this.lock.acquire(this.lockKey, async (done: any) => {
-          //       if (done) {
-          //         console.log("deviceId", deviceId);
-          //         cb(deviceId);
-          //         done();
-          //       }
-          //     });
-          //   } catch (error) {
-          //     console.error("Autoconect error ", cb);
-          //   }
-          // }
-        }
-      }
-    );
+    mainWindow.webContents.removeListener("select-bluetooth-device",  (event, deviceList, cb) => this.listenerSelectBluetoothDevice(event, deviceList, cb));
+    mainWindow.webContents.on("select-bluetooth-device", (event, deviceList, cb) => this.listenerSelectBluetoothDevice(event, deviceList, cb));
   };
 
   loadKnownDevices(): void {
@@ -524,20 +517,21 @@ export class BluetoothManager {
 
     if (
       !foundDevice ||
-      (!foundDevice?.peripheral && this.gattCallback == null)
+      (!foundDevice?.peripheral && foundDevice.gattCallback == null)
     ) {
       return;
     }
     if (this.knownDevices)
       this.knownDevices.addFromBluetoothDevice(foundDevice, true);
 
-    if (this.gattCallback != null) {
+
+    if (foundDevice.gattCallback != null) {
       try {
         this.lock.acquire(
           this.lockKey,
           async (done: any) => {
             if (done) {
-              const valueWrite = await this.gattCallback!(foundDevice.id);
+              const valueWrite = await foundDevice.gattCallback!(foundDevice.id);
               done();
               return;
             }

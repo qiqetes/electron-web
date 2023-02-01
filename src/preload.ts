@@ -185,6 +185,10 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   removeReciveDevices: () => {
     ipcRenderer.removeAllListeners("bluetoothDeviceFound");
   },
+  removeNotConnectedDevice: (name: string) => {
+    ipcRenderer.send("removeNotConnectedDevice", name)
+
+  },
   syncDevices: () => {
     ipcRenderer.send("syncDevices");
   },
