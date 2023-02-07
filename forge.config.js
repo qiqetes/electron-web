@@ -16,8 +16,9 @@ module.exports = {
     extraResource: "bin/",
     osxUniversal: {
       x64ArchFiles:
-        "Contents/Resources/{bin/mac/ffmpeg,app/.webpack/native_modules/lib/mac/native/binding.node}",
+        "Contents/Resources/{bin/mac/ffmpeg,app/.webpack/native_modules/binding.node,bin/mac/binding.node}",
       force: true,
+
     },
 
     // Commenting out this object will disable code signing for OS X.
