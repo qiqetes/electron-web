@@ -1,4 +1,8 @@
-import { getAvailableFeatures, getFeatures, intToBinary } from "./bluetoothDataParser";
+import {
+  getAvailableFeatures,
+  getFeatures,
+  intToBinary,
+} from "./bluetoothDataParser";
 
 export enum BluetoothFeatures {
   Speed = "Velocidad media",
@@ -20,7 +24,7 @@ export enum BluetoothFeatures {
   PowerOutput = "Potencia de salida",
   UserData = "Datos de usuario",
 
-// Write features
+  // Write features
   SpeedTarget = "Velocidad objetivo",
   InclinationTarget = "Inclinación objetivo",
   ResistanceTarget = "Resistencia objetivo",
@@ -44,43 +48,40 @@ export enum BluetoothFeatures {
   PowerBalance = "Pedal power balance",
   PowerBalanceReference = "Pedal power balance reference",
 
-   Torque = "Accumulated Torque",
-   TorqueSource = "Accumulated Torque source",
+  Torque = "Accumulated Torque",
+  TorqueSource = "Accumulated Torque source",
 
-   WheelRevolution = "Wheel Revolution power",
-   WheelRevolutionTimestamp =
-      "Wheel Revolution power timestamp",
+  WheelRevolution = "Wheel Revolution power",
+  WheelRevolutionTimestamp = "Wheel Revolution power timestamp",
 
-   CrankRevolution = "Crank Revolution power",
-   CrankRevolutionTimestamp =
-      "Crank Revolution power timestamp",
+  CrankRevolution = "Crank Revolution power",
+  CrankRevolutionTimestamp = "Crank Revolution power timestamp",
 
-   ExtremesMagnitudes = "Extreme Magnitudes",
-   ExtremesForcesMagnitudes = "Extreme force Magnitudes",
-   ExtremesTorqueMagnitures = "Extreme torque Magnitudes",
+  ExtremesMagnitudes = "Extreme Magnitudes",
+  ExtremesForcesMagnitudes = "Extreme force Magnitudes",
+  ExtremesTorqueMagnitures = "Extreme torque Magnitudes",
 
-   ExtremesAngles = "Extreme Angles",
-   DeadSpotAngles = "Dead Spot Angles",
-   TopDeadSpotAngles = "Top Dead Spot Angles",
-   BottomDeadSpotAngles = "Bottom Dead Spot Angles",
+  ExtremesAngles = "Extreme Angles",
+  DeadSpotAngles = "Dead Spot Angles",
+  TopDeadSpotAngles = "Top Dead Spot Angles",
+  BottomDeadSpotAngles = "Bottom Dead Spot Angles",
 
-   OffsetCompensationIndicator =
-      "Offset Compensation Indicator",
-   SensorMeasurement0 = "Sensor Measurement 0",
-   SensorMeasurement1 = "Sensor Measurement 1",
-   InstantaneousDirection = "Instantaneous direction",
-   OffsetCompensation = "Offset Compensation",
+  OffsetCompensationIndicator = "Offset Compensation Indicator",
+  SensorMeasurement0 = "Sensor Measurement 0",
+  SensorMeasurement1 = "Sensor Measurement 1",
+  InstantaneousDirection = "Instantaneous direction",
+  OffsetCompensation = "Offset Compensation",
 
-   MultipleSensorLocation = "Multiple Sensor Locations",
-   CrankLengthAdjustment = "Crank Length Adjustment",
-   ChainLengthAdjustment = "Chain Length Adjustment",
-   ChainWeightAdjustment = "Chain weight Adjustment",
-   SpanLengthAdjustment = "Span Length Adjustment",
-   FactorCalibrationDate = "Factory Calibration date",
-   EnhancedOffset = "Enhanced Offset Compensation ",
+  MultipleSensorLocation = "Multiple Sensor Locations",
+  CrankLengthAdjustment = "Crank Length Adjustment",
+  ChainLengthAdjustment = "Chain Length Adjustment",
+  ChainWeightAdjustment = "Chain weight Adjustment",
+  SpanLengthAdjustment = "Span Length Adjustment",
+  FactorCalibrationDate = "Factory Calibration date",
+  EnhancedOffset = "Enhanced Offset Compensation ",
 
-   CrankValue = "CRANK_VALUE ",
-   CrankTimestamp = "CRANK_TIMESTAMP_VALUE ",
+  CrankValue = "CRANK_VALUE ",
+  CrankTimestamp = "CRANK_TIMESTAMP_VALUE ",
 
   /// FTMS AVAILABLE
   BikeData = "BIKE_DATA",
@@ -115,11 +116,11 @@ const FTMSOrderFeaturesRead = [
   BluetoothFeatures.RemainingTime,
   BluetoothFeatures.Power,
   BluetoothFeatures.PowerOutput,
-  BluetoothFeatures.UserData
+  BluetoothFeatures.UserData,
 ];
 
 /* Lista ordenadas de características */
-const  FTMSOrderFeaturesWrite = [
+const FTMSOrderFeaturesWrite = [
   BluetoothFeatures.SpeedTarget,
   BluetoothFeatures.InclinationTarget,
   BluetoothFeatures.ResistanceTarget,
@@ -136,12 +137,10 @@ const  FTMSOrderFeaturesWrite = [
   BluetoothFeatures.BikeSimulation,
   BluetoothFeatures.WheelCircunference,
   BluetoothFeatures.SpinDown,
-  BluetoothFeatures.CadenceTarget
+  BluetoothFeatures.CadenceTarget,
 ];
 
-
-
-  /* Lista ordenadas de características */
+/* Lista ordenadas de características */
 const PowerOrderFeaturesRead = [
   BluetoothFeatures.Pedal,
   BluetoothFeatures.Torque,
@@ -164,51 +163,62 @@ const PowerOrderFeaturesRead = [
   BluetoothFeatures.SpanLengthAdjustment,
   BluetoothFeatures.FactorCalibrationDate,
   BluetoothFeatures.EnhancedOffset,
-  ];
+];
 
-  const  PowerOrderFeaturesWrite: string[] = [];
+const PowerOrderFeaturesWrite: string[] = [];
 
-
-export const getFtmsFeatures = (values: Buffer):string[] => {
+export const getFtmsFeatures = (values: Buffer): string[] => {
   // A ver la ordenación de los bits para controlar esto
-  if(values.length< 2){
-    return [''];
+  if (values.length < 2) {
+    return [""];
   }
-  const bitsFeaturesRead = intToBinary(values.readUIntBE(0,1)).reverse().concat(intToBinary(values.readUIntBE(1,1)).reverse());
+  const bitsFeaturesRead = intToBinary(values.readUIntBE(0, 1))
+    .reverse()
+    .concat(intToBinary(values.readUIntBE(1, 1)).reverse());
   //const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
-   var availabe = getFeatures(bitsFeaturesRead,FTMSOrderFeaturesRead);
+  let availabe = getFeatures(bitsFeaturesRead, FTMSOrderFeaturesRead);
 
-   if(values.length > 5){
-    const bitsFeaturesWrite = intToBinary(values.readUIntBE(4,1)).reverse().concat(intToBinary(values.readUIntBE(5,1)).reverse());
+  if (values.length > 5) {
+    const bitsFeaturesWrite = intToBinary(values.readUIntBE(4, 1))
+      .reverse()
+      .concat(intToBinary(values.readUIntBE(5, 1)).reverse());
     //const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
-    const availabeWrite = getFeatures(bitsFeaturesWrite,FTMSOrderFeaturesWrite);
+    const availabeWrite = getFeatures(
+      bitsFeaturesWrite,
+      FTMSOrderFeaturesWrite
+    );
     availabe = availabe.concat(availabeWrite);
   }
 
   return availabe;
-}
+};
 
-export const getPowerFeatures = (values: Buffer):string[] => {
+export const getPowerFeatures = (values: Buffer): string[] => {
   // A ver la ordenación de los bits para controlar esto
-  if(values.length< 2){
-    return [''];
+  if (values.length < 2) {
+    return [""];
   }
-  const bitsFeaturesRead = intToBinary(values.readUIntBE(0,1)).reverse().concat(intToBinary(values.readUIntBE(1,1)).reverse());
+  const bitsFeaturesRead = intToBinary(values.readUIntBE(0, 1))
+    .reverse()
+    .concat(intToBinary(values.readUIntBE(1, 1)).reverse());
   //const bitsFeaturesRead:Buffer =  Buffer.concat([values.subarray(0,7).reverse(),values.subarray(7,16).reverse()]);
-   var availabe = getFeatures(bitsFeaturesRead,PowerOrderFeaturesRead);
-   if(values.length > 2){
-    const bitsFeaturesWrite = intToBinary(values.readUIntBE(2,1)).reverse().concat(intToBinary(values.readUIntBE(3,1)).reverse());
+  let availabe = getFeatures(bitsFeaturesRead, PowerOrderFeaturesRead);
+  if (values.length > 2) {
+    const bitsFeaturesWrite = intToBinary(values.readUIntBE(2, 1))
+      .reverse()
+      .concat(intToBinary(values.readUIntBE(3, 1)).reverse());
     //const bitsFeaturesWrite = Buffer.concat([values.subarray(32,39).reverse() , values.subarray(40,48).reverse()]);
-    const availabeWrite = getFeatures(bitsFeaturesWrite,PowerOrderFeaturesWrite);
+    const availabeWrite = getFeatures(
+      bitsFeaturesWrite,
+      PowerOrderFeaturesWrite
+    );
     availabe = availabe.concat(availabeWrite);
-
   }
   availabe.push(BluetoothFeatures.Power);
 
-  if(availabe.find((value ) => value == BluetoothFeatures.CrankRevolution)){
+  if (availabe.find((value) => value == BluetoothFeatures.CrankRevolution)) {
     availabe.push(BluetoothFeatures.Cadence);
   }
 
-
   return availabe;
-}
+};

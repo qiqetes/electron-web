@@ -131,6 +131,18 @@ export class FtmsDevice extends BikeDevice {
     mainWindow.webContents.send("bikeData-" + this.id, this.bikeValues);
   }
 
+  // TODO: pruebas para el bug del -1
+  checkButtonPress(): boolean {
+    const valueZycleButton = this.zycleButton.mode.get(ButtonMode.AUTO);
+    if (valueZycleButton) {
+      const powerRangeMin = valueZycleButton.value - 15;
+      const powerRangeMax = valueZycleButton.value + 15;
+      if (this.powerTarget > powerRangeMin || this.powerTarget < powerRangeMax)
+        return true;
+    }
+    return false;
+  }
+
   readButtonControl(data: Buffer): void {
     const state = Buffer.from(data);
     const values = bufferToListInt(state);
@@ -142,7 +154,8 @@ export class FtmsDevice extends BikeDevice {
           if (
             dataController.get(ZycleButton.LEVEL) !=
               Math.floor(this.powerTarget / 5) &&
-            this.powerTarget != 10
+            this.powerTarget != 10 &&
+            this.checkButtonPress()
           ) {
             this.resetWindowValues();
             mainWindow.webContents.send(
@@ -292,6 +305,7 @@ export class FtmsDevice extends BikeDevice {
     if (this.intervalWrite) {
       clearInterval(this.intervalWrite);
     }
+    this.setPowerTarget(10);
     const data = Buffer.from(GattSpecification.ftms.controlPoint.stop);
     await this.writeData(
       GattSpecification.ftms.service,
