@@ -80,7 +80,7 @@ export class BluetoothManager {
     ipcMain.on(
       "setPowerTarget",
       async (event, power: number): Promise<void> => {
-        const features = await this.setPowerTarget(power);
+        await this.setPowerTarget(power);
         event.returnValue = null;
       }
     );
@@ -454,7 +454,6 @@ export class BluetoothManager {
       this.allDevicesList.set(deviceId, bl);
       //Autoconnect
       if (knownDevice != null && knownDevice.autoConnect) {
-        console.log("entro autoconnect");
         this.connect(deviceId);
       }
       //this.ipcMain.emit("bluetoothDeviceFound",bl)
