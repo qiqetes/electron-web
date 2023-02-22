@@ -3,7 +3,7 @@ export const bufferToListInt = (values: Buffer): number[] => {
 };
 export const getFeatures = (bits: number[], features: string[]): string[] => {
   const sizeFeatures = features.length;
-  var availableFeatures: string[] = [];
+  const availableFeatures: string[] = [];
 
   bits.forEach((value, index) => {
     if (index < sizeFeatures) {
@@ -20,7 +20,7 @@ export const getAvailableFeatures = (
   features: string[],
   activeValueFeatures: number[] | undefined
 ): string[] => {
-  var availableFeatures: string[] = [];
+  const availableFeatures: string[] = [];
   bits.forEach((value, index) => {
     if (index < features.length) {
       let valueTrue = 1;
@@ -58,13 +58,13 @@ export const listToInt = (
   to: number,
   order: OrderBytes = "lso"
 ): number | undefined => {
-  let fromValue = from;
-  let toValue = to;
+  const fromValue = from;
+  const toValue = to;
   const orderType = order || "lso";
 
   if (bitsValues.length >= toValue) {
     const bitsFeature = bitsValues.slice(fromValue, to);
-    let value = orderList(orderType, bitsFeature);
+    const value = orderList(orderType, bitsFeature);
     const binaryString = value.join("");
     return parseInt(binaryString, 2);
   }
@@ -77,19 +77,19 @@ export const orderList = (order: OrderBytes, bits: number[]): number[] => {
   let orderedBits: number[] = [];
   if (order != "lso") {
     for (let i = 0; i < numBytes; i++) {
-      let initialBit = i * 8;
-      let finalBit = (i + 1) * 8;
+      const initialBit = i * 8;
+      const finalBit = (i + 1) * 8;
       if (finalBit <= bits.length) {
-        let readValues = bits.slice(initialBit, finalBit);
+        const readValues = bits.slice(initialBit, finalBit);
         orderedBits = orderedBits.concat(readValues);
       }
     }
   } else {
     for (let i = numBytes; i > 0; i--) {
-      let initialBit = (i - 1) * 8;
-      let finalBit = i * 8;
+      const initialBit = (i - 1) * 8;
+      const finalBit = i * 8;
       if (finalBit <= bits.length && initialBit >= 0) {
-        let readValues = bits.slice(initialBit, finalBit);
+        const readValues = bits.slice(initialBit, finalBit);
         orderedBits = orderedBits.concat(readValues);
       }
     }

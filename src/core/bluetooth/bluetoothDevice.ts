@@ -1,4 +1,4 @@
-var AsyncLock = require("async-lock");
+const AsyncLock = require("async-lock");
 
 import noble, {
   Advertisement,
@@ -54,7 +54,7 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     state: BluetoothDeviceState = BluetoothDeviceState.unknown,
     peripheral: Peripheral | undefined,
     parserType: BluetoothParserType,
-    broadcast: boolean = false
+    broadcast = false
   ) {
     this.id = deviceId;
     this.name = deviceName;
@@ -207,9 +207,9 @@ export class BluetoothDevice implements BluetoothDeviceInterface {
     } else {
       this.peripheral.on("connect", async (stream) => {
         this.cachedMeasurement = [];
-        await this.getFeatures();
         this.state = BluetoothDeviceState[this.peripheral!.state];
         mainWindow.webContents.send("bluetoothDeviceState", this.serialize());
+        await this.getFeatures();
 
         this.startNotify();
       });

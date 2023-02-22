@@ -18,7 +18,7 @@ export class FtmsDevice extends BikeDevice {
     deviceName: string,
     state: BluetoothDeviceState = BluetoothDeviceState.unknown,
     peripheral: Peripheral | undefined,
-    broadcast: boolean = false
+    broadcast = false
   ) {
     super(deviceId, deviceName, state, peripheral, "ftms", false);
     this.bikeValues = new Map<string, any>();
@@ -359,7 +359,6 @@ export class FtmsDevice extends BikeDevice {
       clearInterval(this.intervalWrite);
     }
     this.resistanceTarget = resistance;
-
     const values = intToBuffer(resistance);
     const data = Buffer.concat([
       Buffer.from(GattSpecification.ftms.controlPoint.setResistance),
