@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.6",
+  "version": "4.0.7",
   "description": "Aplicación de escritorio BestcyclingTV.",
   "main": ".webpack/main",
   "scripts": {
@@ -35,7 +35,6 @@
     "premake:win": "cpx premake/win/resolve-bindings.js node_modules/@abandonware/noble/lib/",
     "rebuild:ia32": "npm rebuild --arch=ia32 && cd ./node_modules/usb && node-gyp.cmd rebuild --arch=ia32 --verbose  && cd ../..",
     "rebuild:x64": "npm rebuild --arch=x64 && cd ./node_modules/usb && node-gyp.cmd rebuild --arch=x64 --verbose && cd ../.."
-
   },
   "keywords": [],
   "author": {

@@ -18,16 +18,15 @@ module.exports = {
       x64ArchFiles:
         "Contents/Resources/{bin/mac/ffmpeg,app/.webpack/native_modules/binding.node,bin/mac/binding.node}",
       force: true,
-
     },
 
     // Commenting out this object will disable code signing for OS X.
-     osxNotarize: {
-       appBundleId: "com.nw-builder.bestcyclingtv",
-       appleId: process.env.APPLE_ID,
-       appleIdPassword: process.env.APPLE_ID_PASSWORD,
-       ascProvider: "YMCHSA4437",
-     },
+    osxNotarize: {
+      appBundleId: "com.nw-builder.bestcyclingtv",
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_ID_PASSWORD,
+      ascProvider: "YMCHSA4437",
+    },
   },
   makers: [
     {
