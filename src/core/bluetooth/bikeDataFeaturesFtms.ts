@@ -1,4 +1,3 @@
-import { existsSync } from "original-fs";
 import {
   getAvailableFeatures,
   intToBinary,
@@ -108,8 +107,8 @@ export class BikeDataFeaturesFtms {
     const bitsValues = listToBinary(intValues);
 
     features.forEach((feature) => {
-      let numBits = BikeDataFeaturesFtms.sizeFeature.get(feature)!;
-      let toBits = currentBit + numBits;
+      const numBits = BikeDataFeaturesFtms.sizeFeature.get(feature)!;
+      const toBits = currentBit + numBits;
       // Energy tiene 3 valores
       if (feature != BikeDataFeaturesFtms.ENERGY) {
         featureRead.set(
