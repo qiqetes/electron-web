@@ -5,6 +5,7 @@ import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
 import {
   avoidExternalPageRequests,
+  detectWorkerInstallation,
   onWindowMoved,
   onWindowResized,
 } from "./helpers";
@@ -56,8 +57,8 @@ const createWindow = async () => {
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools:
-        process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
+      devTools: true,
+      // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
 
@@ -95,6 +96,7 @@ const createWindow = async () => {
     shell.openExternal(url);
   });
 
+  detectWorkerInstallation(session.defaultSession);
   avoidExternalPageRequests(mainWindow);
   onWindowResized(mainWindow);
   onWindowMoved(mainWindow);
@@ -102,14 +104,14 @@ const createWindow = async () => {
   hrService.registerBluetoothEvents(mainWindow);
 };
 
-const reactDevToolsPath = path.join(
-  process.cwd(),
-  "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
-);
+// const reactDevToolsPath = path.join(
+//   process.cwd(),
+//   "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
+// );
 
 app.on("ready", async () => {
   if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
-    await session.defaultSession.loadExtension(reactDevToolsPath);
+    // await session.defaultSession.loadExtension(reactDevToolsPath);
   }
   ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
   createWindow();

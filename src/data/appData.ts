@@ -18,6 +18,7 @@ export class AppDataModel implements AppData {
   MAIN_LOADED = false;
   LAST_WINDOW_SIZE: null | { width: number; height: number } = null;
   LAST_WINDOW_POSITION: null | { x: number; y: number } = null;
+  WORKER_INSTALLED = false;
 
   constructor() {
     this.init();
@@ -41,6 +42,7 @@ export class AppDataModel implements AppData {
       USER,
       LAST_WINDOW_SIZE,
       LAST_WINDOW_POSITION,
+      WORKER_INSTALLED,
     } = DB.data!.appData;
     this.FIRST_TIME_IT_RUNS = FIRST_TIME_IT_RUNS;
     this.LAST_VERSION_DOWNLOADED = LAST_VERSION_DOWNLOADED;
@@ -48,6 +50,7 @@ export class AppDataModel implements AppData {
     this.USER = USER;
     this.LAST_WINDOW_SIZE = LAST_WINDOW_SIZE;
     this.LAST_WINDOW_POSITION = LAST_WINDOW_POSITION;
+    this.WORKER_INSTALLED = WORKER_INSTALLED;
   }
 
   saveToDb(): void {
@@ -58,6 +61,7 @@ export class AppDataModel implements AppData {
       USER: this.USER,
       LAST_WINDOW_SIZE: this.LAST_WINDOW_SIZE,
       LAST_WINDOW_POSITION: this.LAST_WINDOW_POSITION,
+      WORKER_INSTALLED: this.WORKER_INSTALLED,
     };
   }
 }

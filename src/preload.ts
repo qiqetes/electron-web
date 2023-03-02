@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   mainLoaded: () => ipcRenderer.send("mainLoaded"),
 
-  // Sqes settings from webapp to SettingsData
+  // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);
   },
@@ -71,6 +71,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     callback: (event: Event, setting: string, value: any) => void
   ) => {
     ipcRenderer.on("settingChange", callback);
+  },
+
+  workerInstalled: () => {
+    return ipcRenderer.sendSync("workerInstalled");
+  },
+
+  notifyWorkerInstalled: () => {
+    ipcRenderer.send("notifyWorkerInstalled");
   },
 });
 
