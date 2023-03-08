@@ -89,11 +89,13 @@ const createWindow = async () => {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const isExternalPlayer =
       url.startsWith(AppData.WEBAPP_WEBASE!) && url.endsWith("/external.html");
-    if (isExternalPlayer) return { action: "deny" };
-    // e.preventDefault();
+    if (isExternalPlayer)
+      return {
+        action: "allow",
+      };
     shell.openExternal(url);
 
-    return { action: "allow" };
+    return { action: "deny" };
   });
 
   avoidExternalPageRequests(mainWindow);
