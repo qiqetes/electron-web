@@ -1,4 +1,4 @@
-var AsyncLock = require("async-lock");
+const AsyncLock = require("async-lock");
 
 import noble, { Advertisement, Peripheral } from "@abandonware/noble";
 import { mainWindow } from "../../index";
@@ -21,7 +21,7 @@ export class HeartRateDevice extends BluetoothDevice {
     deviceName: string,
     state: BluetoothDeviceState = BluetoothDeviceState.unknown,
     peripheral: Peripheral | undefined,
-    broadcast: boolean = false
+    broadcast = false
   ) {
     super(
       deviceId,
@@ -177,7 +177,7 @@ export class HeartRateDevice extends BluetoothDevice {
 
   readDataFromBuffer(uuid: string, values: Buffer) {
     const buffer = Buffer.from(values);
-    const data = buffer.readInt8(1); //heart rate measurement
+    const data = buffer.readUInt8(1); //heart rate measurement
     if (data >= 0) {
       this.heartRateValue = data;
       mainWindow.webContents.send("heartRateData-" + this.id, data);
