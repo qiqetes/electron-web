@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from "electron";
 import { join } from "path";
+import { AppData } from "../data/appData";
 import config from "../config";
 
 import { log, logError, logWarn } from "./loggers";
@@ -47,4 +48,18 @@ export const avoidExternalPageRequests = (mainWindow: BrowserWindow) => {
  */
 export const getDBPath = () => {
   return join(app.getPath("userData"), "db.json");
+};
+
+export const onWindowResized = (mainWindow: BrowserWindow) => {
+  mainWindow.on("resize", () => {
+    const [width, height] = mainWindow.getSize();
+    AppData.LAST_WINDOW_SIZE = { width, height };
+  });
+};
+
+export const onWindowMoved = (mainWindow: BrowserWindow) => {
+  mainWindow.on("moved", () => {
+    const [x, y] = mainWindow.getPosition();
+    AppData.LAST_WINDOW_POSITION = { x, y };
+  });
 };

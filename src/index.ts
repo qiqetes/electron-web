@@ -3,7 +3,11 @@ import { app, session, BrowserWindow, ipcMain, shell } from "electron";
 import path from "path";
 import os from "os";
 import { LocalServerInstance } from "./core/LocalServer";
-import { avoidExternalPageRequests } from "./helpers";
+import {
+  avoidExternalPageRequests,
+  onWindowMoved,
+  onWindowResized,
+} from "./helpers";
 
 import { DownloadsData, init, SettingsData } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
@@ -45,8 +49,10 @@ const createWindow = async () => {
     autoHideMenuBar: true,
     darkTheme: true,
     // icon: icon,
-    height: 1000,
-    width: 1200,
+    height: AppData.LAST_WINDOW_SIZE?.height || 800,
+    width: AppData.LAST_WINDOW_SIZE?.width || 1100,
+    x: AppData.LAST_WINDOW_POSITION?.x,
+    y: AppData.LAST_WINDOW_POSITION?.y,
     minWidth: 1025,
     minHeight: 720,
     backgroundColor: "#151515",
@@ -104,6 +110,10 @@ const createWindow = async () => {
   //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();
+  onWindowResized(mainWindow);
+  onWindowMoved(mainWindow);
+  const hrService = new HeartRateDeviceService(ipcMain);
+  hrService.registerBluetoothEvents(mainWindow);
 };
 
 const reactDevToolsPath = path.join(

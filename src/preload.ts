@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   sendReport: (report: string) => {
     ipcRenderer.send("sendReport", report);
   },
+  sendAutoReport: (report: string) => {
+    ipcRenderer.send("sendReport", report);
+  },
 
   setUser: (user: User) => {
     ipcRenderer.send("setUser", user);

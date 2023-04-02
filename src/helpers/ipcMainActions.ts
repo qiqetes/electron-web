@@ -224,6 +224,9 @@ export const informSettingState = (settingCode: string, value: any) => {
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
+ipcMain.on("sendAutoReport", (_, report) => {
+  ErrorReporter.sendAutoReport(report);
+});
 
 ipcMain.on("getAdjustVideoPath", (event) => {
   const adjustVideoPath = url.pathToFileURL(

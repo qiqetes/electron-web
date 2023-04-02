@@ -16,6 +16,8 @@ export class AppDataModel implements AppData {
   VERSION = pack.version;
   USER: User | null = null;
   MAIN_LOADED = false;
+  LAST_WINDOW_SIZE: null | { width: number; height: number } = null;
+  LAST_WINDOW_POSITION: null | { x: number; y: number } = null;
 
   constructor() {
     this.init();
@@ -32,12 +34,20 @@ export class AppDataModel implements AppData {
     if (!DB.data?.appData) {
       return;
     }
-    const { FIRST_TIME_IT_RUNS, LAST_VERSION_DOWNLOADED, LAST_LOGIN, USER } =
-      DB.data!.appData;
+    const {
+      FIRST_TIME_IT_RUNS,
+      LAST_VERSION_DOWNLOADED,
+      LAST_LOGIN,
+      USER,
+      LAST_WINDOW_SIZE,
+      LAST_WINDOW_POSITION,
+    } = DB.data!.appData;
     this.FIRST_TIME_IT_RUNS = FIRST_TIME_IT_RUNS;
     this.LAST_VERSION_DOWNLOADED = LAST_VERSION_DOWNLOADED;
     this.LAST_LOGIN = LAST_LOGIN;
     this.USER = USER;
+    this.LAST_WINDOW_SIZE = LAST_WINDOW_SIZE;
+    this.LAST_WINDOW_POSITION = LAST_WINDOW_POSITION;
   }
 
   saveToDb(): void {
@@ -46,6 +56,8 @@ export class AppDataModel implements AppData {
       LAST_VERSION_DOWNLOADED: this.LAST_VERSION_DOWNLOADED,
       LAST_LOGIN: this.LAST_LOGIN,
       USER: this.USER,
+      LAST_WINDOW_SIZE: this.LAST_WINDOW_SIZE,
+      LAST_WINDOW_POSITION: this.LAST_WINDOW_POSITION,
     };
   }
 }
