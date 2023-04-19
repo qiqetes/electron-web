@@ -54,8 +54,6 @@ module.exports = {
         folder: `desktop/versions/v${version}`,
         public: true,
         keyResolver: (fileName, platform, arch) => {
-          if (arch === "universal")
-            return `desktop/versions/v${version}/darwin/${fileName}`;
           return `desktop/versions/v${version}/${arch}/${fileName}`;
         },
       },
