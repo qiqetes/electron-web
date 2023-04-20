@@ -1,8 +1,7 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, Session, shell } from "electron";
 import { join } from "path";
 import { AppData } from "../data/appData";
 import config from "../config";
-
 import { log, logError, logWarn } from "./loggers";
 
 export const getLocalStoragePrefs = async (mainWindow: BrowserWindow) => {
@@ -39,6 +38,25 @@ export const avoidExternalPageRequests = (mainWindow: BrowserWindow) => {
       event.preventDefault();
 
       return;
+    }
+  });
+};
+
+/**
+ * Detects when the service worker is installed and ready to work offline
+ */
+export const detectWorkerInstallation = (session: Session) => {
+  if (AppData.WORKER_INSTALLED) {
+    log("Worker already installed");
+    return;
+  }
+  log("Waiting for worker message");
+  session.serviceWorkers.on("console-message", (_, messageDetails) => {
+    if (messageDetails.message === "@worker:installed") {
+      log("WORKER INSTALLED");
+    }
+    if (messageDetails.message === "@worker:user") {
+      AppData.WORKER_INSTALLED = true;
     }
   });
 };

@@ -235,6 +235,14 @@ ipcMain.on("getAdjustVideoPath", (event) => {
   event.returnValue = adjustVideoPath;
 });
 
+ipcMain.on("workerInstalled", (event) => {
+  event.returnValue = AppData.WORKER_INSTALLED;
+});
+
+ipcMain.on("notifyWorkerInstalled", () => {
+  AppData.WORKER_INSTALLED = true;
+});
+
 ipcMain.on("getSetting", (event, setting) => {
   log("Webapp ask for setting: " + setting);
   let toReturn: any;
