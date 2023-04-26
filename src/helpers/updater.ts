@@ -87,19 +87,12 @@ const getMostUpdatedManifest = async (allowedChannels: {
   revision: boolean | undefined;
   beta: boolean | undefined;
 }): Promise<UpdateManifest | null> => {
+  
   const manifestRevision = allowedChannels.revision
-    ? (
-        await axios.get<UpdateManifest>(
-          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/revision/manifest.json"
-        )
-      ).data
+    ? await getManifest('revision')
     : null;
   const manifestBeta = allowedChannels.beta
-    ? (
-        await axios.get<UpdateManifest>(
-          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/beta/manifest.json"
-        )
-      ).data
+    ? await getManifest('beta')
     : null;
   const manifestProduction = (
     await axios.get<UpdateManifest>(
@@ -116,6 +109,21 @@ const getMostUpdatedManifest = async (allowedChannels: {
       return prev;
     });
 };
+
+const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<UpdateManifest|null> => {
+  try{
+    const manifest = (
+      await axios.get<UpdateManifest>(
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/manifest.json`
+      )
+    ).data;
+    return manifest;
+  }
+  catch(err){
+    logError("Error getting manifest", err);
+    return null;
+  }
+}
 
 /**
  * Sets the autoUpdater to check the s3 manifest and check wether there are updates
@@ -215,7 +223,7 @@ export const setAutoUpdater = async (allowedChannels: {
       }
       const nupkgName = data.split(" ")[1];
 
-      var updateDirTem = updateUrl.split('/');
+      const updateDirTem = updateUrl.split('/');
       updateDirTem.pop();
       const updateDir = updateDirTem.join('/');
       log("NUPKG NAME:", nupkgName, "update Dir ",updateDir);

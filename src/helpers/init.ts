@@ -52,13 +52,14 @@ const recoverOldPrefs = () => {
 // Processess that should be initialized before the webpage loads
 export const init = async () => {
   initErrorHandler();
+
   await initDB();
-  if (process.env.NODE_ENV !== "development") {
+  // if (process.env.NODE_ENV !== "development") {
     setAutoUpdater({
       revision: AppData.USER?.isPreviewTester,
       beta: AppData.USER?.isBetaTester,
     });
-  }
+  // }
 
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
@@ -117,7 +118,6 @@ const initDB = async () => {
     DownloadsData.getFromDb();
     AppData.getFromDb();
     KnownDevicesData.getFromDb();
-    AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
   }
 
   // Start downloads that remained in queue
