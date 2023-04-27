@@ -81,6 +81,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   notifyWorkerInstalled: () => {
     ipcRenderer.send("notifyWorkerInstalled");
   },
+
+  checkConnection: () => ipcRenderer.sendSync("checkConnection"),
 });
 
 contextBridge.exposeInMainWorld("conversionAPI", {
