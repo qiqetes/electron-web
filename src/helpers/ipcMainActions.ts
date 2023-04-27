@@ -2,7 +2,7 @@ import path from "path";
 import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, net } from "electron";
 import {
   api,
   BinData,
@@ -442,6 +442,11 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
     });
   });
 });
+
+ipcMain.on("checkConnection", (event, id, media) => {
+  event.returnValue = net.isOnline();
+});
+
 
 // There are some actions that need to comunicate with the renderer process
 // but they are launched before the execution of the renderer process
