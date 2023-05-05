@@ -24,7 +24,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
       variant?: string,
       seconds?: number
     ) => void
-  ) => ipcRenderer.on("toast", callback),
+  ) => {
+    ipcRenderer.removeAllListeners("toast");
+    ipcRenderer.on("toast", callback);
+  },
 
   // Send modal notification
   handleModal: (
@@ -186,8 +189,10 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
   handleReciveStatusDevices: (
     callback: (event: Event, device: BluetoothDevice) => void
   ) => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceState");
     ipcRenderer.on("bluetoothDeviceState", callback);
   },
+
   handleHeartRateData: (
     id: string,
     callback: (event: Event, data: any) => void
@@ -199,8 +204,7 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.removeAllListeners("bluetoothDeviceFound");
   },
   removeNotConnectedDevice: (name: string) => {
-    ipcRenderer.send("removeNotConnectedDevice", name)
-
+    ipcRenderer.send("removeNotConnectedDevice", name);
   },
   syncDevices: () => {
     ipcRenderer.send("syncDevices");
