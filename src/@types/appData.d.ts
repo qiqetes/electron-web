@@ -8,4 +8,5 @@ interface AppDataDB {
   LAST_WINDOW_POSITION: null | { x: number; y: number };
   WORKER_INSTALLED: boolean;
   AUTHORIZATION: string;
+  USER_AGENT: string;
 }

@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logWarn } from "./loggers";
 import KnownDevicesDataModel from "../data/knownDevicesData";
+import { mainWindow } from "../index";
 // Use JSON file for storage
 const file = getDBPath();
 
@@ -122,11 +123,13 @@ const initDB = async () => {
     KnownDevicesData.getFromDb();
   }
 
+
   api = new Kitsu({
     headers: {
       "Content-Type": "application/vnd.api+json",
       "X-APP-ID": AppData.XAPPID,
       Authorization: AppData.AUTHORIZATION,
+      "User-Agent": AppData.USER_AGENT ?? 'BestCycling desktop',
     },
     baseURL: "https://apiv2.bestcycling.es/api/v2",
   });
