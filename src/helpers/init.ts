@@ -129,7 +129,7 @@ const initDB = async () => {
       "Content-Type": "application/vnd.api+json",
       "X-APP-ID": AppData.XAPPID,
       Authorization: AppData.AUTHORIZATION,
-      "User-Agent": AppData.USER_AGENT,
+      "User-Agent": AppData.USER_AGENT ?? 'BestCycling desktop',
     },
     baseURL: "https://apiv2.bestcycling.es/api/v2",
   });
