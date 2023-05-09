@@ -66,6 +66,7 @@ const createWindow = async () => {
       // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
+  AppData.USER_AGENT = mainWindow.webContents.session.getUserAgent();
 
   mainWindow.setMenu(null);
 
@@ -90,6 +91,7 @@ const createWindow = async () => {
       );
     }
   });
+
 
   mainWindow.on("close", async () => await saveAll());
 
