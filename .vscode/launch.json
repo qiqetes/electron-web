@@ -8,7 +8,7 @@
       "name": "ELECTRON",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}",
+      "cwd": "${workspaceFolder}",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run-script", "start"]
     },

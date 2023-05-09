@@ -24,7 +24,7 @@ export const BinData = new BinDataModel();
 export const SettingsData = new SettingsDataModel();
 export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();
-console.log("**^la database file está en ",file);
+console.log("**^la database file está en ", file);
 export const KnownDevicesData = new KnownDevicesDataModel();
 
 log("DB file in: ", getDBPath());
@@ -55,10 +55,10 @@ export const init = async () => {
 
   await initDB();
   // if (process.env.NODE_ENV !== "development") {
-    setAutoUpdater({
-      revision: AppData.USER?.isPreviewTester,
-      beta: AppData.USER?.isBetaTester,
-    });
+  setAutoUpdater({
+    revision: AppData.USER?.isPreviewTester,
+    beta: AppData.USER?.isBetaTester,
+  });
   // }
 
   recoverOldPrefs();
@@ -93,6 +93,8 @@ const setStartingUrl = () => {
   }
 };
 
+
+export let api: Kitsu;
 /**
  * Initializes the database and creates the tables if they don't exist
  * Also calls the startDownloads at the end
@@ -120,6 +122,16 @@ const initDB = async () => {
     KnownDevicesData.getFromDb();
   }
 
+  api = new Kitsu({
+    headers: {
+      "Content-Type": "application/vnd.api+json",
+      "X-APP-ID": AppData.XAPPID,
+      Authorization: AppData.AUTHORIZATION,
+    },
+    baseURL: "https://apiv2.bestcycling.es/api/v2",
+  });
+
+
   // Start downloads that remained in queue
   DownloadsData.startDownloads();
 };
@@ -131,12 +143,3 @@ const initErrorHandler = () =>
     uploadToServer: false,
   });
 
-export const api = new Kitsu({
-  headers: {
-    "Content-Type": "application/vnd.api+json",
-    "X-APP-ID": AppData.XAPPID,
-    // "X-APP-VERSION": appVersion,
-    Authorization: AppData.AUTHORIZATION,
-  },
-  baseURL: "https://apiv2.bestcycling.es/api/v2",
-});

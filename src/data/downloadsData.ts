@@ -263,8 +263,7 @@ class DownloadsDataModel implements DownloadsData {
           download.retries++;
           this.resumeDownloads();
           sendToast(
-            `Error al descargar clase: ${
-              TrainingClassesData.trainingClasses[download.id].title
+            `Error al descargar clase: ${TrainingClassesData.trainingClasses[download.id].title
             }`,
             "error",
             3
@@ -315,8 +314,7 @@ class DownloadsDataModel implements DownloadsData {
           const isCompleted = received === totalSize;
           if (isCompleted) {
             sendToast(
-              `Clase descargada ${
-                TrainingClassesData.trainingClasses[download.id].title
+              `Clase descargada ${TrainingClassesData.trainingClasses[download.id].title
               }`,
               "success",
               3
@@ -358,6 +356,7 @@ class DownloadsDataModel implements DownloadsData {
 
   getFromDb(): void {
     if (!DB.data?.downloads) return;
+    console.log(DB.data?.downloads);
     this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
     this.hasAdjustVideo = DB.data!.downloads.hasAdjustVideo;
@@ -443,8 +442,7 @@ class DownloadsDataModel implements DownloadsData {
     if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
     log(
-      `Removing download ${id}-${mediaType} in ${
-        url.pathToFileURL(filePath).href
+      `Removing download ${id}-${mediaType} in ${url.pathToFileURL(filePath).href
       }`
     );
 
@@ -585,8 +583,8 @@ class DownloadsDataModel implements DownloadsData {
             v.status === "downloading"
               ? v.progress
               : v.status === "downloaded"
-              ? 100
-              : 0,
+                ? 100
+                : 0,
           downloaded: v.status === "downloaded",
           downloading: v.status === "downloading",
           queued: v.status === "queued",
@@ -595,6 +593,9 @@ class DownloadsDataModel implements DownloadsData {
             v.mediaType
           )}`,
         };
+
+        const trainingClass = TrainingClassesData.trainingClasses[id];
+        if (trainingClass.media == null) trainingClass.media = [];
 
         if (!obj) {
           return [
@@ -613,6 +614,7 @@ class DownloadsDataModel implements DownloadsData {
       },
       []
     );
+
 
     return {
       isDownloading,
@@ -740,7 +742,10 @@ class DownloadsDataModel implements DownloadsData {
     // Check the offlineTrainingClasses really exist
     Object.keys(this.offlineTrainingClasses).forEach((key) => {
       if (foundDownloads.includes(key)) return;
-      delete this.offlineTrainingClasses[key];
+      // delete this.offlineTrainingClasses[key];
+      if (this.offlineTrainingClasses[key].status === "downloaded" && !foundDownloads.includes(key)) {
+        this.offlineTrainingClasses[key].status = "queued";
+      }
     });
 
     // Add unregistered downloads
@@ -764,6 +769,7 @@ class DownloadsDataModel implements DownloadsData {
       };
     });
   }
+
 
   /**
    *  Downloads Cesar's bike adjustment video
