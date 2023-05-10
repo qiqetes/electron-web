@@ -1,4 +1,4 @@
-interface AppData extends IndexableData, AppDataDB {}
+interface AppData extends IndexableData, AppDataDB { }
 
 interface AppDataDB {
   LAST_VERSION_DOWNLOADED: null | string;
@@ -7,4 +7,6 @@ interface AppDataDB {
   LAST_WINDOW_SIZE: null | { width: number; height: number };
   LAST_WINDOW_POSITION: null | { x: number; y: number };
   WORKER_INSTALLED: boolean;
+  AUTHORIZATION: string;
+  USER_AGENT: string;
 }

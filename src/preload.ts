@@ -180,6 +180,7 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.removeAllListeners("bluetoothDeviceFound");
     ipcRenderer.on("bluetoothDeviceFound", callback);
   },
+
   handleReciveStatus: (
     callback: (event: Event, status: BluetoothDevice) => void
   ) => {
@@ -226,9 +227,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.removeAllListeners("buttonChange-" + id);
     ipcRenderer.on("buttonChange-" + id, callback);
   },
-  readData: (id: string) => {},
-  subscribeData: (id: string) => {},
-  getDeviceList: () => {},
+  readData: (id: string) => { },
+  subscribeData: (id: string) => { },
+  getDeviceList: () => { },
   getFeatures: () => ipcRenderer.sendSync("getFeatures"),
   getLevelRange: () => ipcRenderer.sendSync("getLevelRange"),
   isAvailableBluetooth: () => ipcRenderer.sendSync("isAvailableBluetooth"),
