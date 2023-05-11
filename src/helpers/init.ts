@@ -122,6 +122,7 @@ const initDB = async () => {
     KnownDevicesData.getFromDb();
   }
 
+  // TODO: fuera
   api = new Kitsu({
     headers: {
       "Content-Type": "application/vnd.api+json",

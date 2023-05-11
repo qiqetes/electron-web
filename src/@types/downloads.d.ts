@@ -48,12 +48,28 @@ type webappDownload = {
 // The downloadsState that the webapp expects
 // TODO: mejorar esto que es un desastre, pero se usa igual en toda la webapp
 type downloadsStateWebapp = {
-  isDownloading: boolean; // Downloads are in progress
-  queue: string[]; // Clases encoladas (['285303-music'])
-  downloading: null | OfflineTrainingClass; // Clase actualmente en descarga ({ id: 285303, key: 'audio', progress: 20 })
+  /**
+   * Devuelve si se está descargando alguna clase actualmente.
+   */
+  isDownloading: boolean;
+  /**
+   * Clases encoladas (['285303-music'])
+   */
+  queue: string[];
+  /*
+   * Clase actualmente en descarga ({ id: 285303, key: 'audio', progress: 20 }) o null si no hay ninguna descarga activa
+   */
+  downloading: null | OfflineTrainingClass;
+  /**
+   * Clases descargadas
+   */
   trainingClasses: webappDownload[];
+  /**
+   * Listado de ids de clases descargadas de las cuales no tenemos información en base de datos.
+   */
+  unregisteredDownloads: string[];
 };
 
 type conversionStateWebapp = {
-  percent: number
-}
+  percent: number;
+};

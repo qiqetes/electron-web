@@ -17,13 +17,23 @@ import {
 import { AppData } from "./appData";
 import { log, logError, logWarn } from "../helpers/loggers";
 
-class DownloadsDataModel implements DownloadsData {
+export default class DownloadsDataModel implements DownloadsData {
   offlineTrainingClasses: { [id: string]: OfflineTrainingClass } = {}; // [id: id+"-"+mediaType]
+
   trainingClassesScheduled: number[] = [];
+
   isDownloading = false;
+
   currentTask: RedirectableRequest<any, any> | null = null;
+
   currentDownload: OfflineTrainingClass | null = null;
+
   hasAdjustVideo = false;
+
+  /*
+   * Found files not registered in database
+   */
+  unregisteredDownloads: string[] = [];
 
   constructor() {
     this.init();
@@ -33,6 +43,7 @@ class DownloadsDataModel implements DownloadsData {
   init() {
     this.offlineTrainingClasses = {};
     this.trainingClassesScheduled = [];
+    this.unregisteredDownloads = [];
     this.isDownloading = false;
     this.currentTask = null;
     this.currentDownload = null;
@@ -62,7 +73,7 @@ class DownloadsDataModel implements DownloadsData {
       dr.timestamp
     );
 
-    TrainingClassesData.addTraining(dr.trainingClass, false);
+    TrainingClassesData.addTrainingClass(dr.trainingClass, false);
 
     this.offlineTrainingClasses[id + "-" + dr.mediaType] = offlineTrainingClass;
 
@@ -263,7 +274,8 @@ class DownloadsDataModel implements DownloadsData {
           download.retries++;
           this.resumeDownloads();
           sendToast(
-            `Error al descargar clase: ${TrainingClassesData.trainingClasses[download.id].title
+            `Error al descargar clase: ${
+              TrainingClassesData.trainingClasses[download.id].title
             }`,
             "error",
             3
@@ -314,7 +326,8 @@ class DownloadsDataModel implements DownloadsData {
           const isCompleted = received === totalSize;
           if (isCompleted) {
             sendToast(
-              `Clase descargada ${TrainingClassesData.trainingClasses[download.id].title
+              `Clase descargada ${
+                TrainingClassesData.trainingClasses[download.id].title
               }`,
               "success",
               3
@@ -356,7 +369,7 @@ class DownloadsDataModel implements DownloadsData {
 
   getFromDb(): void {
     if (!DB.data?.downloads) return;
-    console.log(DB.data?.downloads);
+
     this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
     this.hasAdjustVideo = DB.data!.downloads.hasAdjustVideo;
@@ -418,8 +431,8 @@ class DownloadsDataModel implements DownloadsData {
           );
           offline.status = "downloaded";
 
-          // TODO: add the training class to the TrainingClassesList
-          TrainingClassesData.addTraining(id);
+          // // TODO: add the training class to the TrainingClassesList
+          // TrainingClassesData.addTrainingClass(id);
 
           this.offlineTrainingClasses[id + "-" + mediaType] = offline;
           informDownloadsState();
@@ -442,7 +455,8 @@ class DownloadsDataModel implements DownloadsData {
     if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
     log(
-      `Removing download ${id}-${mediaType} in ${url.pathToFileURL(filePath).href
+      `Removing download ${id}-${mediaType} in ${
+        url.pathToFileURL(filePath).href
       }`
     );
 
@@ -547,7 +561,6 @@ class DownloadsDataModel implements DownloadsData {
     return null;
   }
 
-  // FIXME: es una mierda, es para adaptar a como estaba en la antigua
   /**
    * Formats the current DownloadsData object to an object understandable
    * by the webapp. This is a temporary solution until the webapp is updated
@@ -583,8 +596,8 @@ class DownloadsDataModel implements DownloadsData {
             v.status === "downloading"
               ? v.progress
               : v.status === "downloaded"
-                ? 100
-                : 0,
+              ? 100
+              : 0,
           downloaded: v.status === "downloaded",
           downloading: v.status === "downloading",
           queued: v.status === "queued",
@@ -595,6 +608,8 @@ class DownloadsDataModel implements DownloadsData {
         };
 
         const trainingClass = TrainingClassesData.trainingClasses[id];
+        if (!trainingClass) return prev;
+
         if (trainingClass.media == null) trainingClass.media = [];
 
         if (!obj) {
@@ -615,8 +630,8 @@ class DownloadsDataModel implements DownloadsData {
       []
     );
 
-
     return {
+      unregisteredDownloads: this.unregisteredDownloads,
       isDownloading,
       queue,
       downloading,
@@ -743,19 +758,23 @@ class DownloadsDataModel implements DownloadsData {
     Object.keys(this.offlineTrainingClasses).forEach((key) => {
       if (foundDownloads.includes(key)) return;
       // delete this.offlineTrainingClasses[key];
-      if (this.offlineTrainingClasses[key].status === "downloaded" && !foundDownloads.includes(key)) {
+      if (
+        this.offlineTrainingClasses[key].status === "downloaded" &&
+        !foundDownloads.includes(key)
+      ) {
         this.offlineTrainingClasses[key].status = "queued";
       }
     });
 
-    // Add unregistered downloads
+    // Generate Offline Downloads
     foundDownloads.forEach((key) => {
       if (this.offlineTrainingClasses[key]) return;
 
       const id = key.split("-")[0];
       const mediaType = key.split("-")[1] as mediaType;
+
       log("Adding unregistered download " + key);
-      TrainingClassesData.addTraining(id, true);
+
       this.offlineTrainingClasses[key] = {
         id: id,
         mediaType: mediaType,
@@ -768,8 +787,18 @@ class DownloadsDataModel implements DownloadsData {
         timestamp: null,
       };
     });
-  }
 
+    // Get training class ids for sync
+    const unregisteredDownloads = foundDownloads
+      .map((key) => key.split("-")[0])
+      .filter((id) => TrainingClassesData.needSyncTrainingClass(id));
+
+    console.info(
+      "Tneemos estos archivos sin registro en DB",
+      unregisteredDownloads
+    );
+    this.unregisteredDownloads = unregisteredDownloads;
+  }
 
   /**
    *  Downloads Cesar's bike adjustment video
@@ -785,7 +814,7 @@ class DownloadsDataModel implements DownloadsData {
       this.isDownloading = false;
       return;
     }
-
+    // TODO: extraer esta ruta
     const url =
       "https://apiv2.bestcycling.es/api/v2/media_assets/68688/?type=video_hd" +
       `&access_token=${accessToken}`;
@@ -857,5 +886,3 @@ class DownloadsDataModel implements DownloadsData {
     });
   }
 }
-
-export = DownloadsDataModel;

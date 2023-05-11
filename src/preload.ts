@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
+import { downloadsAPI } from "./api/downloadsAPI";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
@@ -101,46 +102,7 @@ contextBridge.exposeInMainWorld("conversionAPI", {
   },
 });
 
-contextBridge.exposeInMainWorld("downloadsAPI", {
-  startLocalServer: () => ipcRenderer.send("startLocalServer"),
-  stopLocalServer: () => ipcRenderer.send("stopLocalServer"),
-
-  downloadScheduledTrainingClasses: (downloadRequests: downloadRequest[]) =>
-    ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
-  downloadTrainingClass: (
-    trainingClass: TrainingClass,
-    mediaType: mediaType
-  ) => {
-    ipcRenderer.send("downloadTrainingClass", {
-      trainingClass,
-      mediaType,
-      timestamp: null,
-    });
-  },
-
-  changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
-  importDownloads: () => ipcRenderer.send("importDownloads"),
-  deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
-  deleteDownload: (id: number, media: mediaType = "video_hd") =>
-    ipcRenderer.send("deleteDownload", id, media),
-
-  handleDownloadsState: (
-    callback: (event: Event, state: downloadsStateWebapp) => void
-  ) => {
-    ipcRenderer.on("downloadsState", callback);
-  },
-  handleDownloadState: (
-    callback: (event: Event, state: downloadsStateWebapp) => void
-  ) => {
-    ipcRenderer.on("downloadState", callback);
-  },
-
-  getMediaUrl: (id: number, media: mediaType = "video_hd") =>
-    ipcRenderer.sendSync("getMediaUrl", id, media),
-
-  getAdjustVideoPath: () => ipcRenderer.sendSync("getAdjustVideoPath"),
-  requestDownloadsState: () => ipcRenderer.invoke("requestDownloadsState"),
-});
+contextBridge.exposeInMainWorld("downloadsAPI", downloadsAPI);
 
 contextBridge.exposeInMainWorld("mixmeixterApi", {
   readTagMp3: (file: string, path: string) => {
@@ -227,9 +189,9 @@ contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
     ipcRenderer.removeAllListeners("buttonChange-" + id);
     ipcRenderer.on("buttonChange-" + id, callback);
   },
-  readData: (id: string) => { },
-  subscribeData: (id: string) => { },
-  getDeviceList: () => { },
+  readData: (id: string) => {},
+  subscribeData: (id: string) => {},
+  getDeviceList: () => {},
   getFeatures: () => ipcRenderer.sendSync("getFeatures"),
   getLevelRange: () => ipcRenderer.sendSync("getLevelRange"),
   isAvailableBluetooth: () => ipcRenderer.sendSync("isAvailableBluetooth"),

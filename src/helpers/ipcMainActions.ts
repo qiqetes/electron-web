@@ -9,6 +9,7 @@ import {
   DownloadsData,
   KnownDevicesData,
   SettingsData,
+  TrainingClassesData,
 } from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
@@ -62,6 +63,10 @@ ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
   DownloadsData.addToQueue(downloadRequest);
 });
 
+ipcMain.on("updateTrainingClass", (_, trainingClass) => {
+  TrainingClassesData.addTrainingClass(trainingClass);
+});
+
 ipcMain.on(
   "downloadScheduledTrainingClasses",
   (_, downloadsArray: downloadRequest[]) => {
@@ -82,8 +87,9 @@ ipcMain.on("importDownloads", () => {
 });
 
 ipcMain.on("getMediaUrl", (event, id, media) => {
-  event.returnValue = `http://127.0.0.1:${LocalServerInstance.port
-    }/offline/${filenameStealth(id, media)}`;
+  event.returnValue = `http://127.0.0.1:${
+    LocalServerInstance.port
+  }/offline/${filenameStealth(id, media)}`;
 });
 
 ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
@@ -114,9 +120,9 @@ ipcMain.handle("changeDownloadsPath", (): string => {
   }
 
   showModal(
-    "Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
-    "Sí, copiar",
-    "No, solo cambia el directorio",
+    "¿Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
+    "Sí, copiar archivos",
+    "No, solo cambiar el directorio",
     () => {
       DownloadsData.moveDownloadsTo(dir[0]);
     },
@@ -150,8 +156,7 @@ ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
     if (online) {
       DownloadsData.startDownloads();
       sendToast("Se ha restaurado la conexión");
-    }
-    else if (!online) {
+    } else if (!online) {
       sendToast("Pasando a modo offline", "warn");
     }
   }
@@ -190,9 +195,9 @@ export const showModal = (
   textOk = "OK",
   textCancel = "Cancel",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackOk = () => { },
+  callbackOk = () => {},
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackCancel = () => { }
+  callbackCancel = () => {}
 ) => {
   modalFunctions.callbackOk = callbackOk;
   modalFunctions.callbackCancel = callbackCancel;
@@ -447,7 +452,6 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 ipcMain.on("checkConnection", (event, id, media) => {
   event.returnValue = net.isOnline();
 });
-
 
 // There are some actions that need to comunicate with the renderer process
 // but they are launched before the execution of the renderer process
