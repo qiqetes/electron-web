@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logWarn } from "./loggers";
 import KnownDevicesDataModel from "../data/knownDevicesData";
-import { mainWindow } from "../index";
+
 // Use JSON file for storage
 const file = getDBPath();
 
@@ -94,7 +94,6 @@ const setStartingUrl = () => {
   }
 };
 
-
 export let api: Kitsu;
 /**
  * Initializes the database and creates the tables if they don't exist
@@ -123,17 +122,15 @@ const initDB = async () => {
     KnownDevicesData.getFromDb();
   }
 
-
   api = new Kitsu({
     headers: {
       "Content-Type": "application/vnd.api+json",
       "X-APP-ID": AppData.XAPPID,
       Authorization: AppData.AUTHORIZATION,
-      "User-Agent": AppData.USER_AGENT ?? 'BestCycling desktop',
+      "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
     },
     baseURL: "https://apiv2.bestcycling.es/api/v2",
   });
-
 
   // Start downloads that remained in queue
   DownloadsData.startDownloads();
@@ -145,4 +142,3 @@ const initErrorHandler = () =>
     submitURL: "",
     uploadToServer: false,
   });
-
