@@ -9,7 +9,7 @@ import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
 import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
-
+import {api} from   "../helpers/init";
 type Pckg = { url: string };
 
 interface UpdateManifest {
@@ -87,7 +87,7 @@ const getMostUpdatedManifest = async (allowedChannels: {
   revision: boolean | undefined;
   beta: boolean | undefined;
 }): Promise<UpdateManifest | null> => {
-  
+
   const manifestRevision = allowedChannels.revision
     ? await getManifest('revision')
     : null;
@@ -129,52 +129,21 @@ const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<
  * Sets the autoUpdater to check the s3 manifest and check wether there are updates
  * to be downloaded.
  * */
-export const setAutoUpdater = async (allowedChannels: {
-  revision: boolean | undefined;
-  beta: boolean | undefined;
-}) => {
-  const manifest = await getMostUpdatedManifest(allowedChannels);
+export const setAutoUpdater = async () => {
 
-  if (!manifest) {
-    logError("No manifest found");
-    return;
-  }
-
-  if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
-    log(
-      `No new version found.\nActual: ${projectInfo.version} - Manifest: ${manifest.version}`
-    );
-    return;
-  }
-
-  const version = manifest.version;
-  log(
-    `THERE IS AN UPDATE AVAILABLE: ${version}. Current: ${projectInfo.version}`
-  );
-
-  let platform: string = os.platform();
-  let arch: string;
-  if (platform == "darwin"){
-    platform = "mac64";
-    arch = "universal";
-  }else if(platform == "win32"){
-    arch = "ia32";
-  }else{
-    arch = "x64";
-  }
-  
-  const updateUrl = manifest.packages[platform]?.url;
-  console.log("updateUrl", updateUrl);
-  if (!updateUrl) {
-    logError(
-      `The update is not available for this platform, you should check either if it wasn't uploaded yet or this platform is not supported. (platform: ${platform})`
-    );
+  console.log("vamos a pedir la actualización con esto ",AppData.AUTHORIZATION)
+  const desktopUpdate = await api.fetch("desktop_updater");
+  console.log(desktopUpdate)
+  const version = desktopUpdate?.data?.version;
+  const updateUrl = desktopUpdate?.data?.url;
+  if(updateUrl === undefined || updateUrl == ""){
     return;
   }
 
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
-
+  console.log("el temp path es este ",tempPath);
   const setAutoUpdaterMac = () => {
+
     if (!app.isInApplicationsFolder()) {
       logError("Tried updating from a non-app folder, aborting");
       sendUpdaterEvent({
@@ -197,7 +166,7 @@ export const setAutoUpdater = async (allowedChannels: {
     console.log("file://" + tempPath + "/feed.json");
 
     autoUpdater.setFeedURL({
-      url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
+      url:  updateUrl
     });
 
     autoUpdater.checkForUpdates();
