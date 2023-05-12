@@ -1,8 +1,8 @@
 import { logError } from "../helpers/loggers";
 import { isCompleteTrainingClass } from "../helpers/downloadsHelpers";
-import { api, DB, DownloadsData } from "../helpers/init";
+import { api, DB } from "../helpers/init";
 import { AppData } from "./appData";
-import { informDownloadState } from "../helpers/ipcMainActions";
+import { informDownloadsState } from "../helpers/ipcMainActions";
 
 class TrainingClassesDataModel implements TrainingClassesData {
   trainingClasses: { [key: string]: TrainingClass } = {};
@@ -11,55 +11,45 @@ class TrainingClassesDataModel implements TrainingClassesData {
   debounceInterval = 8000; // ms
 
   // Adds a class with all the parameters (media, progression...)
-  addTraining = (
-    trainingClass: TrainingClass | number | string,
-    complete = true
-  ) => {
-    const id =
-      typeof trainingClass === "object" ? trainingClass.id : trainingClass;
+  addTrainingClass = (trainingClass: TrainingClass, complete = true) => {
+    // const id =
+    //   typeof trainingClass === "object" ? trainingClass.id : trainingClass;
 
-    // Class already exists?
-    const tc = this.trainingClasses[id];
-    if (tc) {
-      if (isCompleteTrainingClass(tc)) return;
-      else if (!complete) {
-        this.trainingClassesToFetch.push(id);
-        return this.debouncedFetchTrainingClass;
-      }
+    // // Class already exists?
+    // const tc = this.trainingClasses[id];
+    // if (tc) {
+    //   if (isCompleteTrainingClass(tc)) return;
+    //   else if (!complete) {
+    //     this.trainingClassesToFetch.push(id);
+    //     return this.debouncedFetchTrainingClass;
+    //   }
+    // }
+
+    // if (typeof trainingClass === "object") {
+    //   if (complete && isCompleteTrainingClass(trainingClass)) {
+    //     this.trainingClasses[id] = trainingClass;
+    //     this.saveToDb();
+    //   } else if (complete && !isCompleteTrainingClass(trainingClass)) {
+    //     this.fetchTrainingClass(id);
+    //   } else {
+    //     this.trainingClasses[id] = trainingClass;
+    //   }
+    // } else {
+    //   this.fetchTrainingClass(id);
+    // }
+    if (!trainingClass) {
+      return Promise.resolve();
     }
 
-    if (typeof trainingClass === "object") {
-      if (complete && isCompleteTrainingClass(trainingClass)) {
-        this.trainingClasses[id] = trainingClass;
-        this.saveToDb();
-      } else if (complete && !isCompleteTrainingClass(trainingClass)) {
-        this.fetchTrainingClass(id);
-      } else {
-        this.trainingClasses[id] = trainingClass;
-      }
-    } else {
-      this.fetchTrainingClass(id);
-    }
+    this.trainingClasses[trainingClass.id.toString()] = trainingClass;
+
+    informDownloadsState();
+    this.saveToDb();
   };
 
-  fetchTrainingClass(id: number | string): void {
-    api
-      .fetch(`training_classes/${id}`, {
-        params: {
-          include: "trainer,training_materials",
-        },
-      })
-      .then((res: any) => {
-        this.trainingClasses[id] = res.data as TrainingClass;
-        informDownloadState();
-        this.saveToDb();
-      })
-      .catch((err: any) => {
-        this.trainingClassesToFetch.push(id);
-        this.debouncedFetchTrainingClass();
-        logError(err);
-      });
-  }
+  needSyncTrainingClass = (id: string, complete = true) => {
+    return !this.trainingClasses[id];
+  };
 
   debouncedFetchTrainingClass = () => {
     if (this.trainingClassesToFetch.length === 0) return;
@@ -68,9 +58,8 @@ class TrainingClassesDataModel implements TrainingClassesData {
       setTimeout(() => this.debouncedFetchTrainingClass(), t);
       return;
     }
-
     const id = this.trainingClassesToFetch.shift();
-    if (id) this.fetchTrainingClass(id);
+    // if (id) this.fetchTrainingClass(id);
     this.lastFetch = Date.now();
     this.debouncedFetchTrainingClass();
   };

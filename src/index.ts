@@ -92,7 +92,6 @@ const createWindow = async () => {
     }
   });
 
-
   mainWindow.on("close", async () => await saveAll());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
