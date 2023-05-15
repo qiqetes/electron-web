@@ -11,7 +11,7 @@ import TrainingClassesDataModel from "../data/trainingClassesData";
 import { setAutoUpdater } from "./updater";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
-import { log, logWarn } from "./loggers";
+import { log, logError, logWarn } from "./loggers";
 import KnownDevicesDataModel from "../data/knownDevicesData";
 
 // Use JSON file for storage
@@ -55,12 +55,13 @@ export const init = async () => {
   initErrorHandler();
 
   await initDB();
-  // if (process.env.NODE_ENV !== "development") {
-  setAutoUpdater({
-    revision: AppData.USER?.isPreviewTester,
-    beta: AppData.USER?.isBetaTester,
-  });
-  // }
+  try{
+    // if (process.env.NODE_ENV !== "development") {
+    setAutoUpdater();
+    //}
+  }catch(err){
+    logError("Error on auto updater", err);
+  }
 
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
@@ -130,7 +131,7 @@ const initDB = async () => {
       Authorization: AppData.AUTHORIZATION,
       "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
     },
-    baseURL: "https://apiv2.bestcycling.es/api/v2",
+    baseURL: AppData.API,
   });
 
   // Start downloads that remained in queue

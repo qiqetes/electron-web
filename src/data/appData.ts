@@ -5,6 +5,7 @@ import { DB } from "../helpers/init";
 export class AppDataModel implements AppData {
   WEBAPP_WEBASE!: string;
   LOGIN_PATH!: string;
+  API!: string;
   URL!: null | string;
   AUTHORIZATION: `Bearer ${string}` = "Bearer ";
   XAPPID = "bestcycling";
@@ -28,6 +29,8 @@ export class AppDataModel implements AppData {
     this.WEBAPP_WEBASE = config.WEBBASE;
     this.LOGIN_PATH = config.LOGIN_PATH;
     this.URL = this.WEBAPP_WEBASE + this.LOGIN_PATH;
+    this.API = config.API;
+
   }
 
   getFromDb(): void {
