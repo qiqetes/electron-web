@@ -130,8 +130,6 @@ const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<
  * to be downloaded.
  * */
 export const setAutoUpdater = async () => {
-
-  console.log("vamos a pedir la actualización con esto ",AppData.AUTHORIZATION)
   const desktopUpdate = await api.fetch("desktop_updater");
   console.log(desktopUpdate)
   const version = desktopUpdate?.data?.version;
@@ -141,7 +139,6 @@ export const setAutoUpdater = async () => {
   }
 
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
-  console.log("el temp path es este ",tempPath);
   const setAutoUpdaterMac = () => {
 
     if (!app.isInApplicationsFolder()) {
@@ -163,7 +160,6 @@ export const setAutoUpdater = async () => {
     };
 
     fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
-    console.log("file://" + tempPath + "/feed.json");
 
     autoUpdater.setFeedURL({
       url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
