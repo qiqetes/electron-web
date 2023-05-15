@@ -179,6 +179,13 @@ export default class DownloadsDataModel implements DownloadsData {
     if (keepDownloading) this.downloadNext();
   }
 
+  async removeDownloading() {
+    const tc = this.getDownloading();
+    await TrainingClassesData.removeTrainingClass(tc?.id);
+
+    delete this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+  }
+
   /**
    * Call to start the next training class download
    */
