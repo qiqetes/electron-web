@@ -166,7 +166,7 @@ export const setAutoUpdater = async () => {
     console.log("file://" + tempPath + "/feed.json");
 
     autoUpdater.setFeedURL({
-      url:  updateUrl
+      url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
     });
 
     autoUpdater.checkForUpdates();
