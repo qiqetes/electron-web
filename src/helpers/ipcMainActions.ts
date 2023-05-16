@@ -75,6 +75,10 @@ ipcMain.on(
   }
 );
 
+ipcMain.on("removeTrainingClasses", (_, data: TrainingClass[]) => {
+  // HERE
+});
+
 ipcMain.on("removeAllDownloads", () => {
   DownloadsData.removeAll();
 });

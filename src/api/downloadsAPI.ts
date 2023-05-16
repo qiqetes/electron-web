@@ -18,6 +18,8 @@ export const downloadsAPI = {
     });
   },
 
+  removeTrainingClasses: (data: TrainingClass[]) => ipcRenderer.send("removeTrainingClasses", data),
+
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
 
   importDownloads: () => ipcRenderer.send("importDownloads"),
