@@ -181,9 +181,10 @@ export default class DownloadsDataModel implements DownloadsData {
 
   async removeDownloading() {
     const tc = this.getDownloading();
-    await TrainingClassesData.removeTrainingClass(tc?.id);
 
-    delete this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+    const offlineTc = this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+    offlineTc.status = 'queued';
+    offlineTc.progress = 0;
   }
 
   /**

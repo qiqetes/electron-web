@@ -47,15 +47,6 @@ class TrainingClassesDataModel implements TrainingClassesData {
     this.saveToDb();
   };
 
-  async removeTrainingClass(id: string | undefined) {
-    if (!id) {
-      return Promise.resolve();
-    }
-
-    delete this.trainingClasses[id];
-    await this.saveToDb();
-  }
-
   needSyncTrainingClass = (id: string, complete = true) => {
     return !this.trainingClasses[id];
   };
