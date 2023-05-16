@@ -443,6 +443,8 @@ export default class DownloadsDataModel implements DownloadsData {
   }
 
   removeDownload(id: string, mediaType: mediaType, inform = true): void {
+    if (!id || !mediaType) return;
+
     const isBeingDownload =
       this.currentDownload?.id === id &&
       this.currentDownload?.mediaType === mediaType;
@@ -452,35 +454,38 @@ export default class DownloadsDataModel implements DownloadsData {
       this.downloadNext();
     }
 
+    const downloadKey = `${id}-${mediaType}`;
+
     const file = filenameStealth(id, mediaType);
-    if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
     log(
-      `Removing download ${id}-${mediaType} in ${
-        url.pathToFileURL(filePath).href
-      }`
+      `Removing download ${downloadKey} in ${url.pathToFileURL(filePath).href}`
     );
 
-    const offlineTraining = this.offlineTrainingClasses[id + "-" + mediaType];
+    const offlineTraining = this.offlineTrainingClasses[downloadKey];
 
     if (offlineTraining.status === "downloaded") {
       fs.rm(filePath, (err) => {
         if (err) {
           logError(
-            `Couldn't delete file for download: ${id}-${mediaType}, error: `,
+            `Couldn't delete file for download: ${downloadKey}, error: `,
             err
           );
           return;
         }
       });
     }
-    this.offlineTrainingClasses[id + "-" + mediaType].downloaded = false;
-    this.offlineTrainingClasses[id + "-" + mediaType].status = "none";
-    this.offlineTrainingClasses[id + "-" + mediaType].progress = 0;
-    this.offlineTrainingClasses[id + "-" + mediaType].size = null;
-    this.offlineTrainingClasses[id + "-" + mediaType].retries = 0;
 
-    log(`${id}-${mediaType} was removed successfully`);
+    this.offlineTrainingClasses[downloadKey] = {
+      ...this.offlineTrainingClasses[downloadKey],
+      downloaded: false,
+      status: "none",
+      progress: 0,
+      size: null,
+      retries: 0,
+    };
+
+    log(`${downloadKey} was removed successfully`);
     if (inform) informDownloadsState();
   }
 
