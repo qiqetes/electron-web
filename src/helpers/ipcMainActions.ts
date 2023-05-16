@@ -75,6 +75,14 @@ ipcMain.on(
   }
 );
 
+ipcMain.on("removeMyTrainingClasses", (_, data: TrainingClass[]) => {
+  DownloadsData.removeMyTrainingClasses(data);
+});
+
+ipcMain.on("removeMyTrainingClass", (_, tc: TrainingClass) => {
+  DownloadsData.removeMyTrainingClass(tc);
+});
+
 ipcMain.on("removeAllDownloads", () => {
   DownloadsData.removeAll();
 });
