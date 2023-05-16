@@ -449,6 +449,7 @@ export default class DownloadsDataModel implements DownloadsData {
     if (isBeingDownload) {
       logWarn("Deleted a download that was being downloaded");
       this.stopDownloading();
+      this.downloadNext();
     }
 
     const file = filenameStealth(id, mediaType);
