@@ -18,6 +18,10 @@ export const downloadsAPI = {
     });
   },
 
+  removeMyTrainingClasses: (data: TrainingClass[]) => ipcRenderer.send("removeMyTrainingClasses", data),
+
+  removeMyTrainingClass: (tc: TrainingClass) => ipcRenderer.send("removeMyTrainingClass", tc),
+
   changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
 
   importDownloads: () => ipcRenderer.send("importDownloads"),

@@ -552,6 +552,38 @@ export default class DownloadsDataModel implements DownloadsData {
     });
   }
 
+  removeMyTrainingClasses(data: TrainingClass[]) {
+    log('Removing training classes...');
+    data.forEach(tc => this.removeMyTrainingClass(tc));
+  }
+
+  removeMyTrainingClass(tc: TrainingClass) {
+    const mediaType: mediaType = 'music';
+    const key = tc.id + '-' + mediaType;
+    const offlineTc = this.offlineTrainingClasses[key];
+    const isFound = !!offlineTc;
+
+    log(`Training class ${tc.id} found: ${isFound}`);
+
+    if (!isFound) return;
+
+    if (offlineTc.status === 'downloading') {
+      this.stopDownloading();
+    }
+
+    const filename = filenameStealth(tc.id, mediaType);
+    const filePath = path.join(SettingsData.downloadsPath, filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    log(`Training class ${tc.id} removed`);
+
+    delete this.offlineTrainingClasses[key];
+    informDownloadsState();
+  }
+
   /**
    * Returns the offline training that should be most likely to be deleted
    **/
