@@ -569,6 +569,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
     if (offlineTc.status === 'downloading') {
       this.stopDownloading();
+      this.downloadNext();
     }
 
     const filename = filenameStealth(tc.id, mediaType);
