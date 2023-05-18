@@ -215,7 +215,10 @@ ipcMain.on("modalOk", () => modalFunctions.callbackOk());
 ipcMain.on("modalCancel", () => modalFunctions.callbackCancel());
 
 export const informDownloadsState = () => {
-  mainWindow.webContents.send("downloadsState", DownloadsData.toWebAppState());
+  mainWindow.webContents.send(
+    "downloadsState",
+    DownloadsData.getDownloadsState()
+  );
 };
 
 // Just gives the information about one download (the one downloading)

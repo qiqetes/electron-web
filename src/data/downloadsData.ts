@@ -598,7 +598,7 @@ export default class DownloadsDataModel implements DownloadsData {
    * Formats the current DownloadsData object to an object understandable
    * by the webapp. This is a temporary solution until the webapp is updated
    */
-  toWebAppState(): downloadsStateWebapp {
+  getDownloadsState(): downloadsStateWebapp {
     const isDownloading = this.isDownloading;
     const downloading = this.getDownloading();
     const queue = this.getQueued().map((v) => `${v.id}-${v.mediaType}`);
@@ -640,78 +640,6 @@ export default class DownloadsDataModel implements DownloadsData {
       offlineTrainingClasses: offlineTrainingClasses,
       unregisteredDownloads,
     };
-
-    // const isDownloading = this.isDownloading;
-    // const queue = this.getQueued().map((v) => `${v.id}-${v.mediaType}`);
-    // const downloading = this.getDownloading();
-
-    // type tc = {
-    //   id: string;
-    //   downloadedMedia: {
-    //     type: mediaType;
-    //     progress: number;
-    //     downloaded: boolean;
-    //     downloading: boolean;
-    //     queued: boolean;
-    //     url: string;
-    //   }[];
-    //   trainingClass: TrainingClass;
-    //   offline: boolean;
-    // };
-
-    // const trainingClasses = Object.values(this.offlineTrainingClasses).reduce(
-    //   (prev: tc[], v): tc[] => {
-    //     // If the status is "none", the webapp should ignore this download
-    //     if (v.status == "none") return prev;
-    //     const id = v.id.toString();
-    //     const obj = prev.find((item) => item.id === id);
-    //     const mediaToAdd = {
-    //       type: v.mediaType,
-    //       progress:
-    //         v.status === "downloading"
-    //           ? v.progress
-    //           : v.status === "downloaded"
-    //           ? 100
-    //           : 0,
-    //       downloaded: v.status === "downloaded",
-    //       downloading: v.status === "downloading",
-    //       queued: v.status === "queued",
-    //       url: `http://127.0.0.1:$PORT/offline/${filenameStealth(
-    //         id,
-    //         v.mediaType
-    //       )}`,
-    //     };
-
-    //     const trainingClass = TrainingClassesData.trainingClasses[id];
-    //     if (!trainingClass) return prev;
-
-    //     if (trainingClass.media == null) trainingClass.media = [];
-
-    //     if (!obj) {
-    //       return [
-    //         ...prev,
-    //         {
-    //           id,
-    //           downloadedMedia: [mediaToAdd],
-    //           trainingClass: TrainingClassesData.trainingClasses[id] || null,
-    //           offline: v.status === "downloaded",
-    //         },
-    //       ];
-    //     }
-
-    //     obj.downloadedMedia.push(mediaToAdd);
-    //     return prev;
-    //   },
-    //   []
-    // );
-
-    // return {
-    //   unregisteredDownloads: this.unregisteredDownloads,
-    //   isDownloading,
-    //   queue,
-    //   downloading,
-    //   trainingClasses,
-    // };
   }
 
   resumeDownloads(): void {

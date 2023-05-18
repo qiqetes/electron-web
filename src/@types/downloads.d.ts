@@ -46,7 +46,6 @@ type webappDownload = {
 };
 
 // The downloadsState that the webapp expects
-// TODO: mejorar esto que es un desastre, pero se usa igual en toda la webapp
 type downloadsStateWebapp = {
   /**
    * Devuelve si se está descargando alguna clase actualmente.
@@ -61,9 +60,13 @@ type downloadsStateWebapp = {
    */
   downloading: null | OfflineTrainingClass;
   /**
-   * Clases descargadas
+   * Info de clases descargadas
    */
-  trainingClasses: webappDownload[];
+  trainingClasses: { [id: string]: TrainingClass };
+  /**
+   * Info de descargas
+   */
+  offlineTrainingClasses: { [id: string]: OfflineTrainingClass };
   /**
    * Listado de ids de clases descargadas de las cuales no tenemos información en base de datos.
    */
