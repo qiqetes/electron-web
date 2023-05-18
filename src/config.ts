@@ -20,7 +20,7 @@ if (process.env.FLAVOUR) {
 const development = {
   WEBBASE: "http://localhost:8080",
   LOGIN_PATH: "/app#/login",
-  API: "http://localhost:3000/api/v2",
+  API: "https://apiv2.bestcycling.es/api/v2",
 };
 
 const production = {
