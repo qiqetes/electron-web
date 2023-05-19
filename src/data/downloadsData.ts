@@ -180,12 +180,22 @@ export default class DownloadsDataModel implements DownloadsData {
     if (keepDownloading) this.downloadNext();
   }
 
+  async removeDownloading() {
+    const tc = this.getDownloading();
+
+    const offlineTc = this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+    offlineTc.status = "queued";
+    offlineTc.progress = 0;
+  }
+
   /**
    * Call to start the next training class download
    */
   async downloadNext() {
     // Check if already downloading
     if (this.isDownloading) return;
+    this.saveToDb(true);
+
     this.isDownloading = true;
 
     // Check if there are classes waiting to be downloaded in the queue
@@ -544,6 +554,8 @@ export default class DownloadsDataModel implements DownloadsData {
       if (trainingsFound.includes(key)) return;
       delete this.offlineTrainingClasses[key];
     });
+
+    this.saveToDb(true);
   }
 
   removeMyTrainingClasses(data: TrainingClass[]) {
@@ -577,6 +589,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
     delete this.offlineTrainingClasses[key];
     informDownloadsState();
+    this.saveToDb(true);
   }
 
   /**
@@ -843,7 +856,7 @@ export default class DownloadsDataModel implements DownloadsData {
           url
         );
         this.resumeDownloads();
-        writeStream.end;
+        writeStream.end();
         return;
       }
 

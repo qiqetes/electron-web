@@ -1,8 +1,8 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.12",
-  "description": "Aplicación de escritorio BestcyclingTV.",
+  "version": "4.0.14",
+  "description": "Aplicación de escritorio Bestcycling.",
   "main": ".webpack/main",
   "scripts": {
     "start": "cross-env-shell ENV=dev electron-forge start",
