@@ -184,7 +184,7 @@ export default class DownloadsDataModel implements DownloadsData {
     const tc = this.getDownloading();
 
     const offlineTc = this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
-    offlineTc.status = 'queued';
+    offlineTc.status = "queued";
     offlineTc.progress = 0;
   }
 
@@ -194,6 +194,8 @@ export default class DownloadsDataModel implements DownloadsData {
   async downloadNext() {
     // Check if already downloading
     if (this.isDownloading) return;
+    this.saveToDb(true);
+
     this.isDownloading = true;
 
     // Check if there are classes waiting to be downloaded in the queue
@@ -552,6 +554,8 @@ export default class DownloadsDataModel implements DownloadsData {
       if (trainingsFound.includes(key)) return;
       delete this.offlineTrainingClasses[key];
     });
+
+    this.saveToDb(true);
   }
 
   removeMyTrainingClasses(data: TrainingClass[]) {
@@ -585,6 +589,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
     delete this.offlineTrainingClasses[key];
     informDownloadsState();
+    this.saveToDb(true);
   }
 
   /**
@@ -849,7 +854,7 @@ export default class DownloadsDataModel implements DownloadsData {
           url
         );
         this.resumeDownloads();
-        writeStream.end;
+        writeStream.end();
         return;
       }
 
