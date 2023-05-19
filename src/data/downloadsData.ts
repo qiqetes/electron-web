@@ -153,6 +153,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
   startDownloads(): void {
     log("STARTING DOWNLOADS ⬇️");
+
     if (!this.hasAdjustVideo) {
       this.downloadHelpVideo();
     }
@@ -451,43 +452,42 @@ export default class DownloadsDataModel implements DownloadsData {
   }
 
   removeDownload(id: string, mediaType: mediaType, inform = true): void {
+    if (!id || !mediaType) return;
+
     const isBeingDownload =
       this.currentDownload?.id === id &&
       this.currentDownload?.mediaType === mediaType;
     if (isBeingDownload) {
       logWarn("Deleted a download that was being downloaded");
       this.stopDownloading();
+      this.downloadNext();
     }
 
+    const downloadKey = `${id}-${mediaType}`;
+
     const file = filenameStealth(id, mediaType);
-    if (!id || !mediaType) return;
     const filePath = path.join(SettingsData.downloadsPath, file);
     log(
-      `Removing download ${id}-${mediaType} in ${
-        url.pathToFileURL(filePath).href
-      }`
+      `Removing download ${downloadKey} in ${url.pathToFileURL(filePath).href}`
     );
 
-    const offlineTraining = this.offlineTrainingClasses[id + "-" + mediaType];
+    const offlineTraining = this.offlineTrainingClasses[downloadKey];
 
     if (offlineTraining.status === "downloaded") {
       fs.rm(filePath, (err) => {
         if (err) {
           logError(
-            `Couldn't delete file for download: ${id}-${mediaType}, error: `,
+            `Couldn't delete file for download: ${downloadKey}, error: `,
             err
           );
           return;
         }
       });
     }
-    this.offlineTrainingClasses[id + "-" + mediaType].downloaded = false;
-    this.offlineTrainingClasses[id + "-" + mediaType].status = "none";
-    this.offlineTrainingClasses[id + "-" + mediaType].progress = 0;
-    this.offlineTrainingClasses[id + "-" + mediaType].size = null;
-    this.offlineTrainingClasses[id + "-" + mediaType].retries = 0;
 
-    log(`${id}-${mediaType} was removed successfully`);
+    delete this.offlineTrainingClasses[downloadKey];
+
+    log(`${downloadKey} was removed successfully`);
     if (inform) informDownloadsState();
   }
 
@@ -554,6 +554,39 @@ export default class DownloadsDataModel implements DownloadsData {
     });
   }
 
+  removeMyTrainingClasses(data: TrainingClass[]) {
+    log("Removing training classes...");
+    data.forEach((tc) => this.removeMyTrainingClass(tc));
+  }
+
+  removeMyTrainingClass(tc: TrainingClass) {
+    const mediaType: mediaType = "music";
+    const key = tc.id + "-" + mediaType;
+    const offlineTc = this.offlineTrainingClasses[key];
+    const isFound = !!offlineTc;
+
+    log(`Training class ${tc.id} found: ${isFound}`);
+
+    if (!isFound) return;
+
+    if (offlineTc.status === "downloading") {
+      this.stopDownloading();
+      this.downloadNext();
+    }
+
+    const filename = filenameStealth(tc.id, mediaType);
+    const filePath = path.join(SettingsData.downloadsPath, filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    log(`Training class ${tc.id} removed`);
+
+    delete this.offlineTrainingClasses[key];
+    informDownloadsState();
+  }
+
   /**
    * Returns the offline training that should be most likely to be deleted
    **/
@@ -573,77 +606,47 @@ export default class DownloadsDataModel implements DownloadsData {
    * Formats the current DownloadsData object to an object understandable
    * by the webapp. This is a temporary solution until the webapp is updated
    */
-  toWebAppState(): downloadsStateWebapp {
+  getDownloadsState(): downloadsStateWebapp {
     const isDownloading = this.isDownloading;
-    const queue = this.getQueued().map((v) => `${v.id}-${v.mediaType}`);
     const downloading = this.getDownloading();
-
-    type tc = {
-      id: string;
-      downloadedMedia: {
-        type: mediaType;
-        progress: number;
-        downloaded: boolean;
-        downloading: boolean;
-        queued: boolean;
-        url: string;
-      }[];
-      trainingClass: TrainingClass;
-      offline: boolean;
-    };
-
-    const trainingClasses = Object.values(this.offlineTrainingClasses).reduce(
-      (prev: tc[], v): tc[] => {
-        // If the status is "none", the webapp should ignore this download
-        if (v.status == "none") return prev;
-        const id = v.id.toString();
-        const obj = prev.find((item) => item.id === id);
-        const mediaToAdd = {
-          type: v.mediaType,
-          progress:
-            v.status === "downloading"
-              ? v.progress
-              : v.status === "downloaded"
-              ? 100
-              : 0,
-          downloaded: v.status === "downloaded",
-          downloading: v.status === "downloading",
-          queued: v.status === "queued",
-          url: `http://127.0.0.1:$PORT/offline/${filenameStealth(
-            id,
-            v.mediaType
-          )}`,
-        };
-
+    const queue = this.getQueued().map((v) => `${v.id}-${v.mediaType}`);
+    // Sólo enviamos la info de las clases de las cuales tenemos descargas
+    const trainingClasses: { [id: string]: TrainingClass } = {};
+    Object.values(this.offlineTrainingClasses).forEach(
+      (offlineTrainingClass) => {
+        const id = offlineTrainingClass.id;
         const trainingClass = TrainingClassesData.trainingClasses[id];
-        if (!trainingClass) return prev;
-
-        if (trainingClass.media == null) trainingClass.media = [];
-
-        if (!obj) {
-          return [
-            ...prev,
-            {
-              id,
-              downloadedMedia: [mediaToAdd],
-              trainingClass: TrainingClassesData.trainingClasses[id] || null,
-              offline: v.status === "downloaded",
-            },
-          ];
+        if (trainingClass) {
+          trainingClasses[id] = trainingClass;
         }
+      }
+    );
 
-        obj.downloadedMedia.push(mediaToAdd);
-        return prev;
-      },
-      []
+    const unregisteredDownloads = this.unregisteredDownloads;
+
+    // Añadimos las urls a las clases offline
+    const offlineTrainingClasses = { ...this.offlineTrainingClasses };
+
+    Object.entries(offlineTrainingClasses).forEach(
+      ([key, offlineTrainingClass]: [string, OfflineTrainingClass]) => {
+        if (offlineTrainingClass.status === "downloaded") {
+          offlineTrainingClasses[
+            key
+          ].url = `http://127.0.0.1:$PORT/offline/${filenameStealth(
+            offlineTrainingClass.id,
+            offlineTrainingClass.mediaType
+          )}`;
+        }
+      }
     );
 
     return {
-      unregisteredDownloads: this.unregisteredDownloads,
       isDownloading,
-      queue,
       downloading,
-      trainingClasses,
+      queue,
+      trainingClasses: trainingClasses,
+      offlineTrainingClasses: offlineTrainingClasses,
+      unregisteredDownloads,
     };
   }
 
