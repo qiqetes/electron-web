@@ -180,6 +180,14 @@ export default class DownloadsDataModel implements DownloadsData {
     if (keepDownloading) this.downloadNext();
   }
 
+  async removeDownloading() {
+    const tc = this.getDownloading();
+
+    const offlineTc = this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+    offlineTc.status = 'queued';
+    offlineTc.progress = 0;
+  }
+
   /**
    * Call to start the next training class download
    */
