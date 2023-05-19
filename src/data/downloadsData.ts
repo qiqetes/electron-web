@@ -809,7 +809,9 @@ export default class DownloadsDataModel implements DownloadsData {
   downloadHelpVideo(): void {
     if (!AppData.ONLINE) return;
 
+    if (this.isDownloading) return;
     this.isDownloading = true;
+
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
 
     if (!accessToken) {
