@@ -108,15 +108,14 @@ const createWindow = async () => {
 
   detectWorkerInstallation(session.defaultSession);
   avoidExternalPageRequests(mainWindow);
-  //const hrService = new HeartRateDeviceService(ipcMain);
 
-  //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();
-  onWindowResized(mainWindow);
-  onWindowMoved(mainWindow);
   const hrService = new HeartRateDeviceService(ipcMain);
   hrService.registerBluetoothEvents(mainWindow);
+
+  onWindowResized(mainWindow);
+  onWindowMoved(mainWindow);
 };
 
 // const reactDevToolsPath = path.join(
@@ -132,6 +131,8 @@ app.on("ready", async () => {
     DownloadsData.getDownloadsState()
   );
   createWindow();
+
+  BTManager.bluetoothStateChange();
 });
 
 app.on("before-quit", async () => {
