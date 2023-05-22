@@ -134,14 +134,10 @@ app.on("ready", async () => {
   createWindow();
 });
 
-app.on("before-quit", async () => {
+app.on("window-all-closed", async () => {
   const download = DownloadsData.getDownloading();
-
   if (download) {
     log("Removing download before app close");
-
-    await DownloadsData.removeDownloading();
-
     const filename = filenameStealth(download.id, download.mediaType);
     fs.unlinkSync(path.join(SettingsData.downloadsPath, filename));
   }
