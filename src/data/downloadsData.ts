@@ -73,7 +73,7 @@ export default class DownloadsDataModel implements DownloadsData {
       dr.timestamp
     );
 
-    TrainingClassesData.addTrainingClass(dr.trainingClass, false);
+    TrainingClassesData.addTrainingClass(dr.trainingClass);
 
     this.offlineTrainingClasses[id + "-" + dr.mediaType] = offlineTrainingClass;
 
@@ -184,6 +184,11 @@ export default class DownloadsDataModel implements DownloadsData {
    * Call to start the next training class download
    */
   async downloadNext() {
+    if (!AppData.ONLINE) {
+      logWarn('No internet connection when trying to download');
+      return;
+    }
+
     // Check if already downloading
     if (this.isDownloading) return;
     this.isDownloading = true;
@@ -275,8 +280,7 @@ export default class DownloadsDataModel implements DownloadsData {
           download.retries++;
           this.resumeDownloads();
           sendToast(
-            `Error al descargar clase: ${
-              TrainingClassesData.trainingClasses[download.id].title
+            `Error al descargar clase: ${TrainingClassesData.trainingClasses[download.id].title
             }`,
             "error",
             3
@@ -327,8 +331,7 @@ export default class DownloadsDataModel implements DownloadsData {
           const isCompleted = received === totalSize;
           if (isCompleted) {
             sendToast(
-              `Clase descargada ${
-                TrainingClassesData.trainingClasses[download.id].title
+              `Clase descargada ${TrainingClassesData.trainingClasses[download.id].title
               }`,
               "success",
               3
@@ -370,7 +373,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
   getFromDb(): void {
     if (!DB.data?.downloads) return;
-
+    // const offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.offlineTrainingClasses = DB.data!.downloads.offlineTrainingClasses;
     this.trainingClassesScheduled = DB.data!.downloads.trainingClassesScheduled;
     this.hasAdjustVideo = DB.data!.downloads.hasAdjustVideo;

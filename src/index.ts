@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+import { app, session, BrowserWindow, ipcMain, shell, Menu } from "electron";
 
 import path from "path";
 import os from "os";
@@ -20,6 +20,7 @@ import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
+import { menu } from "./menuBar";
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -62,13 +63,11 @@ const createWindow = async () => {
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools: true,
-      // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
+      devTools:
+        process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
   AppData.USER_AGENT = mainWindow.webContents.session.getUserAgent();
-
-  mainWindow.setMenu(null);
 
   mainWindow
     .loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
@@ -110,6 +109,11 @@ const createWindow = async () => {
   avoidExternalPageRequests(mainWindow);
   //const hrService = new HeartRateDeviceService(ipcMain);
 
+  if (process.platform == "darwin")
+    setTimeout(() => {
+      console.log("setting menu");
+      Menu.setApplicationMenu(menu);
+    }, 10000);
   //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();

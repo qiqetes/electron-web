@@ -55,11 +55,11 @@ export const init = async () => {
   initErrorHandler();
 
   await initDB();
-  try{
-    // if (process.env.NODE_ENV !== "development") {
-    setAutoUpdater();
-    //}
-  }catch(err){
+  try {
+    if (process.env.NODE_ENV !== "development") {
+      setAutoUpdater();
+    }
+  } catch (err) {
     logError("Error on auto updater", err);
   }
 
