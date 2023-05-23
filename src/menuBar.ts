@@ -1,13 +1,8 @@
 import { mainWindow } from "./index";
 import { AppData } from "./data/appData";
-import {
-  app,
-  Menu,
-  MenuItem,
-  MenuItemConstructorOptions,
-  shell,
-} from "electron";
+import { Menu, MenuItem, MenuItemConstructorOptions, shell } from "electron";
 import config from "./config";
+import { logError } from "./helpers/loggers";
 
 type MenuItemWebapp = {
   label?: string;
@@ -80,7 +75,17 @@ const menuItemWebappToMenuItem = (menuItemW: MenuItemWebapp): MenuItem => {
   else if (menuItemW.openExternal)
     click = () => shell.openExternal(menuItemW.openExternal!);
   else if (menuItemW.customAction) {
-    // TODO: Implement custom actions
+    switch (menuItemW.customAction) {
+      case "logout":
+        click = () => mainWindow.webContents.send("logout");
+        break;
+      case "reportError":
+        click = () => mainWindow.webContents.send("errorReportModal");
+        break;
+      default:
+        logError("Unknown custom action", menuItemW.customAction);
+        break;
+    }
   }
 
   const menuItem = new MenuItem({
@@ -98,148 +103,13 @@ const menuItemWebappToMenuItem = (menuItemW: MenuItemWebapp): MenuItem => {
 };
 
 /**
- * Generates a menu bar from a menu layout coming from webapp
+ * Generates a
  * @param menuLayout Menu layout coming from webapp
  */
 export const generateMenuBar = (menuLayout: MenuBarLayout) => {
   const template = menuLayout.map((i) => menuItemWebappToMenuItem(i));
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
-
-  // const menuBarTemplate: MenuItem[] = [
-  // 	new MenuItem({
-  // 		label: app.name,
-  // 		submenu: [
-  // 			{ role: "about" },
-  // 			{ type: "separator" },
-  // 			{
-  // 				type: "normal",
-  // 				label: "Preferencias",
-  // 				enabled: !!AppData.USER,
-  // 				click: () =>
-  // 					mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/settings"),
-  // 			},
-  // 			{ type: "separator" },
-  // 			AppData.USER?.isPreviewTester ? { role: "toggleDevTools" } : null,
-  // 			AppData.USER?.isPreviewTester ? { type: "separator" } : null,
-  // 			{ role: "quit" },
-  // 		].filter((x) => x != null) as MenuItemConstructorOptions[],
-  // 	}),
-  // ];
-
-  // if (AppData.USER) {
-  // 	menuBarTemplate.push(
-  // 		new MenuItem({
-  // 			label: "Ir a",
-  // 			submenu: [
-  // 				{
-  // 					type: "normal",
-  // 					label: "Buscar clases",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/trainingclasses/search"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Clases offline",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/offline"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Clases favoritas",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/favourites"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Perfil",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/offline"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Notificaciones",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/notifications"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Ajustes",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/settings"),
-  // 				},
-  // 			],
-  // 		})
-  // 	);
-  // 	menuBarTemplate.push(
-  // 		new MenuItem({
-  // 			label: "Aplicaciones",
-  // 			submenu: [
-  // 				{
-  // 					type: "normal",
-  // 					label: "Mis clases",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/bestpro/home"),
-  // 				},
-  // 				AppData.USER?.membership === "gimnasios" ? {
-  // 					type: "normal",
-  // 					label: "Planificador",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/gyms/rooms"),
-  // 				} : null,
-  // 				{
-  // 					type: "normal",
-  // 					label: "Constructor de clases",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/bestpro/constructor"),
-  // 				},
-  // 			].filter((x) => x != null) as MenuItemConstructorOptions[],
-  // 		})
-  // 	);
-  // 	menuBarTemplate.push(
-  // 		new MenuItem({
-  // 			label: "Mi cuenta",
-  // 			submenu: [
-  // 				{
-  // 					type: "normal",
-  // 					label: "Mis datos",
-  // 					click: () => shell.openExternal("https://www.bestcycling.com/user"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Mis suscripción",
-  // 					click: () => mainWindow.loadURL(AppData.WEBAPP_WEBASE + config.APP_PATH + "/subscription"),
-  // 				},
-  // 				{
-  // 					type: "normal",
-  // 					label: "Cerrar sesión",
-  // 					click: () => {
-  // 						/* TODO: ipcMainAction.cerrarSesión */
-  // 					},
-  // 				},
-  // 			],
-  // 		})
-  // 	);
-  // }
-  // menuBarTemplate.push(
-  // 	new MenuItem({
-  // 		label: "Ayuda",
-  // 		submenu: [
-  // 			{
-  // 				type: "normal",
-  // 				label: "Reporta un error",
-  // 				click: () => shell.openExternal("https://www.bestcycling.com/support"),
-  // 			},
-  // 			{
-  // 				type: "normal",
-  // 				label: "Sugerencias",
-  // 				click: () => shell.openExternal("https://community.bestcycling.com/categories/11/topics"),
-  // 			},
-  // 			{
-  // 				type: "normal",
-  // 				label: "Contacta con nosotros",
-  // 				click: () => shell.openExternal("https://bestcycling.com/page/contacto"),
-  // 			},
-  // 			{
-  // 				role:
-  // 			}
-  // 		],
-  // 	})
-  // );
-
-  // const menu = Menu.buildFromTemplate(menuBarTemplate);
-  // Menu.setApplicationMenu(menu);
 };
 
 /**
@@ -248,7 +118,7 @@ export const generateMenuBar = (menuLayout: MenuBarLayout) => {
 export const generateInitialMenu = () => {
   const menuBarTemplate: MenuItem[] = [
     new MenuItem({
-      label: app.name,
+      label: "Bestcycling",
       submenu: [
         { role: "about" },
         { type: "separator" },

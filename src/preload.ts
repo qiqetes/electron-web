@@ -93,6 +93,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   handleElectronRedirect: (callback: (event: Event, route: string) => void) =>
     ipcRenderer.on("modal", callback),
 
+  handleLogout: (callback: () => void) => ipcRenderer.on("logout", callback),
+  handleErrorReportModal: (callback: () => void) =>
+    ipcRenderer.on("errorReportModal", callback),
+
   setMenuBar: (menuLayout: MenuBarLayout) =>
     ipcRenderer.send("setMenuBar", menuLayout),
 });

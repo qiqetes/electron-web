@@ -96,8 +96,9 @@ ipcMain.on("importDownloads", () => {
 });
 
 ipcMain.on("getMediaUrl", (event, id, media) => {
-  event.returnValue = `http://127.0.0.1:${LocalServerInstance.port
-    }/offline/${filenameStealth(id, media)}`;
+  event.returnValue = `http://127.0.0.1:${
+    LocalServerInstance.port
+  }/offline/${filenameStealth(id, media)}`;
 });
 
 ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
@@ -203,9 +204,9 @@ export const showModal = (
   textOk = "OK",
   textCancel = "Cancel",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackOk = () => { },
+  callbackOk = () => {},
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackCancel = () => { }
+  callbackCancel = () => {}
 ) => {
   modalFunctions.callbackOk = callbackOk;
   modalFunctions.callbackCancel = callbackCancel;
