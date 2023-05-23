@@ -3,6 +3,7 @@ import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
 import { downloadsAPI } from "./api/downloadsAPI";
+import { MenuBarLayout } from "./menuBar";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
@@ -87,6 +88,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   checkConnection: () => ipcRenderer.sendSync("checkConnection"),
+
+  // Send navigateToUrl to webapp
+  handleElectronRedirect: (callback: (event: Event, route: string) => void) =>
+    ipcRenderer.on("modal", callback),
+
+  setMenuBar: (menuLayout: MenuBarLayout) =>
+    ipcRenderer.send("setMenuBar", menuLayout),
 });
 
 contextBridge.exposeInMainWorld("conversionAPI", {

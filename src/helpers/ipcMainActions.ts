@@ -18,6 +18,7 @@ import { modalFunctions } from "../models/modal.model";
 import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
 import * as fs from "fs";
+import { MenuBarLayout, generateMenuBar } from "../menuBar";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -95,9 +96,8 @@ ipcMain.on("importDownloads", () => {
 });
 
 ipcMain.on("getMediaUrl", (event, id, media) => {
-  event.returnValue = `http://127.0.0.1:${
-    LocalServerInstance.port
-  }/offline/${filenameStealth(id, media)}`;
+  event.returnValue = `http://127.0.0.1:${LocalServerInstance.port
+    }/offline/${filenameStealth(id, media)}`;
 });
 
 ipcMain.on("deleteDownload", (event, id, media: mediaType) => {
@@ -203,9 +203,9 @@ export const showModal = (
   textOk = "OK",
   textCancel = "Cancel",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackOk = () => {},
+  callbackOk = () => { },
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  callbackCancel = () => {}
+  callbackCancel = () => { }
 ) => {
   modalFunctions.callbackOk = callbackOk;
   modalFunctions.callbackCancel = callbackCancel;
@@ -462,6 +462,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
 ipcMain.on("checkConnection", (event, id, media) => {
   event.returnValue = net.isOnline();
+});
+
+ipcMain.on("setMenuBar", (_, layout: MenuBarLayout) => {
+  generateMenuBar(layout);
 });
 
 // There are some actions that need to comunicate with the renderer process

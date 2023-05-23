@@ -20,7 +20,8 @@ import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
-import { menu } from "./menuBar";
+import { generateInitialMenu } from "./menuBar";
+
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -47,6 +48,8 @@ export const BTManager = new BluetoothManager();
 const createWindow = async () => {
   await init();
 
+  console.log(AppData.USER);
+
   mainWindow = new BrowserWindow({
     autoHideMenuBar: true,
     darkTheme: true,
@@ -63,10 +66,11 @@ const createWindow = async () => {
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools:
-        process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
+      devTools: true,
+      // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
+  generateInitialMenu();
   AppData.USER_AGENT = mainWindow.webContents.session.getUserAgent();
 
   mainWindow
@@ -109,11 +113,6 @@ const createWindow = async () => {
   avoidExternalPageRequests(mainWindow);
   //const hrService = new HeartRateDeviceService(ipcMain);
 
-  if (process.platform == "darwin")
-    setTimeout(() => {
-      console.log("setting menu");
-      Menu.setApplicationMenu(menu);
-    }, 10000);
   //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();
