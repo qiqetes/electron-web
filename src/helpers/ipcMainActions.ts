@@ -37,7 +37,12 @@ ipcMain.on("setAuth", (_, auth) => {
   api.headers.Authorization = AppData.AUTHORIZATION;
   DownloadsData.downloadHelpVideo();
 });
-
+ipcMain.on("setLogout", (_) => {
+  log("Setting Logout");
+  AppData.AUTHORIZATION = `Bearer `;
+  AppData.USER = null;
+  api.headers.Authorization = AppData.AUTHORIZATION;
+});
 ipcMain.on(
   "setUser",
   (
