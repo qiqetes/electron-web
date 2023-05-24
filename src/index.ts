@@ -20,6 +20,7 @@ import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
+import { setAutoUpdater } from "./helpers/updater";
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -116,6 +117,13 @@ const createWindow = async () => {
 
   onWindowResized(mainWindow);
   onWindowMoved(mainWindow);
+  try{
+    if (process.env.NODE_ENV !== "development") {
+      setAutoUpdater();
+    }
+  }catch(err){
+    logError("Error on auto updater", err);
+  }
 };
 
 // const reactDevToolsPath = path.join(
@@ -133,6 +141,7 @@ app.on("ready", async () => {
   createWindow();
 
   BTManager.bluetoothStateChange();
+
 });
 
 app.on("before-quit", async () => {
