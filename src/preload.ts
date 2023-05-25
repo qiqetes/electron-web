@@ -52,6 +52,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.send("setAuth", auth);
   },
 
+  setLogout: () => {
+    ipcRenderer.send("setLogout");
+  },
+
   restoreDefaults: () => {
     ipcRenderer.send("restoreDefaults");
   },

@@ -21,6 +21,7 @@ import { filenameStealth } from "./helpers/downloadsHelpers";
 import fs from "fs";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
 import { generateInitialMenu } from "./menuBar";
+import { setAutoUpdater } from "./helpers/updater";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -111,15 +112,21 @@ const createWindow = async () => {
 
   detectWorkerInstallation(session.defaultSession);
   avoidExternalPageRequests(mainWindow);
-  //const hrService = new HeartRateDeviceService(ipcMain);
 
-  //hrService.registerBluetoothEvents(mainWindow);
   BTManager.registerBluetoothEvents(mainWindow);
   BTManager.loadKnownDevices();
-  onWindowResized(mainWindow);
-  onWindowMoved(mainWindow);
   const hrService = new HeartRateDeviceService(ipcMain);
   hrService.registerBluetoothEvents(mainWindow);
+
+  onWindowResized(mainWindow);
+  onWindowMoved(mainWindow);
+  try {
+    if (process.env.NODE_ENV !== "development") {
+      setAutoUpdater();
+    }
+  } catch (err) {
+    logError("Error on auto updater", err);
+  }
 };
 
 // const reactDevToolsPath = path.join(
@@ -135,12 +142,18 @@ app.on("ready", async () => {
     DownloadsData.getDownloadsState()
   );
   createWindow();
+
+  BTManager.bluetoothStateChange();
 });
 
-app.on("window-all-closed", async () => {
+app.on("before-quit", async () => {
   const download = DownloadsData.getDownloading();
+
   if (download) {
     log("Removing download before app close");
+
+    await DownloadsData.removeDownloading();
+
     const filename = filenameStealth(download.id, download.mediaType);
     fs.unlinkSync(path.join(SettingsData.downloadsPath, filename));
   }

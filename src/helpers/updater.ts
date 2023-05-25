@@ -140,6 +140,11 @@ const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<
  * to be downloaded.
  * */
 export const setAutoUpdater = async () => {
+  console.table(AppData)
+  if(AppData.USER === null){
+    log("No user, abort updater");
+    return
+  }
   const config = {
     headers: {
       "Content-Type": "application/vnd.api+json",
@@ -148,6 +153,7 @@ export const setAutoUpdater = async () => {
       "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
     },
   };
+
   const desktopUpdate = (await axios.get<UpdateData>(`${AppData.API}/desktop_updaters`,config)).data;
 
   const version = desktopUpdate?.data?.attributes?.version;
