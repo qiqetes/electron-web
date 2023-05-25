@@ -129,6 +129,12 @@ export default class DownloadsDataModel implements DownloadsData {
     );
   }
 
+  getIncomplete(): OfflineTrainingClass[] {
+    return Object.values(this.offlineTrainingClasses).filter(
+      (v) => v.status === "downloading" || v.status === "error"
+    );
+  }
+
   /**
    * Gets the next download to start
    */
@@ -157,6 +163,11 @@ export default class DownloadsDataModel implements DownloadsData {
     if (!this.hasAdjustVideo) {
       this.downloadHelpVideo();
     }
+
+    // encolamos descargas incompletas o erróneas no eliminadas
+    this.requeueIncomplete();
+
+    // Siguiente descarga
     this.downloadNext();
   }
 
@@ -174,10 +185,38 @@ export default class DownloadsDataModel implements DownloadsData {
 
     sendToast("Error al descargar clase", "error", 3);
     this.isDownloading = false;
-    download.status = "queued";
-    download.retries++;
-    if (download.retries >= 5) download.status = "error";
+    if (download.retries > 5) {
+      this.removeFromQueue(download);
+    } else {
+      this.requeue(download);
+    }
+
     if (keepDownloading) this.downloadNext();
+  }
+
+  requeue(download: OfflineTrainingClass) {
+    download.retries++;
+    download.status = "queued";
+  }
+
+  removeFromQueue(download: OfflineTrainingClass) {
+    const key = `${download.id}-${download.mediaType}`;
+    delete this.offlineTrainingClasses[key];
+  }
+
+  requeueIncomplete() {
+    this.getIncomplete().forEach((download) => {
+      download.status = "queued";
+      download.retries = 0;
+    });
+  }
+
+  async removeDownloading() {
+    const tc = this.getDownloading();
+
+    const offlineTc = this.offlineTrainingClasses[tc?.id + "-" + tc?.mediaType];
+    offlineTc.status = "queued";
+    offlineTc.progress = 0;
   }
 
   /**
@@ -185,7 +224,9 @@ export default class DownloadsDataModel implements DownloadsData {
    */
   async downloadNext() {
     // Check if already downloading
-    if (this.isDownloading) return;
+    if (!AppData.ONLINE || this.isDownloading) return;
+    this.saveToDb(true);
+
     this.isDownloading = true;
 
     // Check if there are classes waiting to be downloaded in the queue
@@ -544,6 +585,8 @@ export default class DownloadsDataModel implements DownloadsData {
       if (trainingsFound.includes(key)) return;
       delete this.offlineTrainingClasses[key];
     });
+
+    this.saveToDb(true);
   }
 
   removeMyTrainingClasses(data: TrainingClass[]) {
@@ -577,6 +620,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
     delete this.offlineTrainingClasses[key];
     informDownloadsState();
+    this.saveToDb(true);
   }
 
   /**
@@ -809,7 +853,9 @@ export default class DownloadsDataModel implements DownloadsData {
   downloadHelpVideo(): void {
     if (!AppData.ONLINE) return;
 
+    if (this.isDownloading) return;
     this.isDownloading = true;
+
     const accessToken = AppData.AUTHORIZATION.split(" ")[1];
 
     if (!accessToken) {
@@ -841,7 +887,7 @@ export default class DownloadsDataModel implements DownloadsData {
           url
         );
         this.resumeDownloads();
-        writeStream.end;
+        writeStream.end();
         return;
       }
 

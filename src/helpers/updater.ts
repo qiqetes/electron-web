@@ -9,7 +9,7 @@ import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
 import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
-import {api} from   "../helpers/init";
+
 type Pckg = { url: string };
 
 interface UpdateManifest {
@@ -20,6 +20,16 @@ interface UpdateManifest {
   packages: {
     [bar: string]: Pckg;
   };
+}
+interface UpdateData {
+  data: {
+    type: string;
+    attributes: {
+      url: string,
+      version: string,
+      plattform: string
+    };
+  }
 }
 
 const isNewVersionNuber = (actual: string, incoming: string) => {
@@ -130,14 +140,27 @@ const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<
  * to be downloaded.
  * */
 export const setAutoUpdater = async () => {
-  const desktopUpdate = await api.fetch("desktop_updater");
-  console.log(desktopUpdate)
-  const version = desktopUpdate?.data?.version;
-  const updateUrl = desktopUpdate?.data?.url;
+  console.table(AppData)
+  if(AppData.USER === null){
+    log("No user, abort updater");
+    return
+  }
+  const config = {
+    headers: {
+      "Content-Type": "application/vnd.api+json",
+      "X-APP-ID": AppData.XAPPID,
+      Authorization: AppData.AUTHORIZATION,
+      "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
+    },
+  };
+
+  const desktopUpdate = (await axios.get<UpdateData>(`${AppData.API}/desktop_updaters`,config)).data;
+
+  const version = desktopUpdate?.data?.attributes?.version;
+  const updateUrl = desktopUpdate?.data?.attributes?.url;
   if(updateUrl === undefined || updateUrl == ""){
     return;
   }
-
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
   const setAutoUpdaterMac = () => {
 

@@ -37,8 +37,6 @@ export class BluetoothManager {
       BluetoothDevice | HeartRateDevice | BikeDevice
     >();
 
-    this.bluetoothStateChange();
-
     ipcMain.on("bluetoothStartScan", () => {
       // this.callback("");
       this.startScan();
@@ -478,7 +476,7 @@ export class BluetoothManager {
   isBike = (peripheral: noble.Peripheral): BluetoothDevice | undefined => {
     const ftmsDevice = FtmsDevice.isDevice(peripheral);
     if (ftmsDevice) {
-      console.log("ftmsDevice", peripheral);
+      // console.log("ftmsDevice", peripheral);
       return ftmsDevice;
     }
     const keiserDevice = KeiserDevice.isDevice(peripheral);
