@@ -8,7 +8,6 @@ import BinDataModel from "../data/binData";
 import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
-import { setAutoUpdater } from "./updater";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
 import { log, logError, logWarn } from "./loggers";

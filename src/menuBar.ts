@@ -3,6 +3,7 @@ import { AppData } from "./data/appData";
 import { Menu, MenuItem, MenuItemConstructorOptions, shell } from "electron";
 import config from "./config";
 import { logError } from "./helpers/loggers";
+import { forceCheckForUpdate } from "./helpers/updater";
 
 type MenuItemWebapp = {
   label?: string;
@@ -60,7 +61,7 @@ type MenuItemWebapp = {
   type?: "normal" | "separator" | "submenu" | "checkbox" | "radio";
   loadUrl?: `/${string}`;
   openExternal?: string;
-  customAction?: "logout" | "reportError";
+  customAction?: "logout" | "reportError" | "checkForUpdates";
 };
 
 export type MenuBarLayout = MenuItemWebapp[];
@@ -81,6 +82,9 @@ const menuItemWebappToMenuItem = (menuItemW: MenuItemWebapp): MenuItem => {
         break;
       case "reportError":
         click = () => mainWindow.webContents.send("errorReportModal");
+        break;
+      case "checkForUpdates":
+        click = () => forceCheckForUpdate();
         break;
       default:
         logError("Unknown custom action", menuItemW.customAction);

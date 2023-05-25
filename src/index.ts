@@ -121,9 +121,9 @@ const createWindow = async () => {
   onWindowResized(mainWindow);
   onWindowMoved(mainWindow);
   try {
-    if (process.env.NODE_ENV !== "development") {
-      setAutoUpdater();
-    }
+    // if (process.env.NODE_ENV !== "development") {
+    setAutoUpdater();
+    // }
   } catch (err) {
     logError("Error on auto updater", err);
   }
