@@ -18,6 +18,7 @@ import { modalFunctions } from "../models/modal.model";
 import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
 import * as fs from "fs";
+import { MenuBarLayout, generateMenuBar } from "../menuBar";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -467,6 +468,10 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
 
 ipcMain.on("checkConnection", (event, id, media) => {
   event.returnValue = net.isOnline();
+});
+
+ipcMain.on("setMenuBar", (_, layout: MenuBarLayout) => {
+  generateMenuBar(layout);
 });
 
 // There are some actions that need to comunicate with the renderer process

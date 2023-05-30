@@ -1,8 +1,9 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcMain, ipcRenderer } from "electron";
 import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
 import { downloadsAPI } from "./api/downloadsAPI";
+import { MenuBarLayout } from "./menuBar";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
@@ -11,6 +12,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   loginPath: config.LOGIN_PATH,
 
   mainLoaded: () => ipcRenderer.send("mainLoaded"),
+
+  checkForUpdates: () => {
+    ipcRenderer.send("checkForUpdates");
+  },
 
   // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
@@ -91,6 +96,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   checkConnection: () => ipcRenderer.sendSync("checkConnection"),
+
+  // Send navigateToUrl to webapp
+  handleElectronRedirect: (callback: (event: Event, route: string) => void) =>
+    ipcRenderer.on("modal", callback),
+
+  handleLogout: (callback: () => void) => ipcRenderer.on("logout", callback),
+  handleErrorReportModal: (callback: () => void) =>
+    ipcRenderer.on("errorReportModal", callback),
+
+  setMenuBar: (menuLayout: MenuBarLayout) =>
+    ipcRenderer.send("setMenuBar", menuLayout),
 });
 
 contextBridge.exposeInMainWorld("conversionAPI", {

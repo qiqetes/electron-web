@@ -1,4 +1,4 @@
-import { app, autoUpdater, BrowserWindow, ipcMain } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain } from "electron";
 import projectInfo from "../../package.json";
 import path from "path";
 import { AppData } from "../../src/data/appData";
@@ -25,11 +25,11 @@ interface UpdateData {
   data: {
     type: string;
     attributes: {
-      url: string,
-      version: string,
-      plattform: string
+      url: string;
+      version: string;
+      plattform: string;
     };
-  }
+  };
 }
 
 const isNewVersionNuber = (actual: string, incoming: string) => {
@@ -97,13 +97,10 @@ const getMostUpdatedManifest = async (allowedChannels: {
   revision: boolean | undefined;
   beta: boolean | undefined;
 }): Promise<UpdateManifest | null> => {
-
   const manifestRevision = allowedChannels.revision
-    ? await getManifest('revision')
+    ? await getManifest("revision")
     : null;
-  const manifestBeta = allowedChannels.beta
-    ? await getManifest('beta')
-    : null;
+  const manifestBeta = allowedChannels.beta ? await getManifest("beta") : null;
   const manifestProduction = (
     await axios.get<UpdateManifest>(
       "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/production/manifest.json" // TODO: change to production
@@ -120,31 +117,23 @@ const getMostUpdatedManifest = async (allowedChannels: {
     });
 };
 
-const getManifest = async (channel: 'beta' | 'revision' | 'production'):Promise<UpdateManifest|null> => {
-  try{
+const getManifest = async (
+  channel: "beta" | "revision" | "production"
+): Promise<UpdateManifest | null> => {
+  try {
     const manifest = (
       await axios.get<UpdateManifest>(
         `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/manifest.json`
       )
     ).data;
     return manifest;
-  }
-  catch(err){
+  } catch (err) {
     logError("Error getting manifest", err);
     return null;
   }
-}
+};
 
-/**
- * Sets the autoUpdater to check the s3 manifest and check wether there are updates
- * to be downloaded.
- * */
-export const setAutoUpdater = async () => {
-  console.table(AppData)
-  if(AppData.USER === null){
-    log("No user, abort updater");
-    return
-  }
+export const getUpdateManifest = async () => {
   const config = {
     headers: {
       "Content-Type": "application/vnd.api+json",
@@ -154,16 +143,52 @@ export const setAutoUpdater = async () => {
     },
   };
 
-  const desktopUpdate = (await axios.get<UpdateData>(`${AppData.API}/desktop_updaters`,config)).data;
+  const desktopUpdate = (
+    await axios.get<UpdateData>(`${AppData.API}/desktop_updaters`, config)
+  ).data;
 
-  const version = desktopUpdate?.data?.attributes?.version;
-  const updateUrl = desktopUpdate?.data?.attributes?.url;
-  if(updateUrl === undefined || updateUrl == ""){
+  return desktopUpdate?.data?.attributes ?? {};
+};
+
+export const forceCheckForUpdate = async () => {
+  const updateManifest = await getUpdateManifest();
+
+  // const version = updateManifest?.version;
+  const updateUrl = updateManifest?.url;
+
+  if (updateUrl) {
+    setAutoUpdater();
+  } else {
+    const dialogOpts = {
+      type: "info",
+      buttons: ["Aceptar"],
+      title: "Application Update",
+      // message: process.platform === "win32" ? releaseNotes : releaseName,
+      message: "Actualmente, no hay actualizaciones disponibles.",
+    };
+    dialog.showMessageBox(dialogOpts);
+  }
+};
+
+/**
+ * Sets the autoUpdater to check the s3 manifest and check wether there are updates
+ * to be downloaded.
+ * */
+export const setAutoUpdater = async () => {
+  // console.table(AppData);
+  if (AppData.USER === null) {
+    log("No user, abort updater");
     return;
   }
+
+  const updateManifest = await getUpdateManifest();
+  const updateUrl = updateManifest?.url;
+  const version = updateManifest?.version;
+
+  if (!updateUrl) return;
+
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
   const setAutoUpdaterMac = () => {
-
     if (!app.isInApplicationsFolder()) {
       logError("Tried updating from a non-app folder, aborting");
       sendUpdaterEvent({
@@ -211,10 +236,10 @@ export const setAutoUpdater = async () => {
       }
       const nupkgName = data.split(" ")[1];
 
-      const updateDirTem = updateUrl.split('/');
+      const updateDirTem = updateUrl.split("/");
       updateDirTem.pop();
-      const updateDir = updateDirTem.join('/');
-      log("NUPKG NAME:", nupkgName, "update Dir ",updateDir);
+      const updateDir = updateDirTem.join("/");
+      log("NUPKG NAME:", nupkgName, "update Dir ", updateDir);
 
       download(
         tempPath,
