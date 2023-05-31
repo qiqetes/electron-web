@@ -1,11 +1,12 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.16",
+  "version": "4.0.17",
   "description": "Aplicación de escritorio Bestcycling.",
   "main": ".webpack/main",
   "scripts": {
     "start": "cross-env-shell ENV=dev electron-forge start",
+    "prod": "cross-env-shell ENV=prod electron-forge start",
     "dev": "cross-env-shell ENV=prod FLAVOUR=2 electron-forge start",
     "package": "electron-forge package",
     "make": "npm run premake:macos && cross-env-shell ENV=prod electron-forge make --arch=universal",
