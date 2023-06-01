@@ -146,24 +146,8 @@ app.on("ready", async () => {
 
   BTManager.bluetoothStateChange();
 
-  // Clean old app
-
-  const path = "%CSIDL_DEFAULT_PROGRAMS%\\Bestcycling TV\\uninst000.exe";
-  const path2 = "%CSIDL_DEFAULT_PROGRAMS%\\Bestcycling TV\\uninst000.exe";
-
-  if (fs.existsSync(path)) {
-    console.log("file exists");
-    alert("file exists");
-  } else {
-    console.log("file not found!");
-    alert("file not exists");
-  }
-  if (fs.existsSync(path2)) {
-    console.log("file2 exists");
-    alert("file2 exist");
-  } else {
-    console.log("file2 not found!");
-    alert("file2 not exists");
+  if (process.platform === "win32") {
+    // TODO: cleanup old installation
   }
 });
 
