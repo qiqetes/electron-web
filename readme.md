@@ -50,3 +50,19 @@ Aunque nuestra app no tenga renderer, por un bug de Electron-forge hay que mante
 
 - Quitar el webSecurity: false y servir la clase de ajuste y la música de espera por LocalServer
 - InnoSetup windows.
+
+# Actualizar desde NW.js
+
+- Simular actualizador de nwjs.
+
+```bash
+node ./nwjs-update.js
+```
+
+- Crear actualizador:
+
+Debería llamarse `Bestcycling TV.exe` e ir incluido en update-win{32,64}.zip junto con el .exe normal.
+
+```bash
+npx pkg -t win-x86 .\update-win.js
+```
