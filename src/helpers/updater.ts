@@ -9,6 +9,8 @@ import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
 import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
+import extract from "extract-zip";
+import { spawn } from "child_process";
 
 type Pckg = { url: string };
 
@@ -206,6 +208,11 @@ export const setAutoUpdater = async () => {
     const json = {
       url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
     };
+    console.info("JSON", json);
+    console.info(
+      "URL",
+      url.pathToFileURL(path.join(tempPath, "feed.json")).href
+    );
 
     fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
 
@@ -217,61 +224,56 @@ export const setAutoUpdater = async () => {
   };
 
   const setAutoUpdaterWin = async () => {
-    // In windows we need to avoid running an update the first time the app runs
-    const cmd = process.argv[1];
-    if (cmd == "--squirrel-firstrun") {
-      sendUpdaterEvent({
-        type: "update_error",
-        error:
-          "Por favor reinicia la aplicación para instalar la actualización",
-      });
-      return;
-    }
+    // TODO: en mac se pasa un zip y funciona bien, en windows no lo he conseguido.
+    // const source = path.join(tempPath, "update.zip");
+    // const target = path.join(tempPath, "Bestcycling TV.exe");
+    // await extract(source, { dir: target });
+    // spawn(target, ["/SILENT"], {
+    //   detached: true,
+    //   stdio: ["ignore", "ignore", "ignore"],
+    // }).unref();
 
-    log("RELEASES downloaded in temp folder", tempPath);
-    fs.readFile(path.join(tempPath, "RELEASES"), "utf8", (err, data) => {
-      if (err) {
-        logError("Reading RELEASES file", err);
-        return;
-      }
-      const nupkgName = data.split(" ")[1];
+    // app.quit();
+    // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.
+    const json = {
+      url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
+    };
+    console.info("JSON", json);
+    console.info(
+      "URL",
+      url.pathToFileURL(path.join(tempPath, "feed.json")).href
+    );
 
-      const updateDirTem = updateUrl.split("/");
-      updateDirTem.pop();
-      const updateDir = updateDirTem.join("/");
-      log("NUPKG NAME:", nupkgName, "update Dir ", updateDir);
+    fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
 
-      download(
-        tempPath,
-        nupkgName,
-        `${updateDir}/${nupkgName}`,
-        () => {
-          log("NUPKG downloaded in temp folder", tempPath);
-          autoUpdater.setFeedURL({
-            url: tempPath,
-          });
-          autoUpdater.checkForUpdates();
-          AppData.LAST_VERSION_DOWNLOADED = version;
-        },
-        (percentage) =>
-          sendUpdaterEvent({ type: "update_downloading", progress: percentage })
-      );
+    autoUpdater.setFeedURL({
+      url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
     });
+
+    autoUpdater.checkForUpdates();
   };
 
   registerAutoUpdaterEvents();
   sendUpdaterEvent({ type: "update_found", version });
-  if (os.platform() == "darwin") {
+
+  const downloadedCallback =
+    os.platform() == "darwin"
+      ? setAutoUpdaterMac
+      : os.platform() == "win32"
+      ? setAutoUpdaterWin
+      : undefined;
+
+  const downloadProgressCallback = (percentage: number) =>
+    sendUpdaterEvent({ type: "update_downloading", progress: percentage });
+
+  if (downloadedCallback) {
     download(
       tempPath,
       "update.zip",
       updateUrl,
-      setAutoUpdaterMac,
-      (percentage) =>
-        sendUpdaterEvent({ type: "update_downloading", progress: percentage })
+      downloadedCallback,
+      downloadProgressCallback
     );
-  } else if (os.platform() == "win32") {
-    download(tempPath, "RELEASES", updateUrl, setAutoUpdaterWin);
   }
 };
 
