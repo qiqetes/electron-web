@@ -5,7 +5,7 @@
 #define AppExeName "Bestcycling TV.exe"
 #define AppURL "https://www.bestcycling.com"
 #define AppSrcDir "out/Bestcycling TV-win32-x64/"
-#define AppVersion GetFileVersion(AppSrcDir + "Bestcycling TV.exe")
+#define AppVersion GetVersionNumberString(AppSrcDir + "Bestcycling TV.exe")
 #define AppPublisher "Bestcycling SL"
 #define AppCopyright "Copyright (c) 2023 Bestcycling SL"
 
