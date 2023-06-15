@@ -49,13 +49,6 @@ gulp.task("electron", ["copy"], function () {
             "product-version": pkg.version,
             icon: "icons/app.ico",
           },
-          darwin: {
-            CFBundleDisplayName: pkg.name,
-            CFBundleIdentifier: pkg.name,
-            CFBundleName: pkg.name,
-            CFBundleVersion: pkg.version,
-            icon: "icons/app.icns",
-          },
         },
       })
     )
