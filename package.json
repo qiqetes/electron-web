@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.16",
+  "version": "4.0.17",
   "description": "Aplicación de escritorio Bestcycling.",
   "main": ".webpack/main",
   "scripts": {
@@ -13,7 +13,7 @@
     "make:macos": "npm run premake:macos && cross-env-shell ENV=prod electron-forge make --arch=universal",
     "make:macos:dev": "npm run premake:macos && cross-env-shell ENV=dev electron-forge make --arch=universal",
     "make:macos:devprod": "npm run premake:macos && cross-env-shell ENV=prod FLAVOUR=2 electron-forge make --arch=universal",
-    "make:win": "npm run make:win:x64 && npm run make:win:ia32",
+    "make:win": "npm run make:win:ia32 && npm run make:win:x64",
     "make:win:x64": "npm run premake:win && npm run rebuild:x64 && cross-env-shell ENV=prod electron-forge make --arch=x64",
     "make:win:ia32": "npm run premake:win && npm run rebuild:ia32 && cross-env-shell ENV=prod electron-forge make --arch=ia32",
     "make:win:devprod": "npm run make:win:devprod:x64 && npm run  make:win:devprod:ia32 ",

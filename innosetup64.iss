@@ -4,8 +4,8 @@
 #define AppName "Bestcycling"
 #define AppExeName "Bestcycling TV.exe"
 #define AppURL "https://www.bestcycling.com"
-#define AppSrcDir "out/Bestcycling TV-win32-x64/"
-#define AppVersion GetVersionNumberString(AppSrcDir + "Bestcycling TV.exe")
+#define AppSrcDir "out/Bestcycling TV-win32-x64\"
+#define AppVersion GetVersionNumbersString(AppSrcDir + "Bestcycling TV.exe")
 #define AppPublisher "Bestcycling SL"
 #define AppCopyright "Copyright (c) 2023 Bestcycling SL"
 
@@ -22,11 +22,12 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={commonpf}\{#AppName}
+DefaultDirName={userpf}\{#AppName}
 DefaultGroupName={#AppName}
 OutputDir=out
-OutputBaseFilename=SetupBestcycling32
+OutputBaseFilename=SetupBestcycling64
 DisableProgramGroupPage=yes
+DisableDirPage=no
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

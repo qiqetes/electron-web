@@ -225,32 +225,32 @@ export const setAutoUpdater = async () => {
 
   const setAutoUpdaterWin = async () => {
     // TODO: en mac se pasa un zip y funciona bien, en windows no lo he conseguido.
-    // const source = path.join(tempPath, "update.zip");
-    // const target = path.join(tempPath, "Bestcycling TV.exe");
-    // await extract(source, { dir: target });
-    // spawn(target, ["/SILENT"], {
-    //   detached: true,
-    //   stdio: ["ignore", "ignore", "ignore"],
-    // }).unref();
+    const source = path.join(tempPath, "update.zip");
+    const target = path.join(tempPath);
+    let installerPath: string | undefined;
 
-    // app.quit();
-    // We need to manually create a feed.json file with a `url` key that points to our local `.zip` update file.
-    const json = {
-      url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
-    };
-    console.info("JSON", json);
-    console.info(
-      "URL",
-      url.pathToFileURL(path.join(tempPath, "feed.json")).href
-    );
-
-    fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
-
-    autoUpdater.setFeedURL({
-      url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
+    await extract(source, {
+      dir: target,
+      onEntry: (entry) => {
+        const entryPath = path.join(tempPath, entry.fileName);
+        if (!installerPath && path.extname(entryPath) === ".exe") {
+          installerPath = entryPath;
+        }
+      },
     });
+    if (installerPath) {
+      spawn(target, ["/SILENT"], {
+        detached: true,
+        stdio: ["ignore", "ignore", "ignore"],
+      }).unref();
 
-    autoUpdater.checkForUpdates();
+      app.quit();
+    } else {
+      sendUpdaterEvent({
+        type: "update_error",
+        error: "Archivo de actualización no válido.",
+      });
+    }
   };
 
   registerAutoUpdaterEvents();
