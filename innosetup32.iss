@@ -54,10 +54,9 @@ Source: "{#AppSrcDir}/*"; DestDir: "{app}/bin"; Flags: ignoreversion recursesubd
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-;Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
 ;Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{group}\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"; Tasks: quicklaunchicon
 
 [Run]
