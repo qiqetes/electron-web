@@ -29,6 +29,10 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 UsePreviousAppDir=yes
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
+; Require Windows 7 SP1 or later
+MinVersion=6.1.7601
 
 [Languages]
 ;Name: "english"; MessagesFile: "compiler:Default.isl"
