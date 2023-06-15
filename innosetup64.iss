@@ -16,23 +16,32 @@
 AppId={{2E6F71A8-75E3-404A-B275-CD48D56C7FD2}
 AppName={#AppName}
 AppVersion={#AppVersion}
+AppCopyright={#AppCopyright}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={pf}\{#AppName}
+DefaultDirName={commonpf}\{#AppName}
 DefaultGroupName={#AppName}
 OutputDir=out
-OutputBaseFilename={#AppExeName}
+OutputBaseFilename=SetupBestcycling32
+DisableProgramGroupPage=yes
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 UsePreviousAppDir=yes
+UsePreviousGroup=no
+UsePreviousLanguage=no
+UsePreviousSetupType=no
+UsePreviousTasks=no
+UsePreviousUserInfo=no
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 ; Require Windows 7 SP1 or later
-MinVersion=6.1.7601
+MinVersion=6.1sp1
+PrivilegesRequired=lowest
+CloseApplications=force
 
 [Languages]
 ;Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -47,7 +56,6 @@ Source: "{#AppSrcDir}/*"; DestDir: "{app}/bin"; Flags: ignoreversion recursesubd
 
 [Icons]
 ;Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"
-;Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{group}\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"; Tasks: quicklaunchicon

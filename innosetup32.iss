@@ -5,7 +5,7 @@
 #define AppExeName "Bestcycling TV.exe"
 #define AppURL "https://www.bestcycling.com"
 #define AppSrcDir "out/Bestcycling TV-win32-ia32/"
-#define AppVersion GetVersionNumberString(AppSrcDir + "Bestcycling TV.exe")
+#define AppVersion GetVersionNumbersString(AppSrcDir + "Bestcycling TV.exe")
 #define AppPublisher "Bestcycling SL"
 #define AppCopyright "Copyright (c) 2023 Bestcycling SL"
 
@@ -16,21 +16,30 @@
 AppId={{2E6F71A8-75E3-404A-B275-CD48D56C7FD2}
 AppName={#AppName}
 AppVersion={#AppVersion}
+AppCopyright={#AppCopyright}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={pf}\{#AppName}
+DefaultDirName={commonpf}\{#AppName}
 DefaultGroupName={#AppName}
 OutputDir=out
-OutputBaseFilename={#AppExeName}
+OutputBaseFilename=SetupBestcycling32
+DisableProgramGroupPage=yes
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 UsePreviousAppDir=yes
+UsePreviousGroup=no
+UsePreviousLanguage=no
+UsePreviousSetupType=no
+UsePreviousTasks=no
+UsePreviousUserInfo=no
 ; Require Windows 7 SP1 or later
-MinVersion=6.1.7601
+MinVersion=6.1sp1
+PrivilegesRequired=lowest
+CloseApplications=force
 
 
 [Languages]
