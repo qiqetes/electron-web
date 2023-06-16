@@ -1,7 +1,9 @@
-import { app, session, BrowserWindow, ipcMain, shell } from "electron";
-
+import fs from "fs";
 import path from "path";
 import os from "os";
+
+import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+
 import { LocalServerInstance } from "./core/LocalServer";
 import {
   avoidExternalPageRequests,
@@ -18,9 +20,11 @@ import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService"
 
 import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
-import fs from "fs";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
+import { generateInitialMenu } from "./menuBar";
 import { setAutoUpdater } from "./helpers/updater";
+import { checkIfUninstallNeeded } from "./win-update";
+
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
@@ -47,6 +51,8 @@ export const BTManager = new BluetoothManager();
 const createWindow = async () => {
   await init();
 
+  console.log(AppData.USER);
+
   mainWindow = new BrowserWindow({
     autoHideMenuBar: true,
     darkTheme: true,
@@ -67,9 +73,8 @@ const createWindow = async () => {
       // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
+  generateInitialMenu();
   AppData.USER_AGENT = mainWindow.webContents.session.getUserAgent();
-
-  mainWindow.setMenu(null);
 
   mainWindow
     .loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
@@ -117,11 +122,11 @@ const createWindow = async () => {
 
   onWindowResized(mainWindow);
   onWindowMoved(mainWindow);
-  try{
-    if (process.env.NODE_ENV !== "development") {
-      setAutoUpdater();
-    }
-  }catch(err){
+  try {
+    // if (process.env.NODE_ENV !== "development") {
+    setAutoUpdater();
+    // }
+  } catch (err) {
     logError("Error on auto updater", err);
   }
 };
@@ -138,10 +143,15 @@ app.on("ready", async () => {
   ipcMain.handle("requestDownloadsState", () =>
     DownloadsData.getDownloadsState()
   );
+
   createWindow();
 
   BTManager.bluetoothStateChange();
 
+  if (process.platform === "win32") {
+    // cleanup old installation
+    checkIfUninstallNeeded();
+  }
 });
 
 app.on("before-quit", async () => {

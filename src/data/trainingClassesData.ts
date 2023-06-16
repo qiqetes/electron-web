@@ -11,7 +11,7 @@ class TrainingClassesDataModel implements TrainingClassesData {
   debounceInterval = 8000; // ms
 
   // Adds a class with all the parameters (media, progression...)
-  addTrainingClass = (trainingClass: TrainingClass, complete = true) => {
+  addTrainingClass = (trainingClass: TrainingClass) => {
     // const id =
     //   typeof trainingClass === "object" ? trainingClass.id : trainingClass;
 
@@ -37,9 +37,6 @@ class TrainingClassesDataModel implements TrainingClassesData {
     // } else {
     //   this.fetchTrainingClass(id);
     // }
-    if (!trainingClass) {
-      return Promise.resolve();
-    }
 
     this.trainingClasses[trainingClass.id.toString()] = trainingClass;
 
