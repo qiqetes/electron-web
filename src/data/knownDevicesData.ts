@@ -1,4 +1,3 @@
-import { saveAll } from "../helpers/databaseHelpers";
 import { BluetoothDevice } from "../core/bluetooth/bluetoothDevice";
 import { DB } from "../helpers/init";
 
@@ -62,6 +61,8 @@ class KnownDevicesDataModel implements KnownDevicesData {
 
   init() {
     this.knownDevices = {};
+    if (!DB.data) return;
+    DB.data.knownDevices = {};
   }
 }
 
