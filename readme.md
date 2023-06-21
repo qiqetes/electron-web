@@ -21,7 +21,17 @@ Si hay problemas con el servidor de tiempo probar otros:
 - http://timestamp.comodoca.com
 - http://timestamp.digicert.com
 
-* Configuración de SSH windows
+El maker de inno setup firma el ejecutable automáticamente si hemos hecho login en SafeNet Authentication Client.
+
+- Abrir SafeNet Authentication Client
+- Click en Modo avanzado
+- Seleccionar SafeNet Authentication Client Tools > Dispositivos > Bestcycling S.L.
+- Click en Iniciar sesión en dispositivo
+- Introducir password y ya se puede lanzar el maker.
+
+Se necesita Inno Setup 6 instalado y signtool.exe en el path.
+
+- Configuración de SSH windows
 
 ```bash
 # By default the ssh-agent service is disabled. Configure it to start automatically.
@@ -49,4 +59,3 @@ Aunque nuestra app no tenga renderer, por un bug de Electron-forge hay que mante
 # TODO:
 
 - Quitar el webSecurity: false y servir la clase de ajuste y la música de espera por LocalServer
-- InnoSetup windows.

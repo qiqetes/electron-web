@@ -148,10 +148,10 @@ app.on("ready", async () => {
 
   BTManager.bluetoothStateChange();
 
-  if (process.platform === "win32") {
-    // cleanup old installation
-    checkIfUninstallNeeded();
-  }
+  // if (process.platform === "win32") {
+  //   // cleanup old installation
+  //   checkIfUninstallNeeded();
+  // }
 });
 
 app.on("before-quit", async () => {
