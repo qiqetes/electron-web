@@ -40,9 +40,6 @@ class BinDataModel implements IBinData {
       case "win32":
         osPath = this.win32Path;
         break;
-
-      // default:
-      //   osPath = this.win64Path;
     }
 
     return path.join(process.resourcesPath, "bin", osPath);

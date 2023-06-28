@@ -47,10 +47,10 @@ class ConversionDataImpl implements ConversionData {
 
   // TODO: stderr.on data required to be typed
   async checkExtension(): Promise<ConversionResponse> {
-    return await new Promise<ConversionResponse>((resolve, reject) => {
+    return new Promise<ConversionResponse>((resolve, reject) => {
       log("Getting data from file...");
 
-      const data = BinData.executeBinary(this.ffmpegBin, ["-i", this.url]);
+      const data = BinData.executeBinary(this.ffmpegBin, ["-i", `"${path.resolve(this.url)}"`]);
       const buff: number[] = [];
 
       data.stderr.on("data", (data: any) => buff.push(data.toString()));
@@ -74,7 +74,7 @@ class ConversionDataImpl implements ConversionData {
   async convert(onUpdate: (value: number) => void): Promise<ConversionResponse> {
     let durationInSeconds = 0;
 
-    return await new Promise<ConversionResponse>((resolve, reject) => {
+    return new Promise<ConversionResponse>((resolve, reject) => {
       log("Creating mp3 from wav...");
 
       const process = BinData.executeBinary(
@@ -82,7 +82,7 @@ class ConversionDataImpl implements ConversionData {
         [
           "-y",
           "-i",
-          this.url,
+          `"${path.resolve(this.url)}"`,
           "-codec:a",
           "libmp3lame",
           "-b:a",
@@ -93,7 +93,7 @@ class ConversionDataImpl implements ConversionData {
           "false",
           "-f",
           "mp3",
-          this.outputPath,
+          `"${path.resolve(this.outputPath)}"`,
         ],
         "ffmpeg"
       );
