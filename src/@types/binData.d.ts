@@ -4,11 +4,7 @@ interface IBinData {
   win32Path: string;
   // win64Path: string,
   currentSystem: SystemsAllowed;
-  processes: IBinProcessesData
-}
-
-interface IBinProcessesData {
-  [key: string]: child_process.ChildProcessWithoutNullStreams;
+  processes: IBinProcessesData;
 }
 
 type BinTypes = "ffmpeg" | "ffmpeg.exe";
