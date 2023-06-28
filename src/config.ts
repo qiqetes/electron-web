@@ -18,9 +18,9 @@ if (process.env.FLAVOUR) {
 }
 
 const development = {
-  WEBBASE: "http://localhost:8080",
-  LOGIN_PATH: "/app#/login",
-  APP_PATH: "/app#",
+  WEBBASE: "https://bestcycling.com",
+  LOGIN_PATH: "/app/#/login",
+  APP_PATH: "/app/#",
   API: "https://apiv2.bestcycling.es/api/v2",
 };
 
@@ -29,7 +29,6 @@ const production = {
   LOGIN_PATH: "/app/#/login",
   APP_PATH: "/app/#",
   API: "https://apiv2.bestcycling.es/api/v2",
-
 };
 
 const devprod = {

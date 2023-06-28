@@ -1,6 +1,11 @@
 import * as os from "os";
 import path from "path";
-import child_process from "child_process";
+import * as child_process from "child_process";
+import { log } from "../helpers/loggers";
+
+interface IBinProcessesData {
+  [key: string]: child_process.ChildProcessWithoutNullStreams;
+}
 
 class BinDataModel implements IBinData {
   binaryPath = "";
@@ -9,7 +14,7 @@ class BinDataModel implements IBinData {
   // win64Path = "win64";
 
   currentSystem: SystemsAllowed = "WIN";
-  processes: IBinProcessesData  = {}
+  processes: IBinProcessesData = {};
 
   constructor() {
     this.binaryPath = this.getBinaryPath();
@@ -44,11 +49,26 @@ class BinDataModel implements IBinData {
   }
 
   killProcess(pid: string) {
-    if (os.platform() === 'darwin') {
-      this.processes[pid]?.kill();
+    const childProcess = this.processes[pid];
+
+    log(
+      `Process ${pid} with pid:${this.processes[pid].pid} not dead, attempting to kill`
+    );
+    if (os.platform() === "darwin") {
+      if (childProcess.kill()) {
+        console.log(`Process ${pid} killed`);
+        return;
+      }
+      console.log(`Process ${pid} couldn't be killed`);
     } else {
-      const _pid = this.processes[pid]?.pid
-      child_process.exec('taskkill /pid ' + _pid + ' /T /F');
+      const _pid = childProcess.pid;
+      child_process.exec("taskkill /pid " + _pid + " /T /F");
+      if (!childProcess.pid) {
+        console.log(`Process ${pid} killed`);
+        return;
+      }
+
+      console.log(`Process ${pid} couldn't be killed`);
     }
   }
 
@@ -80,7 +100,25 @@ class BinDataModel implements IBinData {
 
       if (pid) {
         this.processes[pid] = process;
+        log(`ChildProcess ${pid} with pid:${this.processes[pid].pid} created`);
+        process.on("exit", (code, signal) => {
+          if (signal === "SIGTERM") {
+            console.log(
+              `Child process ${pid} with pid:${process.pid} was killed with SIGTERM`
+            );
+          } else if (signal === "SIGINT") {
+            console.log(
+              `Child process ${pid} with pid:${process.pid} was killed with SIGINT`
+            );
+          } else {
+            console.log(
+              `Child process ${pid} with pid:${process.pid} exited with code ${code}`
+            );
+          }
+          delete this.processes[pid];
+        });
       }
+
       return process;
     } else if (os.platform() === "win32") {
       const process = child_process.spawn(
