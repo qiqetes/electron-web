@@ -85,16 +85,6 @@ class BinDataModel implements IBinData {
   ) {
     const fullCommand = path.join(this.binaryPath, command);
 
-    /**
-     * TO-DO: Needs to be tested
-     * For windows command should be something like:
-     * command => cmd.exe (entry point for command line, not the parameter command)
-     * args => ['c/', paramCommand, paramArgs]
-     *
-     * return child_process.spawn('cmd.exe', ['c/', command, ...args]);
-     *  var ffmpeg = spawn( 'cmd.exe', ['/c',  '"'+ffmpegpath+ '"', '-i', filelist[i], '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', outfile]));
-     */
-
     if (os.platform() === "darwin") {
       const process = child_process.spawn(fullCommand, args, options);
 
@@ -123,8 +113,12 @@ class BinDataModel implements IBinData {
     } else if (os.platform() === "win32") {
       const process = child_process.spawn(
         "cmd.exe",
-        ["/c", fullCommand, ...args],
-        options
+        ["/c", path.basename(fullCommand), ...args],
+        {
+          ...options,
+          shell: true,
+          cwd: path.dirname(fullCommand)
+        }
       );
 
       if (pid) {
