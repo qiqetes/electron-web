@@ -81,6 +81,7 @@ class BinDataModel implements IBinData {
       if (pid) {
         this.processes[pid] = process;
       }
+
       return process;
     } else if (os.platform() === "win32") {
       const process = child_process.spawn(
@@ -92,6 +93,7 @@ class BinDataModel implements IBinData {
       if (pid) {
         this.processes[pid] = process;
       }
+
       return process;
     } else {
       throw new Error("Platform not supported");

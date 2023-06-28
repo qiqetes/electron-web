@@ -1,5 +1,4 @@
 import path from "path";
-import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
 import { app, dialog, ipcMain, net } from "electron";
@@ -19,6 +18,7 @@ import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
 import * as fs from "fs";
 import { MenuBarLayout, generateMenuBar } from "../menuBar";
+import ConversionDataImpl from "../../src/data/conversionData";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -329,140 +329,30 @@ ipcMain.on("stopConversion", () => {
 ipcMain.on("removeTempMp3", (_, fileName) => {
   if (!fileName) return;
 
-  BinData.removeProcess("ffmpeg");
-  fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
-    if (err) {
-      logError(`Couldn't delete file for download: ${fileName}, error: `, err);
-      return;
-    }
+  const _path = path.join(app.getPath("temp"), fileName);
 
-    log("removeTempMp3");
-  });
-});
-
-ipcMain.handle("convertToMp3", async (_, url: string) => {
-  const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
-
-  const name = url.split(path.sep).reverse()[0].split(".")[0];
-  const date = new Date().getTime();
-  const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
-
-  const isMp3 = await new Promise((resolve, reject) => {
-    log("Getting data from file...");
-
-    const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
-    const buff: number[] = [];
-
-    data.stderr.on("data", (data) => buff.push(data.toString()));
-    data.stderr.once("end", () => {
-      const regex = /Stream.+Audio: mp3,/;
-      const mp3 = buff.join().match(regex);
-
-      resolve(mp3);
-    });
-    data.stdout.once("error", (err) => {
-      logError("Error getting data from file: ", err);
-      reject(false);
-    });
-  });
-
-  if (isMp3) {
-    log(`Unnecessary conversion detected: returning ${url}`);
-    return {
-      status: "success",
-      url: url,
-    };
-  }
-
-  const toSeconds = (date: string) => {
-    const times = [3600, 60, 1];
-    let seconds = 0;
-
-    times.forEach((time, index) => (seconds += parseInt(date[index]) * time));
-    return seconds;
-  };
-
-  const onExit = () => {
-    BinData.removeProcess("ffmpeg");
-    fs.rm(outPutPath.replace(/\\/, "\\"), (err) => {
+  if (fs.existsSync(_path)) {
+    fs.rm(_path, (err) => {
       if (err) {
-        logError(
-          `Couldn't delete file for download: ${outPutPath}, error: `,
-          err
-        );
+        logError(`Couldn't delete file for download: ${fileName}, error: `, err);
         return;
       }
 
       log("removeTempMp3");
     });
-  };
+  }
+});
 
-  let durationInSeconds = 0;
+ipcMain.handle("convertToMp3", async (_, url: string) => {
+  const conversion = new ConversionDataImpl(url);
+  const mp3Status = await conversion.checkExtension();
 
-  return await new Promise<ConversionResponse>((resolve, reject) => {
-    log("Creating mp3 from wav...");
+  if (mp3Status) {
+    return mp3Status;
+  }
 
-    const execution = BinData.executeBinary(
-      ffmpegBin,
-      [
-        "-y",
-        "-i",
-        url,
-        "-codec:a",
-        "libmp3lame",
-        "-b:a",
-        "320k",
-        "-ar",
-        "44100",
-        "-write_xing",
-        "false",
-        "-f",
-        "mp3",
-        outPutPath,
-      ],
-      "ffmpeg"
-    );
-
-    execution.stderr.on("data", (data) => {
-      // Looking for Duration in console err output
-      const buff = data.toString().split(" ");
-      const durationIndex = buff.indexOf("Duration:");
-
-      if (durationIndex !== -1) {
-        const duration = buff[durationIndex + 1].split(",")[0].split(":");
-        durationInSeconds = toSeconds(duration);
-        return;
-      }
-
-      // Looking for Time in console err output
-      const timeBuff = buff.join("=").split("=");
-      const timeIndex = timeBuff.indexOf("time");
-
-      if (timeIndex !== -1) {
-        // Convert times to percent
-        const time = timeBuff[timeIndex + 1].split(":");
-        const seconds = toSeconds(time);
-
-        const percent = Math.trunc((100 * seconds) / durationInSeconds);
-
-        log(
-          `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
-        );
-        informConversionState(percent);
-      }
-    });
-    execution.stderr.once("end", () => {
-      if (!BinData.processes["ffmpeg"]) {
-        onExit();
-        resolve({ status: "canceled" });
-      } else resolve({ status: "success", url: outPutPath });
-    });
-    execution.stderr.once("error", (err) => {
-      onExit();
-
-      logError("convertToMp3: Error converting to mp3: ", err);
-      reject();
-    });
+  return await conversion.convert((value: number) => {
+    informConversionState(value);
   });
 });
 
