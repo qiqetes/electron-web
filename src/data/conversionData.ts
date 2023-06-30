@@ -15,14 +15,21 @@ class ConversionDataImpl implements ConversionData {
 
   constructor(url: string) {
     this.url = url;
-    this.ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
 
     this.name = url.split(path.sep).reverse()[0].split(".")[0];
     this.date = new Date().getTime();
     this.outputPath = path.join(app.getPath("temp"), `${this.name}_${this.date}.mp3`);
+
+    if (os.platform() === "win32") {
+      this.ffmpegBin = "ffmpeg.exe";
+      this.url = `"${path.resolve(this.url)}"`
+      this.outputPath = `"${path.resolve(this.outputPath)}"`
+    } else {
+      this.ffmpegBin = "ffmpeg";
+    }
   }
 
-  toSeconds(date: string) {
+  toSeconds(date: string[]) {
     const times = [3600, 60, 1];
     let seconds = 0;
 
@@ -32,28 +39,31 @@ class ConversionDataImpl implements ConversionData {
 
   onExit() {
     BinData.removeProcess("ffmpeg");
-    fs.rm(this.outputPath.replace(/\\/, "\\"), (err) => {
-      if (err) {
-        logError(
-          `Couldn't delete file for download: ${this.outputPath}, error: `,
-          err
-        );
-        return;
-      }
+    const path = this.outputPath.replace(/\\/, "\\");
 
-      log("removeTempMp3");
-    });
+    if (fs.existsSync(path)) {
+      fs.rm(path, (err) => {
+        if (err) {
+          logError(
+            `Couldn't delete file for download: ${path}, error: `,
+            err
+          );
+          return;
+        }
+
+        log("removeTempMp3");
+      });
+    }
   }
 
-  // TODO: stderr.on data required to be typed
-  async checkExtension(): Promise<ConversionResponse> {
+  checkExtension(): Promise<ConversionResponse> {
     return new Promise<ConversionResponse>((resolve, reject) => {
       log("Getting data from file...");
 
-      const data = BinData.executeBinary(this.ffmpegBin, ["-i", `"${path.resolve(this.url)}"`]);
-      const buff: number[] = [];
+      const data = BinData.executeBinary(this.ffmpegBin, ["-i", this.url]);
+      const buff: string[] = [];
 
-      data.stderr.on("data", (data: any) => buff.push(data.toString()));
+      data.stderr.on("data", (data: number) => buff.push(data.toString()));
       data.stderr.once("end", () => {
         const regex = /Stream.+Audio: mp3,/;
         const matches = buff.join().match(regex);
@@ -70,8 +80,7 @@ class ConversionDataImpl implements ConversionData {
     });
   }
 
-  // TODO: stderr.on data required to be typed
-  async convert(onUpdate: (value: number) => void): Promise<ConversionResponse> {
+  convert(onUpdate: (value: number) => void): Promise<ConversionResponse> {
     let durationInSeconds = 0;
 
     return new Promise<ConversionResponse>((resolve, reject) => {
@@ -82,7 +91,7 @@ class ConversionDataImpl implements ConversionData {
         [
           "-y",
           "-i",
-          `"${path.resolve(this.url)}"`,
+          this.url,
           "-codec:a",
           "libmp3lame",
           "-b:a",
@@ -93,12 +102,12 @@ class ConversionDataImpl implements ConversionData {
           "false",
           "-f",
           "mp3",
-          `"${path.resolve(this.outputPath)}"`,
+          this.outputPath,
         ],
         "ffmpeg"
       );
 
-      process.stderr.on("data", (data: any) => {
+      process.stderr.on("data", (data: number) => {
         // Looking for Duration in console err output
         const buff = data.toString().split(" ");
         const durationIndex = buff.indexOf("Duration:");

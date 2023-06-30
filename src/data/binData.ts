@@ -78,18 +78,18 @@ class BinDataModel implements IBinData {
     pid?: string,
     options?: Record<string, unknown>
   ) {
-    const fullCommand = path.join(this.binaryPath, command);
     let process: child_process.ChildProcessWithoutNullStreams;
+
     if (os.platform() === "darwin") {
-      process = child_process.spawn(fullCommand, args, options);
+      process = child_process.spawn(path.join(this.binaryPath, command), args, options);
     } else if (os.platform() === "win32") {
       process = child_process.spawn(
         "cmd.exe",
-        ["/c", path.basename(fullCommand), ...args],
+        ["/c", command, ...args],
         {
           ...options,
           shell: true,
-          cwd: path.dirname(fullCommand),
+          cwd: this.binaryPath,
         }
       );
     } else {

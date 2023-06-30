@@ -326,15 +326,13 @@ ipcMain.on("stopConversion", () => {
   BinData.removeProcess("ffmpeg");
 });
 
-ipcMain.on("removeTempMp3", (_, fileName) => {
-  if (!fileName) return;
+ipcMain.on("removeTempMp3", (_, path) => {
+  if (!path) return;
 
-  const _path = path.join(app.getPath("temp"), fileName);
-
-  if (fs.existsSync(_path)) {
-    fs.rm(_path, (err) => {
+  if (fs.existsSync(path)) {
+    fs.rm(path, (err) => {
       if (err) {
-        logError(`Couldn't delete file for download: ${fileName}, error: `, err);
+        logError(`Couldn't delete file for download: ${path}, error: `, err);
         return;
       }
 
