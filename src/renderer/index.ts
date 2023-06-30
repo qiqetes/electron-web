@@ -1,8 +1,9 @@
 // eslint-disable-next-line import/no-unresolved
+import axios from "axios";
 import "./index.css";
 
 const loginUrl = window.electronAPI.baseURL + window.electronAPI.loginPath;
-console.log(loginUrl);
+console.log("Renderer: loginurl => ", loginUrl);
 
 const loadPage = () => {
   console.log(loginUrl);
@@ -22,14 +23,25 @@ document.addEventListener("securitypolicyviolation", (e) => {
 console.log("Loading ✨");
 
 window.onload = () => {
-  if (localStorage.getItem("cached")) {
-    console.log("Cached ✨");
+  if (window.electronAPI.workerInstalled()) {
+    console.log("workerInstalled ✨");
     loadPage();
   } else {
-    console.log("Not cached");
+    console.log("Service worker not installed", loginUrl);
+    // axios
+    //   .get(window.electronAPI.baseURL)
+    //   .then(() => {
+    //     console.log("showing page");
+    //     loadPage();
+    //   })
+    //   .catch((err) => {
+    //     console.log("Error fetching", err);
+    //     console.info("Mostramos offline");
+    //     document.getElementById("offline")!.style.display = "block";
+    //   });
+
     fetch(loginUrl)
       .then(() => {
-        localStorage.setItem("cached", "true");
         loadPage();
       })
       .catch((err) => {

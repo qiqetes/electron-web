@@ -1,6 +1,6 @@
 import { SettingsData, TrainingClassesData } from "./init";
 import * as fs from "fs-extra";
-import { informSettingState, sendToast } from "./ipcMainActions";
+import { sendToast } from "./ipcMainActions";
 import path from "path";
 import { https } from "follow-redirects";
 import { log, logError } from "./loggers";
@@ -9,8 +9,8 @@ import { app } from "electron";
 const mediaTypeFileCodes = {
   video_hd: "9783",
   video_sd: "9783",
-  audio: "8397",
-  music: "7893",
+  audio: "7893",
+  music: "8397",
 };
 
 export const filenameStealth = (id: number | string, mediaType: mediaType) => {

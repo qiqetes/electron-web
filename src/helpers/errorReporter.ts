@@ -105,6 +105,7 @@ class ErrorReporterModel {
     axios(config)
       .then((res) => {
         if (res.statusText === "OK") {
+          log("Report sent to server");
           sendOkToast();
         } else {
           logError("Error sending report", res.status);
@@ -115,6 +116,56 @@ class ErrorReporterModel {
       .catch((err) => {
         logError("Error sending report", err);
         sendErrorToast(this.numberOfFailedReports);
+        this.numberOfFailedReports++;
+      });
+  }
+
+  async sendAutoReport(reportMessage: string) {
+    const data = new FormData();
+    data.append("Email subject", "AUTOMATIC-DESKTOP-REPORT");
+    data.append("Email", AppData.USER?.email || "desconocido");
+    data.append("User", AppData.USER?.name || "desconocido");
+    data.append(
+      "Admin user",
+      `https://bestcycling.com/admin/users/${AppData.USER?.id}`
+    );
+    if (AppData.USER?.membership === "gimnasios") {
+      data.append(
+        "Admin gym",
+        `https://bestcycling.com/admin/gyms/${AppData.USER?.id}`
+      );
+    }
+    data.append("React stack message", reportMessage);
+    data.append("userDB.json", fs.createReadStream(getDBPath()));
+    data.append("Desktop version", app.getVersion());
+    data.append("x-api", "true"); // Necessary to get 200/400 response instead of html
+    this.getLastSessionLoggings()
+      .map((f) => ({
+        filename: path.basename(f),
+        content: fs.createReadStream(f),
+      }))
+      .forEach((f) => data.append(f.filename, f.content));
+
+    const config = {
+      method: "post",
+      url: "https://bestcycling.com/store/go/sendcontact/",
+      headers: {
+        ...data.getHeaders(),
+      },
+      data: data,
+    };
+
+    axios(config)
+      .then((res) => {
+        if (res.statusText === "OK") {
+          log("Automatic report sent");
+        } else {
+          logError("Error sending report", res.status);
+          this.numberOfFailedReports++;
+        }
+      })
+      .catch((err) => {
+        logError("Error sending report", err);
         this.numberOfFailedReports++;
       });
   }

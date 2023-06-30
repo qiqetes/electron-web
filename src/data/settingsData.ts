@@ -37,7 +37,7 @@ class SettingsDataModel implements SettingsData {
     this.autoStartGymsScheduler = false; // Iniciar planificador de gimnasios automáticamente, C11
     this.C16 = false; // Aceleración generador MP4
     this.defaultRoom = 1;
-    this.download_scheduled_training_classes = false;
+    this.download_scheduled_training_classes = true;
     this.downloadsPath = path.join(
       app.getPath("userData"),
       "Default",
@@ -132,9 +132,6 @@ class SettingsDataModel implements SettingsData {
     if (validSetting) {
       log(`Setting ${setting} saved`);
       this.saveToDb();
-      if (process.env.NODE_ENV === "development") {
-        sendToast("Preferencia guardada", null, 5);
-      }
     }
   }
 

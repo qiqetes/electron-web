@@ -5,6 +5,7 @@ declare global {
     electronAPI: {
       baseURL;
       loginPath;
+      workerInstalled;
     };
   }
 }

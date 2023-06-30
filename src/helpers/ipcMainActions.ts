@@ -2,8 +2,15 @@ import path from "path";
 import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { app, dialog, ipcMain } from "electron";
-import { api, BinData, DownloadsData, SettingsData } from "./init";
+import { app, dialog, ipcMain, net } from "electron";
+import {
+  api,
+  BinData,
+  DownloadsData,
+  KnownDevicesData,
+  SettingsData,
+  TrainingClassesData,
+} from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -11,6 +18,7 @@ import { modalFunctions } from "../models/modal.model";
 import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
 import * as fs from "fs";
+import { MenuBarLayout, generateMenuBar } from "../menuBar";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -30,7 +38,12 @@ ipcMain.on("setAuth", (_, auth) => {
   api.headers.Authorization = AppData.AUTHORIZATION;
   DownloadsData.downloadHelpVideo();
 });
-
+ipcMain.on("setLogout", (_) => {
+  log("Setting Logout");
+  AppData.AUTHORIZATION = `Bearer `;
+  AppData.USER = null;
+  api.headers.Authorization = AppData.AUTHORIZATION;
+});
 ipcMain.on(
   "setUser",
   (
@@ -56,6 +69,10 @@ ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
   DownloadsData.addToQueue(downloadRequest);
 });
 
+ipcMain.on("updateTrainingClass", (_, trainingClass) => {
+  TrainingClassesData.addTrainingClass(trainingClass);
+});
+
 ipcMain.on(
   "downloadScheduledTrainingClasses",
   (_, downloadsArray: downloadRequest[]) => {
@@ -63,6 +80,14 @@ ipcMain.on(
     DownloadsData.addMultipleToQueue(downloadsArray);
   }
 );
+
+ipcMain.on("removeMyTrainingClasses", (_, data: TrainingClass[]) => {
+  DownloadsData.removeMyTrainingClasses(data);
+});
+
+ipcMain.on("removeMyTrainingClass", (_, tc: TrainingClass) => {
+  DownloadsData.removeMyTrainingClass(tc);
+});
 
 ipcMain.on("removeAllDownloads", () => {
   DownloadsData.removeAll();
@@ -109,9 +134,9 @@ ipcMain.handle("changeDownloadsPath", (): string => {
   }
 
   showModal(
-    "Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
-    "Sí, copiar",
-    "No, solo cambia el directorio",
+    "¿Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
+    "Sí, copiar archivos",
+    "No, solo cambiar el directorio",
     () => {
       DownloadsData.moveDownloadsTo(dir[0]);
     },
@@ -130,6 +155,7 @@ ipcMain.on("restoreDefaults", () => {
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
+  KnownDevicesData.init();
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
 
@@ -141,11 +167,12 @@ ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
   if (AppData.ONLINE != online) {
     AppData.ONLINE = online;
     log(`Changed status connection to: ${online ? "online" : "offline"}`);
-    if (online) sendToast("Se ha restaurado la conexión");
-    else if (!online) sendToast("Pasando a modo offline", "warn");
-  }
-  if (online) {
-    DownloadsData.startDownloads();
+    if (online) {
+      DownloadsData.startDownloads();
+      sendToast("Se ha restaurado la conexión");
+    } else if (!online) {
+      sendToast("Pasando a modo offline", "warn");
+    }
   }
 });
 
@@ -194,7 +221,10 @@ ipcMain.on("modalOk", () => modalFunctions.callbackOk());
 ipcMain.on("modalCancel", () => modalFunctions.callbackCancel());
 
 export const informDownloadsState = () => {
-  mainWindow.webContents.send("downloadsState", DownloadsData.toWebAppState());
+  mainWindow.webContents.send(
+    "downloadsState",
+    DownloadsData.getDownloadsState()
+  );
 };
 
 // Just gives the information about one download (the one downloading)
@@ -217,12 +247,23 @@ export const informSettingState = (settingCode: string, value: any) => {
 ipcMain.on("sendReport", (_, report) => {
   ErrorReporter.sendReport(report);
 });
+ipcMain.on("sendAutoReport", (_, report) => {
+  ErrorReporter.sendAutoReport(report);
+});
 
 ipcMain.on("getAdjustVideoPath", (event) => {
   const adjustVideoPath = url.pathToFileURL(
     path.join(SettingsData.downloadsPath, "ajustes.mp4")
   ).href;
   event.returnValue = adjustVideoPath;
+});
+
+ipcMain.on("workerInstalled", (event) => {
+  event.returnValue = AppData.WORKER_INSTALLED;
+});
+
+ipcMain.on("notifyWorkerInstalled", () => {
+  AppData.WORKER_INSTALLED = true;
 });
 
 ipcMain.on("getSetting", (event, setting) => {
@@ -423,6 +464,14 @@ ipcMain.handle("convertToMp3", async (_, url: string) => {
       reject();
     });
   });
+});
+
+ipcMain.on("checkConnection", (event, id, media) => {
+  event.returnValue = net.isOnline();
+});
+
+ipcMain.on("setMenuBar", (_, layout: MenuBarLayout) => {
+  generateMenuBar(layout);
 });
 
 // There are some actions that need to comunicate with the renderer process

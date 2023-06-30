@@ -1,6 +1,9 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcMain, ipcRenderer } from "electron";
+import { BluetoothDevice } from "./core/bluetooth/bluetoothDevice";
 import config from "./config";
 import { UpdaterEvents } from "./helpers/ipcMainActions";
+import { downloadsAPI } from "./api/downloadsAPI";
+import { MenuBarLayout } from "./menuBar";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   isDesktop: true,
@@ -10,7 +13,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   mainLoaded: () => ipcRenderer.send("mainLoaded"),
 
-  // Sqes settings from webapp to SettingsData
+  checkForUpdates: () => {
+    ipcRenderer.send("checkForUpdates");
+  },
+
+  // Saves settings from webapp to SettingsData
   saveSetting: (setting: string, value: any) => {
     ipcRenderer.send("saveSetting", setting, value);
   },
@@ -23,7 +30,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
       variant?: string,
       seconds?: number
     ) => void
-  ) => ipcRenderer.on("toast", callback),
+  ) => {
+    ipcRenderer.removeAllListeners("toast");
+    ipcRenderer.on("toast", callback);
+  },
 
   // Send modal notification
   handleModal: (
@@ -46,6 +56,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.send("setAuth", auth);
   },
 
+  setLogout: () => {
+    ipcRenderer.send("setLogout");
+  },
+
   restoreDefaults: () => {
     ipcRenderer.send("restoreDefaults");
   },
@@ -55,6 +69,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   sendReport: (report: string) => {
+    ipcRenderer.send("sendReport", report);
+  },
+  sendAutoReport: (report: string) => {
     ipcRenderer.send("sendReport", report);
   },
 
@@ -69,6 +86,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
   ) => {
     ipcRenderer.on("settingChange", callback);
   },
+
+  workerInstalled: () => {
+    return ipcRenderer.sendSync("workerInstalled");
+  },
+
+  notifyWorkerInstalled: () => {
+    ipcRenderer.send("notifyWorkerInstalled");
+  },
+
+  checkConnection: () => ipcRenderer.sendSync("checkConnection"),
+
+  // Send navigateToUrl to webapp
+  handleElectronRedirect: (callback: (event: Event, route: string) => void) =>
+    ipcRenderer.on("modal", callback),
+
+  handleLogout: (callback: () => void) => ipcRenderer.on("logout", callback),
+  handleErrorReportModal: (callback: () => void) =>
+    ipcRenderer.on("errorReportModal", callback),
+
+  setMenuBar: (menuLayout: MenuBarLayout) =>
+    ipcRenderer.send("setMenuBar", menuLayout),
 });
 
 contextBridge.exposeInMainWorld("conversionAPI", {
@@ -84,46 +122,7 @@ contextBridge.exposeInMainWorld("conversionAPI", {
   },
 });
 
-contextBridge.exposeInMainWorld("downloadsAPI", {
-  startLocalServer: () => ipcRenderer.send("startLocalServer"),
-  stopLocalServer: () => ipcRenderer.send("stopLocalServer"),
-
-  downloadScheduledTrainingClasses: (downloadRequests: downloadRequest[]) =>
-    ipcRenderer.send("downloadScheduledTrainingClasses", downloadRequests),
-  downloadTrainingClass: (
-    trainingClass: TrainingClass,
-    mediaType: mediaType
-  ) => {
-    ipcRenderer.send("downloadTrainingClass", {
-      trainingClass,
-      mediaType,
-      timestamp: null,
-    });
-  },
-
-  changeDownloadsPath: () => ipcRenderer.invoke("changeDownloadsPath"),
-  importDownloads: () => ipcRenderer.send("importDownloads"),
-  deleteDownloads: () => ipcRenderer.send("deleteDownloads"),
-  deleteDownload: (id: number, media: mediaType = "video_hd") =>
-    ipcRenderer.send("deleteDownload", id, media),
-
-  handleDownloadsState: (
-    callback: (event: Event, state: downloadsStateWebapp) => void
-  ) => {
-    ipcRenderer.on("downloadsState", callback);
-  },
-  handleDownloadState: (
-    callback: (event: Event, state: downloadsStateWebapp) => void
-  ) => {
-    ipcRenderer.on("downloadState", callback);
-  },
-
-  getMediaUrl: (id: number, media: mediaType = "video_hd") =>
-    ipcRenderer.sendSync("getMediaUrl", id, media),
-
-  getAdjustVideoPath: () => ipcRenderer.sendSync("getAdjustVideoPath"),
-  requestDownloadsState: () => ipcRenderer.invoke("requestDownloadsState"),
-});
+contextBridge.exposeInMainWorld("downloadsAPI", downloadsAPI);
 
 contextBridge.exposeInMainWorld("mixmeixterApi", {
   readTagMp3: (file: string, path: string) => {
@@ -139,4 +138,100 @@ contextBridge.exposeInMainWorld("bluetoothAPI", {
     ipcRenderer.send("hrDeviceSelected", deviceName),
   hrDeviceSelectionCancelled: () =>
     ipcRenderer.send("hrDeviceSelectionCancelled"),
+});
+
+contextBridge.exposeInMainWorld("bluetoothManagerAPI", {
+  startScan: () => {
+    ipcRenderer.send("bluetoothStartScan");
+  },
+
+  stopScan: (callback: (event: Event, device: BluetoothDevice) => void) =>
+    ipcRenderer.on("bluetoothStartScan", callback),
+
+  connectDevice: (id: string) => {
+    ipcRenderer.send("connectDevice", id);
+  },
+
+  disconnectDevice: (id: string) => {
+    ipcRenderer.send("disconnectDevice", id);
+  },
+
+  handleReciveDevices: (
+    callback: (event: Event, device: BluetoothDevice) => void
+  ) => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceFound");
+    ipcRenderer.on("bluetoothDeviceFound", callback);
+  },
+
+  handleReciveStatus: (
+    callback: (event: Event, status: BluetoothDevice) => void
+  ) => {
+    ipcRenderer.on("stateChange", callback);
+  },
+
+  handleReciveStatusDevices: (
+    callback: (event: Event, device: BluetoothDevice) => void
+  ) => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceState");
+    ipcRenderer.on("bluetoothDeviceState", callback);
+  },
+
+  handleHeartRateData: (
+    id: string,
+    callback: (event: Event, data: any) => void
+  ) => {
+    ipcRenderer.removeAllListeners("heartRateData-" + id);
+    ipcRenderer.on("heartRateData-" + id, callback);
+  },
+  removeReciveDevices: () => {
+    ipcRenderer.removeAllListeners("bluetoothDeviceFound");
+  },
+  removeNotConnectedDevice: (name: string) => {
+    ipcRenderer.send("removeNotConnectedDevice", name);
+  },
+  syncDevices: () => {
+    ipcRenderer.send("syncDevices");
+  },
+  syncStatus: () => {
+    ipcRenderer.send("syncStatus");
+  },
+  enableAutoScan: () => {
+    ipcRenderer.send("enableAutoScan");
+  },
+  handleBikeData: (id: string, callback: (event: Event, data: any) => void) => {
+    ipcRenderer.removeAllListeners("bikeData-" + id);
+    ipcRenderer.on("bikeData-" + id, callback);
+  },
+  handleButtonChange: (
+    id: string,
+    callback: (event: Event, data: any) => void
+  ) => {
+    ipcRenderer.removeAllListeners("buttonChange-" + id);
+    ipcRenderer.on("buttonChange-" + id, callback);
+  },
+  readData: (id: string) => {},
+  subscribeData: (id: string) => {},
+  getDeviceList: () => {},
+  getFeatures: () => ipcRenderer.sendSync("getFeatures"),
+  getLevelRange: () => ipcRenderer.sendSync("getLevelRange"),
+  isAvailableBluetooth: () => ipcRenderer.sendSync("isAvailableBluetooth"),
+  setPowerTarget: (power: number) =>
+    ipcRenderer.sendSync("setPowerTarget", power),
+  stopPowerTarget: () => ipcRenderer.sendSync("stopPowerTarget"),
+  setResistanceTarget: (resistance: number) =>
+    ipcRenderer.sendSync("setResistanceTarget", resistance),
+  autoMode: (enable: boolean) => ipcRenderer.sendSync("autoMode", enable),
+  //Chromium api
+  chromiumDeviceStatus: (deviceName: string, deviceStatus: string) =>
+    ipcRenderer.send("changeDeviceStatus", deviceName, deviceStatus),
+  discoverDeviceType: (deviceName: string, uuids: string[]) =>
+    ipcRenderer.sendSync("discoverDeviceType", deviceName, uuids),
+  readDataFromBuffer: (uuid: string, deviceName: string, data: Buffer) =>
+    ipcRenderer.send("readDataFromBuffer", uuid, deviceName, data),
+  handleWriteData: (
+    id: string,
+    callback: (event: Event, data: any) => void
+  ) => {
+    ipcRenderer.on("writeData-" + id, callback);
+  },
 });

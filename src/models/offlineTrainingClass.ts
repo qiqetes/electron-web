@@ -7,6 +7,7 @@ export class OfflineTrainingClass {
   retries = 0;
   timestamp: number | null = null;
   size: number | null = null; // in bytes
+  url?: string;
 
   constructor(
     id: string,

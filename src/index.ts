@@ -1,18 +1,29 @@
-import { app, session, BrowserWindow, ipcMain, shell } from "electron";
-
+import fs from "fs";
 import path from "path";
 import os from "os";
+
+import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+
 import { LocalServerInstance } from "./core/LocalServer";
-import { avoidExternalPageRequests } from "./helpers";
+import {
+  avoidExternalPageRequests,
+  detectWorkerInstallation,
+  onWindowMoved,
+  onWindowResized,
+} from "./helpers";
 
 import { DownloadsData, init, SettingsData } from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
 import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
 import { HeartRateDeviceService } from "./core/bluetooth/heartrateDeviceService";
+
 import { AppData } from "./data/appData";
 import { filenameStealth } from "./helpers/downloadsHelpers";
-import fs from "fs";
+import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
+import { generateInitialMenu } from "./menuBar";
+import { setAutoUpdater } from "./helpers/updater";
+import { checkIfUninstallNeeded } from "./win-update";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -31,17 +42,25 @@ app.on("second-instance", () => mainWindow?.focus());
 if (os.platform() == "win32") app.disableHardwareAcceleration();
 
 app.commandLine.appendSwitch("remote-debugging-port", "8181");
+app.commandLine.appendSwitch("enable-web-bluetooth", "true");
+app.commandLine.appendSwitch("enable-experimental-web-platform-features");
 
 export let mainWindow: BrowserWindow;
+export const BTManager = new BluetoothManager();
+
 const createWindow = async () => {
   await init();
+
+  console.log(AppData.USER);
 
   mainWindow = new BrowserWindow({
     autoHideMenuBar: true,
     darkTheme: true,
     // icon: icon,
-    height: 1000,
-    width: 1200,
+    height: AppData.LAST_WINDOW_SIZE?.height || 800,
+    width: AppData.LAST_WINDOW_SIZE?.width || 1100,
+    x: AppData.LAST_WINDOW_POSITION?.x,
+    y: AppData.LAST_WINDOW_POSITION?.y,
     minWidth: 1025,
     minHeight: 720,
     backgroundColor: "#151515",
@@ -50,12 +69,12 @@ const createWindow = async () => {
       autoplayPolicy: "no-user-gesture-required",
       nodeIntegration: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      devTools:
-        process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
+      devTools: true,
+      // process.env.NODE_ENV == "development" || AppData.USER?.isPreviewTester,
     },
   });
-
-  mainWindow.setMenu(null);
+  generateInitialMenu();
+  AppData.USER_AGENT = mainWindow.webContents.session.getUserAgent();
 
   mainWindow
     .loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
@@ -81,36 +100,68 @@ const createWindow = async () => {
 
   mainWindow.on("close", async () => await saveAll());
 
-  mainWindow.webContents.on("new-window", (e, url) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const isExternalPlayer =
       url.startsWith(AppData.WEBAPP_WEBASE!) && url.endsWith("/external.html");
-    if (isExternalPlayer) return;
-    e.preventDefault();
+    if (isExternalPlayer)
+      return {
+        action: "allow",
+      };
     shell.openExternal(url);
+
+    return { action: "deny" };
   });
 
+  detectWorkerInstallation(session.defaultSession);
   avoidExternalPageRequests(mainWindow);
+
+  BTManager.registerBluetoothEvents(mainWindow);
+  BTManager.loadKnownDevices();
   const hrService = new HeartRateDeviceService(ipcMain);
   hrService.registerBluetoothEvents(mainWindow);
+
+  onWindowResized(mainWindow);
+  onWindowMoved(mainWindow);
+  try {
+    // if (process.env.NODE_ENV !== "development") {
+    setAutoUpdater();
+    // }
+  } catch (err) {
+    logError("Error on auto updater", err);
+  }
 };
 
-const reactDevToolsPath = path.join(
-  process.cwd(),
-  "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
-);
+// const reactDevToolsPath = path.join(
+//   process.cwd(),
+//   "/extensions/fmkadmapgofadopljbjfkapdkoienihi/4.25.0_3"
+// );
 
 app.on("ready", async () => {
   if (process.env.NODE_ENV === "development" && app.isPackaged === false) {
-    await session.defaultSession.loadExtension(reactDevToolsPath);
+    // await session.defaultSession.loadExtension(reactDevToolsPath);
   }
-  ipcMain.handle("requestDownloadsState", () => DownloadsData.toWebAppState());
+  ipcMain.handle("requestDownloadsState", () =>
+    DownloadsData.getDownloadsState()
+  );
+
   createWindow();
+
+  BTManager.bluetoothStateChange();
+
+  // if (process.platform === "win32") {
+  //   // cleanup old installation
+  //   checkIfUninstallNeeded();
+  // }
 });
 
-app.on("window-all-closed", async () => {
+app.on("before-quit", async () => {
   const download = DownloadsData.getDownloading();
+
   if (download) {
     log("Removing download before app close");
+
+    await DownloadsData.removeDownloading();
+
     const filename = filenameStealth(download.id, download.mediaType);
     fs.unlinkSync(path.join(SettingsData.downloadsPath, filename));
   }
