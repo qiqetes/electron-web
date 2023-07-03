@@ -29,7 +29,6 @@ const production = {
   LOGIN_PATH: "/app/#/login",
   APP_PATH: "/app/#",
   API: "https://apiv2.bestcycling.es/api/v2",
-
 };
 
 const devprod = {

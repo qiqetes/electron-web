@@ -1,5 +1,4 @@
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain } from "electron";
-import projectInfo from "../../package.json";
+import { app, autoUpdater, BrowserWindow, dialog } from "electron";
 import path from "path";
 import { AppData } from "../../src/data/appData";
 import axios from "axios";

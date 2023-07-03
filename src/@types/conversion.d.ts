@@ -1,3 +1,12 @@
+interface ConversionData {
+  url: string;
+  ffmpegBin: BinTypes;
+
+  name : string;
+  date: number;
+  outputPath: string;
+}
+
 type ConversionResponse =
   | {
     status: 'success',
@@ -6,3 +15,7 @@ type ConversionResponse =
   | {
     status: 'canceled'
   }
+  | {
+    status: 'error',
+  }
+  | null
