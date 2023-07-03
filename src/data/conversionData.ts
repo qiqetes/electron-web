@@ -9,7 +9,7 @@ class ConversionDataImpl implements ConversionData {
   url: string;
   ffmpegBin: BinTypes;
 
-  name : string;
+  name: string;
   date: number;
   outputPath: string;
 
@@ -18,12 +18,13 @@ class ConversionDataImpl implements ConversionData {
 
     this.name = url.split(path.sep).reverse()[0].split(".")[0];
     this.date = new Date().getTime();
-    this.outputPath = path.join(app.getPath("temp"), `${this.name}_${this.date}.mp3`);
+    this.outputPath = path.join(
+      app.getPath("temp"),
+      `${this.name}_${this.date}.mp3`
+    );
 
     if (os.platform() === "win32") {
       this.ffmpegBin = "ffmpeg.exe";
-      this.url = `"${path.resolve(this.url)}"`
-      this.outputPath = `"${path.resolve(this.outputPath)}"`
     } else {
       this.ffmpegBin = "ffmpeg";
     }
@@ -43,10 +44,7 @@ class ConversionDataImpl implements ConversionData {
 
     fs.rm(path, (err) => {
       if (err) {
-        logError(
-          `Couldn't delete file for download: ${path}, error: `,
-          err
-        );
+        logError(`Couldn't delete file for download: ${path}, error: `, err);
         return;
       }
 
@@ -80,16 +78,19 @@ class ConversionDataImpl implements ConversionData {
 
   convert(onUpdate: (value: number) => void): Promise<ConversionResponse> {
     let durationInSeconds = 0;
+    let lastPercentage = 0;
 
     return new Promise<ConversionResponse>((resolve, reject) => {
-      log("Creating mp3 from wav...");
+      log(
+        `Creating mp3 from wav [path: ${this.url}, outputPath: ${this.outputPath}]`
+      );
 
       const process = BinData.executeBinary(
         this.ffmpegBin,
         [
           "-y",
           "-i",
-          this.url,
+          os.platform() == "win32" ? `"${path.resolve(this.url)}"` : this.url,
           "-codec:a",
           "libmp3lame",
           "-b:a",
@@ -100,7 +101,9 @@ class ConversionDataImpl implements ConversionData {
           "false",
           "-f",
           "mp3",
-          this.outputPath,
+          os.platform() == "win32"
+            ? `"${path.resolve(this.outputPath)}"`
+            : this.outputPath,
         ],
         "ffmpeg"
       );
@@ -127,10 +130,13 @@ class ConversionDataImpl implements ConversionData {
 
           const percent = Math.trunc((100 * seconds) / durationInSeconds);
 
-          log(
-            `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
-          );
+          if (lastPercentage === percent) {
+            log(
+              `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
+            );
+          }
 
+          lastPercentage = percent;
           onUpdate(percent);
         }
       });
