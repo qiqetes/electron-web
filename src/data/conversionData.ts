@@ -41,19 +41,17 @@ class ConversionDataImpl implements ConversionData {
     BinData.removeProcess("ffmpeg");
     const path = this.outputPath.replace(/\\/, "\\");
 
-    if (fs.existsSync(path)) {
-      fs.rm(path, (err) => {
-        if (err) {
-          logError(
-            `Couldn't delete file for download: ${path}, error: `,
-            err
-          );
-          return;
-        }
+    fs.rm(path, (err) => {
+      if (err) {
+        logError(
+          `Couldn't delete file for download: ${path}, error: `,
+          err
+        );
+        return;
+      }
 
-        log("removeTempMp3");
-      });
-    }
+      log("removeTempMp3");
+    });
   }
 
   checkExtension(): Promise<ConversionResponse> {
