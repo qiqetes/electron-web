@@ -1,7 +1,7 @@
 {
   "name": "desktop-electron-webpack",
   "productName": "Bestcycling TV",
-  "version": "4.0.18",
+  "version": "4.0.19",
   "description": "Aplicación de escritorio Bestcycling.",
   "main": ".webpack/main",
   "scripts": {
