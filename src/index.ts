@@ -23,7 +23,6 @@ import { filenameStealth } from "./helpers/downloadsHelpers";
 import { BluetoothManager } from "./core/bluetooth/bluetoothManager";
 import { generateInitialMenu } from "./menuBar";
 import { setAutoUpdater } from "./helpers/updater";
-import { checkIfUninstallNeeded } from "./win-update";
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -123,9 +122,9 @@ const createWindow = async () => {
   onWindowResized(mainWindow);
   onWindowMoved(mainWindow);
   try {
-    // if (process.env.NODE_ENV !== "development") {
-    setAutoUpdater();
-    // }
+    if (process.env.NODE_ENV !== "development") {
+      setAutoUpdater();
+    }
   } catch (err) {
     logError("Error on auto updater", err);
   }
@@ -147,11 +146,6 @@ app.on("ready", async () => {
   createWindow();
 
   BTManager.bluetoothStateChange();
-
-  // if (process.platform === "win32") {
-  //   // cleanup old installation
-  //   checkIfUninstallNeeded();
-  // }
 });
 
 app.on("before-quit", async () => {
