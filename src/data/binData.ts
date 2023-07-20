@@ -1,6 +1,11 @@
 import * as os from "os";
 import path from "path";
-import child_process from "child_process";
+import * as child_process from "child_process";
+import { log } from "../helpers/loggers";
+
+interface IBinProcessesData {
+  [key: string]: child_process.ChildProcessWithoutNullStreams;
+}
 
 class BinDataModel implements IBinData {
   binaryPath = "";
@@ -9,7 +14,7 @@ class BinDataModel implements IBinData {
   // win64Path = "win64";
 
   currentSystem: SystemsAllowed = "WIN";
-  processes: IBinProcessesData  = {}
+  processes: IBinProcessesData = {};
 
   constructor() {
     this.binaryPath = this.getBinaryPath();
@@ -35,20 +40,30 @@ class BinDataModel implements IBinData {
       case "win32":
         osPath = this.win32Path;
         break;
-
-      // default:
-      //   osPath = this.win64Path;
     }
 
     return path.join(process.resourcesPath, "bin", osPath);
   }
 
   killProcess(pid: string) {
-    if (os.platform() === 'darwin') {
-      this.processes[pid]?.kill();
+    const childProcess = this.processes[pid];
+
+    if (!childProcess) {
+      log(`Process with ${pid} can't be killed, already dead`);
+      return;
+    }
+
+    if (os.platform() === "darwin") {
+      if (childProcess.kill()) {
+        console.log(`Process ${pid} killed`);
+        return;
+      }
+      console.log(`Process ${pid} couldn't be killed`);
     } else {
-      const _pid = this.processes[pid]?.pid
-      child_process.exec('taskkill /pid ' + _pid + ' /T /F');
+      const _pid = childProcess.pid;
+      child_process.exec("taskkill /pid " + _pid + " /T /F");
+
+      console.log(`Killing process ${pid} with pid${childProcess.pid}`);
     }
   }
 
@@ -63,39 +78,45 @@ class BinDataModel implements IBinData {
     pid?: string,
     options?: Record<string, unknown>
   ) {
-    const fullCommand = path.join(this.binaryPath, command);
-
-    /**
-     * TO-DO: Needs to be tested
-     * For windows command should be something like:
-     * command => cmd.exe (entry point for command line, not the parameter command)
-     * args => ['c/', paramCommand, paramArgs]
-     *
-     * return child_process.spawn('cmd.exe', ['c/', command, ...args]);
-     *  var ffmpeg = spawn( 'cmd.exe', ['/c',  '"'+ffmpegpath+ '"', '-i', filelist[i], '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', outfile]));
-     */
+    let process: child_process.ChildProcessWithoutNullStreams;
 
     if (os.platform() === "darwin") {
-      const process = child_process.spawn(fullCommand, args, options);
-
-      if (pid) {
-        this.processes[pid] = process;
-      }
-      return process;
+      process = child_process.spawn(path.join(this.binaryPath, command), args, options);
     } else if (os.platform() === "win32") {
-      const process = child_process.spawn(
+      process = child_process.spawn(
         "cmd.exe",
-        ["/c", fullCommand, ...args],
-        options
+        ["/c", command, ...args],
+        {
+          ...options,
+          shell: true,
+          cwd: this.binaryPath,
+        }
       );
-
-      if (pid) {
-        this.processes[pid] = process;
-      }
-      return process;
     } else {
       throw new Error("Platform not supported");
     }
+    if (pid) {
+      this.processes[pid] = process;
+      log(`ChildProcess ${pid} with pid:${this.processes[pid].pid} created`);
+      process.on("exit", (code, signal) => {
+        if (signal === "SIGTERM") {
+          console.log(
+            `Child process ${pid} with pid:${process.pid} was killed with SIGTERM`
+          );
+        } else if (signal === "SIGINT") {
+          console.log(
+            `Child process ${pid} with pid:${process.pid} was killed with SIGINT`
+          );
+        } else {
+          console.log(
+            `Child process ${pid} with pid:${process.pid} exited with code ${code}`
+          );
+        }
+        delete this.processes[pid];
+      });
+    }
+
+    return process;
   }
 }
 
