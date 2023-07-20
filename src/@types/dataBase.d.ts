@@ -3,5 +3,6 @@ type DataBase = {
   trainingClasses: TrainingClassesData;
   downloads: DownloadsDataDB;
   appData: AppDataDB;
+  knownDevices: KnownDevices;
   // errorReporter: ErrorReporterDB;
 };

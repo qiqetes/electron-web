@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("maker-inno-setup");
 // const makeUniversalApp = require("@electron/universal").makeUniversalApp;
 const packageJson = require(__dirname + "/package.json");
 const { version } = packageJson;
@@ -15,7 +16,8 @@ module.exports = {
     },
     extraResource: "bin/",
     osxUniversal: {
-      x64ArchFiles: "Contents/Resources/bin/mac/ffmpeg",
+      x64ArchFiles:
+        "Contents/Resources/{bin/mac/ffmpeg,app/.webpack/native_modules/binding.node,bin/mac/binding.node}",
       force: true,
     },
 
@@ -28,10 +30,16 @@ module.exports = {
     // },
   },
   makers: [
+    // {
+    //   name: "@electron-forge/maker-squirrel",
+    //   config: {
+    //     name: "BestcyclingTV",
+    //   },
+    // },
     {
-      name: "@electron-forge/maker-squirrel",
+      name: "maker-inno-setup",
       config: {
-        name: "BestcyclingTV",
+        signParams: "/tr http://timestamp.digicert.com /td SHA256 /fd SHA256",
       },
     },
     {
@@ -52,9 +60,8 @@ module.exports = {
         bucket: "bestcycling-production",
         folder: `desktop/versions/v${version}`,
         public: true,
+        region: "eu-west-1",
         keyResolver: (fileName, platform, arch) => {
-          if (arch === "universal")
-            return `desktop/versions/v${version}/darwin/${fileName}`;
           return `desktop/versions/v${version}/${arch}/${fileName}`;
         },
       },

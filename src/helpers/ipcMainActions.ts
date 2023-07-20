@@ -1,9 +1,15 @@
 import path from "path";
-import os from "os";
 import url from "url";
 import { LocalServerInstance } from "../core/LocalServer";
-import { app, dialog, ipcMain } from "electron";
-import { api, BinData, DownloadsData, SettingsData } from "./init";
+import { app, dialog, ipcMain, net } from "electron";
+import {
+  api,
+  BinData,
+  DownloadsData,
+  KnownDevicesData,
+  SettingsData,
+  TrainingClassesData,
+} from "./init";
 import { mainWindow } from "../index";
 import { AppData } from "../data/appData";
 import { filenameStealth } from "./downloadsHelpers";
@@ -11,6 +17,8 @@ import { modalFunctions } from "../models/modal.model";
 import { ErrorReporter, log, logError } from "./loggers";
 import { readTagMp3 } from "./mixmeixterHelpers";
 import * as fs from "fs";
+import { MenuBarLayout, generateMenuBar } from "../menuBar";
+import ConversionDataImpl from "../../src/data/conversionData";
 
 ipcMain.on("saveSetting", (_, setting, value) => {
   SettingsData.saveSetting(setting, value);
@@ -30,7 +38,12 @@ ipcMain.on("setAuth", (_, auth) => {
   api.headers.Authorization = AppData.AUTHORIZATION;
   DownloadsData.downloadHelpVideo();
 });
-
+ipcMain.on("setLogout", (_) => {
+  log("Setting Logout");
+  AppData.AUTHORIZATION = `Bearer `;
+  AppData.USER = null;
+  api.headers.Authorization = AppData.AUTHORIZATION;
+});
 ipcMain.on(
   "setUser",
   (
@@ -56,6 +69,10 @@ ipcMain.on("downloadTrainingClass", (_, downloadRequest: downloadRequest) => {
   DownloadsData.addToQueue(downloadRequest);
 });
 
+ipcMain.on("updateTrainingClass", (_, trainingClass) => {
+  TrainingClassesData.addTrainingClass(trainingClass);
+});
+
 ipcMain.on(
   "downloadScheduledTrainingClasses",
   (_, downloadsArray: downloadRequest[]) => {
@@ -63,6 +80,14 @@ ipcMain.on(
     DownloadsData.addMultipleToQueue(downloadsArray);
   }
 );
+
+ipcMain.on("removeMyTrainingClasses", (_, data: TrainingClass[]) => {
+  DownloadsData.removeMyTrainingClasses(data);
+});
+
+ipcMain.on("removeMyTrainingClass", (_, tc: TrainingClass) => {
+  DownloadsData.removeMyTrainingClass(tc);
+});
 
 ipcMain.on("removeAllDownloads", () => {
   DownloadsData.removeAll();
@@ -109,9 +134,9 @@ ipcMain.handle("changeDownloadsPath", (): string => {
   }
 
   showModal(
-    "Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
-    "Sí, copiar",
-    "No, solo cambia el directorio",
+    "¿Desea copiar los archivos de descarga del directorio actual al nuevo directorio seleccionado?",
+    "Sí, copiar archivos",
+    "No, solo cambiar el directorio",
     () => {
       DownloadsData.moveDownloadsTo(dir[0]);
     },
@@ -130,6 +155,7 @@ ipcMain.on("restoreDefaults", () => {
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
+  KnownDevicesData.init();
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
 
@@ -141,11 +167,12 @@ ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
   if (AppData.ONLINE != online) {
     AppData.ONLINE = online;
     log(`Changed status connection to: ${online ? "online" : "offline"}`);
-    if (online) sendToast("Se ha restaurado la conexión");
-    else if (!online) sendToast("Pasando a modo offline", "warn");
-  }
-  if (online) {
-    DownloadsData.startDownloads();
+    if (online) {
+      DownloadsData.startDownloads();
+      sendToast("Se ha restaurado la conexión");
+    } else if (!online) {
+      sendToast("Pasando a modo offline", "warn");
+    }
   }
 });
 
@@ -194,7 +221,10 @@ ipcMain.on("modalOk", () => modalFunctions.callbackOk());
 ipcMain.on("modalCancel", () => modalFunctions.callbackCancel());
 
 export const informDownloadsState = () => {
-  mainWindow.webContents.send("downloadsState", DownloadsData.toWebAppState());
+  mainWindow.webContents.send(
+    "downloadsState",
+    DownloadsData.getDownloadsState()
+  );
 };
 
 // Just gives the information about one download (the one downloading)
@@ -226,6 +256,14 @@ ipcMain.on("getAdjustVideoPath", (event) => {
     path.join(SettingsData.downloadsPath, "ajustes.mp4")
   ).href;
   event.returnValue = adjustVideoPath;
+});
+
+ipcMain.on("workerInstalled", (event) => {
+  event.returnValue = AppData.WORKER_INSTALLED;
+});
+
+ipcMain.on("notifyWorkerInstalled", () => {
+  AppData.WORKER_INSTALLED = true;
 });
 
 ipcMain.on("getSetting", (event, setting) => {
@@ -288,144 +326,40 @@ ipcMain.on("stopConversion", () => {
   BinData.removeProcess("ffmpeg");
 });
 
-ipcMain.on("removeTempMp3", (_, fileName) => {
-  if (!fileName) return;
+ipcMain.on("removeTempMp3", (_, path) => {
+  if (!path) return;
 
-  BinData.removeProcess("ffmpeg");
-  fs.rm(path.join(app.getPath("temp"), fileName), (err) => {
-    if (err) {
-      logError(`Couldn't delete file for download: ${fileName}, error: `, err);
-      return;
-    }
-
-    log("removeTempMp3");
-  });
-});
-
-ipcMain.handle("convertToMp3", async (_, url: string) => {
-  const ffmpegBin = os.platform() === "win32" ? "ffmpeg.exe" : "ffmpeg";
-
-  const name = url.split(path.sep).reverse()[0].split(".")[0];
-  const date = new Date().getTime();
-  const outPutPath = path.join(app.getPath("temp"), `${name}_${date}.mp3`);
-
-  const isMp3 = await new Promise((resolve, reject) => {
-    log("Getting data from file...");
-
-    const data = BinData.executeBinary(ffmpegBin, ["-i", url]);
-    const buff: number[] = [];
-
-    data.stderr.on("data", (data) => buff.push(data.toString()));
-    data.stderr.once("end", () => {
-      const regex = /Stream.+Audio: mp3,/;
-      const mp3 = buff.join().match(regex);
-
-      resolve(mp3);
-    });
-    data.stdout.once("error", (err) => {
-      logError("Error getting data from file: ", err);
-      reject(false);
-    });
-  });
-
-  if (isMp3) {
-    log(`Unnecessary conversion detected: returning ${url}`);
-    return {
-      status: "success",
-      url: url,
-    };
-  }
-
-  const toSeconds = (date: string) => {
-    const times = [3600, 60, 1];
-    let seconds = 0;
-
-    times.forEach((time, index) => (seconds += parseInt(date[index]) * time));
-    return seconds;
-  };
-
-  const onExit = () => {
-    BinData.removeProcess("ffmpeg");
-    fs.rm(outPutPath.replace(/\\/, "\\"), (err) => {
+  if (fs.existsSync(path)) {
+    fs.rm(path, (err) => {
       if (err) {
-        logError(
-          `Couldn't delete file for download: ${outPutPath}, error: `,
-          err
-        );
+        logError(`Couldn't delete file for download: ${path}, error: `, err);
         return;
       }
 
       log("removeTempMp3");
     });
-  };
+  }
+});
 
-  let durationInSeconds = 0;
+ipcMain.handle("convertToMp3", async (_, url: string) => {
+  const conversion = new ConversionDataImpl(url);
+  const mp3Status = await conversion.checkExtension();
 
-  return await new Promise<ConversionResponse>((resolve, reject) => {
-    log("Creating mp3 from wav...");
+  if (mp3Status) {
+    return mp3Status;
+  }
 
-    const execution = BinData.executeBinary(
-      ffmpegBin,
-      [
-        "-y",
-        "-i",
-        url,
-        "-codec:a",
-        "libmp3lame",
-        "-b:a",
-        "320k",
-        "-ar",
-        "44100",
-        "-write_xing",
-        "false",
-        "-f",
-        "mp3",
-        outPutPath,
-      ],
-      "ffmpeg"
-    );
-
-    execution.stderr.on("data", (data) => {
-      // Looking for Duration in console err output
-      const buff = data.toString().split(" ");
-      const durationIndex = buff.indexOf("Duration:");
-
-      if (durationIndex !== -1) {
-        const duration = buff[durationIndex + 1].split(",")[0].split(":");
-        durationInSeconds = toSeconds(duration);
-        return;
-      }
-
-      // Looking for Time in console err output
-      const timeBuff = buff.join("=").split("=");
-      const timeIndex = timeBuff.indexOf("time");
-
-      if (timeIndex !== -1) {
-        // Convert times to percent
-        const time = timeBuff[timeIndex + 1].split(":");
-        const seconds = toSeconds(time);
-
-        const percent = Math.trunc((100 * seconds) / durationInSeconds);
-
-        log(
-          `Converting => totalSeconds: ${durationInSeconds} | currentSeconds: ${seconds} | percent: ${percent}`
-        );
-        informConversionState(percent);
-      }
-    });
-    execution.stderr.once("end", () => {
-      if (!BinData.processes["ffmpeg"]) {
-        onExit();
-        resolve({ status: "canceled" });
-      } else resolve({ status: "success", url: outPutPath });
-    });
-    execution.stderr.once("error", (err) => {
-      onExit();
-
-      logError("convertToMp3: Error converting to mp3: ", err);
-      reject();
-    });
+  return await conversion.convert((value: number) => {
+    informConversionState(value);
   });
+});
+
+ipcMain.on("checkConnection", (event, id, media) => {
+  event.returnValue = net.isOnline();
+});
+
+ipcMain.on("setMenuBar", (_, layout: MenuBarLayout) => {
+  generateMenuBar(layout);
 });
 
 // There are some actions that need to comunicate with the renderer process

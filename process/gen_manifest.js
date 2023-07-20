@@ -75,22 +75,22 @@ const uploadManifest = async (channel) => {
 
   let platform = process.platform;
   if (process.platform == "darwin") platform = "mac64";
-
   if (platform == "mac64") {
     manifest.packages[platform] = {
       url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${
         pack.version
-      }/darwin/${pack.productName.replace(
+      }/universal/${pack.productName.replace(
         " ",
         "+"
       )}-${os.platform()}-universal-${pack.version}.zip`,
     };
-  } else if (platform == "win32") {
-    const platforms = ["ia32", "x64"];
+  } else if (platform == "win32" || platform == "win64") {
+    const platforms = ["win32", "win64"];
+    const arch = { win32: "ia32", win64: "x64" };
     platforms.forEach(
       (p) =>
         (manifest.packages[p] = {
-          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/${p}/RELEASES`,
+          url: `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${pack.version}/${arch[p]}/RELEASES`,
         })
     );
   }

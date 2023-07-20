@@ -1,5 +1,4 @@
-import { app, autoUpdater, BrowserWindow, ipcMain } from "electron";
-import projectInfo from "../../package.json";
+import { app, autoUpdater, BrowserWindow, dialog } from "electron";
 import path from "path";
 import { AppData } from "../../src/data/appData";
 import axios from "axios";
@@ -9,6 +8,8 @@ import fs from "fs";
 import { download } from "./downloadsHelpers";
 import url from "url";
 import { sendToast, sendUpdaterEvent } from "./ipcMainActions";
+import extract from "extract-zip";
+import { spawn } from "child_process";
 
 type Pckg = { url: string };
 
@@ -19,6 +20,16 @@ interface UpdateManifest {
   manifestUrl: string;
   packages: {
     [bar: string]: Pckg;
+  };
+}
+interface UpdateData {
+  data: {
+    type: string;
+    attributes: {
+      url: string;
+      version: string;
+      plattform: string;
+    };
   };
 }
 
@@ -88,22 +99,12 @@ const getMostUpdatedManifest = async (allowedChannels: {
   beta: boolean | undefined;
 }): Promise<UpdateManifest | null> => {
   const manifestRevision = allowedChannels.revision
-    ? (
-        await axios.get<UpdateManifest>(
-          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/revision/manifest.json"
-        )
-      ).data
+    ? await getManifest("revision")
     : null;
-  const manifestBeta = allowedChannels.beta
-    ? (
-        await axios.get<UpdateManifest>(
-          "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/beta/manifest.json"
-        )
-      ).data
-    : null;
+  const manifestBeta = allowedChannels.beta ? await getManifest("beta") : null;
   const manifestProduction = (
     await axios.get<UpdateManifest>(
-      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/qiqe-temp/manifest.json" // TODO: change to production
+      "https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/production/manifest.json" // TODO: change to production
     )
   ).data;
 
@@ -117,48 +118,77 @@ const getMostUpdatedManifest = async (allowedChannels: {
     });
 };
 
+const getManifest = async (
+  channel: "beta" | "revision" | "production"
+): Promise<UpdateManifest | null> => {
+  try {
+    const manifest = (
+      await axios.get<UpdateManifest>(
+        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/${channel}/manifest.json`
+      )
+    ).data;
+    return manifest;
+  } catch (err) {
+    logError("Error getting manifest", err);
+    return null;
+  }
+};
+
+export const getUpdateManifest = async () => {
+  const config = {
+    headers: {
+      "Content-Type": "application/vnd.api+json",
+      "X-APP-ID": AppData.XAPPID,
+      Authorization: AppData.AUTHORIZATION,
+      "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
+    },
+  };
+
+  const desktopUpdate = (
+    await axios.get<UpdateData>(`${AppData.API}/desktop_updaters`, config)
+  ).data;
+
+  return desktopUpdate?.data?.attributes ?? {};
+};
+
+export const forceCheckForUpdate = async () => {
+  const updateManifest = await getUpdateManifest();
+
+  // const version = updateManifest?.version;
+  const updateUrl = updateManifest?.url;
+
+  if (updateUrl) {
+    setAutoUpdater();
+  } else {
+    const dialogOpts = {
+      type: "info",
+      buttons: ["Aceptar"],
+      title: "Application Update",
+      // message: process.platform === "win32" ? releaseNotes : releaseName,
+      message: "Actualmente, no hay actualizaciones disponibles.",
+    };
+    dialog.showMessageBox(dialogOpts);
+  }
+};
+
 /**
  * Sets the autoUpdater to check the s3 manifest and check wether there are updates
  * to be downloaded.
  * */
-export const setAutoUpdater = async (allowedChannels: {
-  revision: boolean | undefined;
-  beta: boolean | undefined;
-}) => {
-  const manifest = await getMostUpdatedManifest(allowedChannels);
-
-  if (!manifest) {
-    logError("No manifest found");
+export const setAutoUpdater = async () => {
+  // console.table(AppData);
+  if (AppData.USER === null) {
+    log("No user, abort updater");
     return;
   }
 
-  if (!isNewVersionNuber(projectInfo.version, manifest.version)) {
-    log(
-      `No new version found.\nActual: ${projectInfo.version} - Manifest: ${manifest.version}`
-    );
-    return;
-  }
+  const updateManifest = await getUpdateManifest();
+  const updateUrl = updateManifest?.url;
+  const version = updateManifest?.version;
 
-  const version = manifest.version;
-  log(
-    `THERE IS AN UPDATE AVAILABLE: ${version}. Current: ${projectInfo.version}`
-  );
-
-  let platform: string = os.platform();
-
-  if (platform == "darwin") platform = "mac64";
-
-  const updateUrl = manifest.packages[platform]?.url;
-  console.log("updateUrl", updateUrl);
-  if (!updateUrl) {
-    logError(
-      `The update is not available for this platform, you should check either if it wasn't uploaded yet or this platform is not supported. (platform: ${platform})`
-    );
-    return;
-  }
+  if (!updateUrl) return;
 
   const tempPath = path.join(app.getPath("temp"), "updateVersion");
-
   const setAutoUpdaterMac = () => {
     if (!app.isInApplicationsFolder()) {
       logError("Tried updating from a non-app folder, aborting");
@@ -177,9 +207,13 @@ export const setAutoUpdater = async (allowedChannels: {
     const json = {
       url: url.pathToFileURL(path.join(tempPath, "update.zip")).href,
     };
+    console.info("JSON", json);
+    console.info(
+      "URL",
+      url.pathToFileURL(path.join(tempPath, "feed.json")).href
+    );
 
     fs.writeFileSync(tempPath + "/feed.json", JSON.stringify(json));
-    console.log("file://" + tempPath + "/feed.json");
 
     autoUpdater.setFeedURL({
       url: url.pathToFileURL(path.join(tempPath, "feed.json")).href,
@@ -189,56 +223,56 @@ export const setAutoUpdater = async (allowedChannels: {
   };
 
   const setAutoUpdaterWin = async () => {
-    // In windows we need to avoid running an update the first time the app runs
-    const cmd = process.argv[1];
-    if (cmd == "--squirrel-firstrun") {
+    // TODO: en mac se pasa un zip y funciona bien, en windows no lo he conseguido.
+    const source = path.join(tempPath, "update.zip");
+    const target = path.join(tempPath);
+    let installerPath: string | undefined;
+
+    await extract(source, {
+      dir: target,
+      onEntry: (entry) => {
+        const entryPath = path.join(tempPath, entry.fileName);
+        if (!installerPath && path.extname(entryPath) === ".exe") {
+          installerPath = entryPath;
+        }
+      },
+    });
+    if (installerPath) {
+      spawn(target, ["/SILENT"], {
+        detached: true,
+        stdio: ["ignore", "ignore", "ignore"],
+      }).unref();
+
+      app.quit();
+    } else {
       sendUpdaterEvent({
         type: "update_error",
-        error:
-          "Por favor reinicia la aplicación para instalar la actualización",
+        error: "Archivo de actualización no válido.",
       });
-      return;
     }
-
-    log("RELEASES downloaded in temp folder", tempPath);
-    fs.readFile(path.join(tempPath, "RELEASES"), "utf8", (err, data) => {
-      if (err) {
-        logError("Reading RELEASES file", err);
-        return;
-      }
-      const nupkgName = data.split(" ")[1];
-      log("NUPKG NAME:", nupkgName);
-      download(
-        tempPath,
-        nupkgName,
-        `https://s3-eu-west-1.amazonaws.com/bestcycling-production/desktop/versions/v${manifest.version}/${nupkgName}`,
-        () => {
-          log("NUPKG downloaded in temp folder", tempPath);
-          autoUpdater.setFeedURL({
-            url: tempPath,
-          });
-          autoUpdater.checkForUpdates();
-          AppData.LAST_VERSION_DOWNLOADED = version;
-        },
-        (percentage) =>
-          sendUpdaterEvent({ type: "update_downloading", progress: percentage })
-      );
-    });
   };
 
   registerAutoUpdaterEvents();
   sendUpdaterEvent({ type: "update_found", version });
-  if (os.platform() == "darwin") {
+
+  const downloadedCallback =
+    os.platform() == "darwin"
+      ? setAutoUpdaterMac
+      : os.platform() == "win32"
+      ? setAutoUpdaterWin
+      : undefined;
+
+  const downloadProgressCallback = (percentage: number) =>
+    sendUpdaterEvent({ type: "update_downloading", progress: percentage });
+
+  if (downloadedCallback) {
     download(
       tempPath,
       "update.zip",
       updateUrl,
-      setAutoUpdaterMac,
-      (percentage) =>
-        sendUpdaterEvent({ type: "update_downloading", progress: percentage })
+      downloadedCallback,
+      downloadProgressCallback
     );
-  } else if (os.platform() == "win32") {
-    download(tempPath, "RELEASES", updateUrl, setAutoUpdaterWin);
   }
 };
 

@@ -8,13 +8,14 @@ import BinDataModel from "../data/binData";
 import DownloadsDataModel from "../data/downloadsData";
 import SettingsDataModel from "../data/settingsData";
 import TrainingClassesDataModel from "../data/trainingClassesData";
-import { setAutoUpdater } from "./updater";
 import dayjs from "dayjs";
 import { getDBPath } from ".";
-import { log, logWarn } from "./loggers";
+import { log, logError, logWarn } from "./loggers";
+import KnownDevicesDataModel from "../data/knownDevicesData";
 
 // Use JSON file for storage
 const file = getDBPath();
+
 const adapter = new JSONFile<DataBase>(file);
 export const DB = new Low(adapter);
 
@@ -23,6 +24,8 @@ export const BinData = new BinDataModel();
 export const SettingsData = new SettingsDataModel();
 export const TrainingClassesData = new TrainingClassesDataModel();
 export const DownloadsData = new DownloadsDataModel();
+console.log("**^la database file está en ", file);
+export const KnownDevicesData = new KnownDevicesDataModel();
 
 log("DB file in: ", getDBPath());
 
@@ -49,14 +52,8 @@ const recoverOldPrefs = () => {
 // Processess that should be initialized before the webpage loads
 export const init = async () => {
   initErrorHandler();
-  await initDB();
-  if (process.env.NODE_ENV !== "development") {
-    setAutoUpdater({
-      revision: AppData.USER?.isPreviewTester,
-      beta: AppData.USER?.isBetaTester,
-    });
-  }
 
+  await initDB();
   recoverOldPrefs();
   DownloadsData.identifyDownloadsInFolder(SettingsData.downloadsPath);
 };
@@ -89,6 +86,7 @@ const setStartingUrl = () => {
   }
 };
 
+export let api: Kitsu;
 /**
  * Initializes the database and creates the tables if they don't exist
  * Also calls the startDownloads at the end
@@ -104,6 +102,7 @@ const initDB = async () => {
       settings: SettingsData,
       trainingClasses: TrainingClassesData,
       downloads: DownloadsData,
+      knownDevices: KnownDevicesData.getKnownDevices(),
       appData: AppData,
     };
     void DB.write();
@@ -112,8 +111,19 @@ const initDB = async () => {
     TrainingClassesData.getFromDb();
     DownloadsData.getFromDb();
     AppData.getFromDb();
-    AppData.FIRST_TIME_IT_RUNS = false; // FIXME: no es buena manera de hacerlo, se puede haber quedado la BD guardada de una instalación anterior.
+    KnownDevicesData.getFromDb();
   }
+
+  // TODO: fuera
+  api = new Kitsu({
+    headers: {
+      "Content-Type": "application/vnd.api+json",
+      "X-APP-ID": AppData.XAPPID,
+      Authorization: AppData.AUTHORIZATION,
+      "User-Agent": AppData.USER_AGENT ?? app.userAgentFallback,
+    },
+    baseURL: AppData.API,
+  });
 
   // Start downloads that remained in queue
   DownloadsData.startDownloads();
@@ -125,13 +135,3 @@ const initErrorHandler = () =>
     submitURL: "",
     uploadToServer: false,
   });
-
-export const api = new Kitsu({
-  headers: {
-    "Content-Type": "application/vnd.api+json",
-    "X-APP-ID": AppData.XAPPID,
-    // "X-APP-VERSION": appVersion,
-    Authorization: AppData.AUTHORIZATION,
-  },
-  baseURL: "https://apiv2.bestcycling.es/api/v2",
-});
