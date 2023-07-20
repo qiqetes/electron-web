@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-import { app, session, BrowserWindow, ipcMain, shell } from "electron";
+import { app, session, BrowserWindow, ipcMain, shell, dialog } from "electron";
 
 import { LocalServerInstance } from "./core/LocalServer";
 import {
@@ -97,6 +97,23 @@ const createWindow = async () => {
     }
   });
 
+  // Si alguna página va a evitar el unload mostramos dialogo de confirmación.
+  // Si ejecutamos event.preventDefault() cancelaremos el beforeunload permitiendo
+  // el cierre de la ventana.
+  mainWindow.webContents.on("will-prevent-unload", (evt) => {
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: "question",
+      buttons: ["Salir", "Cancelar"],
+      message: "Tienes cambios sin guardar. ¿Estás seguro que deseas salir?",
+      defaultId: 0,
+      cancelId: 1,
+    });
+    const leave = choice === 0;
+    if (leave) {
+      evt.preventDefault();
+    }
+  });
+
   mainWindow.on("close", async () => await saveAll());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -148,12 +165,12 @@ app.on("ready", async () => {
   BTManager.bluetoothStateChange();
 });
 
-app.on("before-quit", async () => {
+// Si todas las ventanas se han cerrado guardamos datos, cancelamos servicios
+// y cerramos la aplicación.
+app.on("window-all-closed", async () => {
   const download = DownloadsData.getDownloading();
-
   if (download) {
     log("Removing download before app close");
-
     await DownloadsData.removeDownloading();
 
     const filename = filenameStealth(download.id, download.mediaType);
@@ -162,8 +179,11 @@ app.on("before-quit", async () => {
 
   LocalServerInstance.stop();
   await saveAll();
+  app.quit(); // Llama a before-quit
+});
 
-  app.quit();
+app.on("before-quit", async () => {
+  // No usar app.quit() aquí o tendremos infinite loop.
 });
 
 app.on("activate", () => {
