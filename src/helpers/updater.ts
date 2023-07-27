@@ -238,7 +238,7 @@ export const setAutoUpdater = async () => {
       },
     });
     if (installerPath) {
-      spawn(target, ["/SILENT"], {
+      spawn(installerPath, ["/SILENT"], {
         detached: true,
         stdio: ["ignore", "ignore", "ignore"],
       }).unref();
