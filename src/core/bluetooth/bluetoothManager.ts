@@ -16,7 +16,7 @@ import { PowerDevice } from "./powerDevice";
 import { BhProDevice } from "./bhProDevice";
 import { BhCustomDevice } from "./bhCustomDevice";
 import { log } from "../../helpers/loggers";
-var AsyncLock = require("async-lock");
+const AsyncLock = require("async-lock");
 
 export class BluetoothManager {
   knownDevices: KnownDevicesData | undefined;
@@ -251,17 +251,17 @@ export class BluetoothManager {
       const deviceId = device.deviceId;
       const deviceName = device.deviceName;
 
+      const isDeviceUnknow = deviceName.includes(deviceId);
       const foundDevice: BluetoothDevice | undefined =
         this.allDevicesList.get(deviceId);
 
-      if (foundDevice) {
-        return;
+      if (!foundDevice && !isDeviceUnknow) {
+        const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
+        bl.setGattCallback(cb);
+        //this.setGattCallback(cb);
+        this.allDevicesList.set(deviceId, bl);
+        mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
       }
-      const bl = BluetoothDevice.fromChromium(deviceId, deviceName);
-      bl.setGattCallback(cb);
-      //this.setGattCallback(cb);
-      this.allDevicesList.set(deviceId, bl);
-      mainWindow.webContents.send("bluetoothDeviceFound", bl.serialize());
     }
   };
 
@@ -616,8 +616,8 @@ export class BluetoothManager {
   };
 
   getDeviceType = (id: string): [BluetoothDeviceTypes, BluetoothParserType] => {
-    var deviceType = BluetoothDeviceTypes.HeartRate;
-    var parserType: BluetoothParserType = "heartrate";
+    let deviceType = BluetoothDeviceTypes.HeartRate;
+    const parserType: BluetoothParserType = "heartrate";
 
     if (this.knownDevices != null) {
       const knwon = this.knownDevices.getKnownDevice(id.toLowerCase());
