@@ -160,7 +160,7 @@ ipcMain.on("restoreDefaults", () => {
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
 
-  // app.relaunch();
+  app.relaunch();
   app.quit();
 });
 
