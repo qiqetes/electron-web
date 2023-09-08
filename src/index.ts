@@ -12,7 +12,12 @@ import {
   onWindowResized,
 } from "./helpers";
 
-import { DownloadsData, init, SettingsData } from "./helpers/init";
+import {
+  DownloadsData,
+  init,
+  SettingsData,
+  TrainingClassesData,
+} from "./helpers/init";
 import { sendToast } from "./helpers/ipcMainActions";
 import { saveAll } from "./helpers/databaseHelpers";
 import { log, logError } from "./helpers/loggers";
@@ -168,6 +173,10 @@ app.on("ready", async () => {
 // Si todas las ventanas se han cerrado guardamos datos, cancelamos servicios
 // y cerramos la aplicación.
 app.on("window-all-closed", async () => {
+  app.quit(); // Llama a before-quit
+});
+
+app.on("before-quit", async () => {
   const download = DownloadsData.getDownloading();
   if (download) {
     log("Removing download before app close");
@@ -178,11 +187,8 @@ app.on("window-all-closed", async () => {
   }
 
   LocalServerInstance.stop();
-  await saveAll();
-  app.quit(); // Llama a before-quit
-});
 
-app.on("before-quit", async () => {
+  await saveAll();
   // No usar app.quit() aquí o tendremos infinite loop.
 });
 

@@ -152,6 +152,7 @@ ipcMain.handle("changeDownloadsPath", (): string => {
 ipcMain.on("restoreDefaults", () => {
   log("Restoring defaults");
 
+  TrainingClassesData.init();
   DownloadsData.init();
   SettingsData.init();
   AppData.init();
@@ -159,8 +160,8 @@ ipcMain.on("restoreDefaults", () => {
   // borrar localStorage
   mainWindow.webContents.session.clearStorageData();
 
-  app.relaunch();
-  app.exit();
+  // app.relaunch();
+  app.quit();
 });
 
 ipcMain.on("changeConnectionStatus", (event, online: boolean) => {
