@@ -58,6 +58,7 @@ Source: "{#AppSrcDir}\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubd
 ;Name: "{commondesktop}\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{group}\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
+Name: "{userdesktop}\{#AppName}"; Filename: "{app}\bin\{#AppExeName}"; Tasks: "desktopicon"
 
 [Run]
 Filename: "{app}\bin\{#AppExeName}"; WorkingDir: "{app}"; Flags: nowait postinstall; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"
