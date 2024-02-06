@@ -131,7 +131,7 @@ export default class DownloadsDataModel implements DownloadsData {
 
   getIncomplete(): OfflineTrainingClass[] {
     return Object.values(this.offlineTrainingClasses).filter(
-      (v) => v.status === "downloading" || v.status === "error"
+      (v) => v.status === "error"
     );
   }
 

@@ -68,7 +68,13 @@ async function signWindowsInstaller(config) {
 
   let args = [
     "sign",
-    config.signParams,
+    // config.signParams,
+    "/tr",
+    "http://timestamp.digicert.com",
+    "/td",
+    "SHA256",
+    "/fd",
+    "SHA256",
     path.resolve(config.outputDirectory, `${config.exe}.exe`),
   ].filter((a) => a);
 
@@ -76,6 +82,9 @@ async function signWindowsInstaller(config) {
 
   const signResult = spawnSync(cmd, args, { stdio: "pipe" });
   console.info(signResult.output.toString());
+  if (!signResult.output.toString().includes("Successfully signed")) {
+    throw `No se ha podido firmar.\n${signResult.output.toString()}`;
+  }
 
   args = [
     "verify",
@@ -85,6 +94,9 @@ async function signWindowsInstaller(config) {
   console.info("validating...");
   const validateResult = spawnSync(cmd, args, { stdio: "pipe" });
   console.info(validateResult.output.toString());
+  if (!validateResult.output.toString().includes("Successfully verified")) {
+    throw `No se ha podido validar la firma.\n${validateResult.output.toString()}`;
+  }
 }
 
 async function packagingWindowsUpdater(config) {

@@ -1,9 +1,9 @@
+import { app } from "electron";
+import * as fs from "fs";
 import os from "os";
 import path from "path";
-import * as fs from "fs";
-import { app } from "electron";
-import { log, logError } from "../../src/helpers/loggers";
 import { BinData } from "../../src/helpers/init";
+import { log, logError } from "../../src/helpers/loggers";
 
 class ConversionDataImpl implements ConversionData {
   url: string;
@@ -52,6 +52,18 @@ class ConversionDataImpl implements ConversionData {
     });
   }
 
+  parseURL(url: string): string {
+    const parsedSep = encodeURIComponent(path.sep);
+    const parsedDots = encodeURIComponent(':');
+    const parsedURL = encodeURIComponent(url);
+
+    const parsedFinal = parsedURL.replace(new RegExp(parsedSep, 'g'), path.sep);
+
+    return os.platform() === 'win32'
+      ? parsedFinal.replace(new RegExp(parsedDots, 'g'), ':')
+      : parsedFinal;
+  }
+
   checkExtension(): Promise<ConversionResponse> {
     return new Promise<ConversionResponse>((resolve, reject) => {
       log("Getting data from file...");
@@ -65,7 +77,7 @@ class ConversionDataImpl implements ConversionData {
         const matches = buff.join().match(regex);
         const isMp3 = matches?.length;
 
-        resolve(isMp3 ? { status: "success", url: this.url } : null);
+        resolve(isMp3 ? { status: "success", url: this.parseURL(this.url) } : null);
       });
       data.stderr.once("close", (error: boolean) => {
         if (!error) return;
@@ -142,7 +154,7 @@ class ConversionDataImpl implements ConversionData {
       });
       process.stderr.once("end", () => {
         if (BinData.processes["ffmpeg"]) {
-          resolve({ status: "success", url: this.outputPath });
+          resolve({ status: "success", url: this.parseURL(this.outputPath) });
           return;
         }
 
